@@ -1,8 +1,4 @@
 sygus-comp13
 ============
 
-http://www.sygus.org
-
-Syntax-Guided Synthesis Competition 2014
-
-Repository for solvers and benchmarks.
+Repository for solvers and benchmarks for the 1st Syntax-Guided Synthesis Competition at CAV 2014 (http://www.sygus.org).
