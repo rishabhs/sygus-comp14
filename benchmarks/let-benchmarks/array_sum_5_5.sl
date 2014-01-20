@@ -1,3 +1,10 @@
+;; expected program:: (let ((z Int (+ x1 x2))) (ite (> z 5) z (
+;;   	    	      let ((z Int (+ x2 x3))) (ite (> z 5) z (
+;;   	    	      let ((z Int (+ x3 x4))) (ite (> z 5) z (
+;;   	    	      let ((z Int (+ x4 x5))) (ite (> z 5) z 0))))))))
+
+
+
 (set-logic LIA)
 (synth-fun findSum ((y1 Int) (y2 Int) (y3 Int) (y4 Int) (y5 Int)) Int 
            ((Start Int (0 
@@ -12,6 +19,7 @@
                         y4 
 			y5
                         z 
+			(+ Start Start)
                         (let ((z Int Start)) Start) 
                         (ite BoolExpr Start Start))) 
             (BoolExpr Bool 

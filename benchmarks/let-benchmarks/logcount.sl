@@ -1,3 +1,10 @@
+;; expected program: tmp = in & AA + (in >> 1) & AA, tmp = tmp & CC + (tmp >> 2) & CC, tmp = tmp & E0 + (tmp >> 4) & E0
+;; (let ((tmp (BitVec 8) (x)) (m (BitVec 8) (#xE0))  (n (BitVec 8) (#x04)))
+;;(let ((tmp (BitVec 8) (x)) (m (BitVec 8) (#xCC))  (n (BitVec 8) (#x02))) (
+;;(let ((tmp (BitVec 8) (x)) (m (BitVec 8) (#xAA))  (n (BitVec 8) (#x01)) (bvadd;; (bvand tmp m) (bvand (bvshr tmp n) m)))) (bvadd (bvand tmp m) (bvand 
+;;    (bvshr tmp n) m)))) (bvadd (bvand tmp m) (bvand (bvshr tmp n) m)))
+
+
 (set-logic BV)
 
 (synth-fun countSketch ((x (BitVec 8))) (BitVec 8)
@@ -8,7 +15,7 @@
 		)
 	     )
 	     (ConstBV (BitVec 8) (
-	        #x00 #xAA #xCC #xE0
+	        #x00 #xAA #xCC #xE0 #x01 #x02 #x04
     		 )
 	     
 	     )

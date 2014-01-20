@@ -1,5 +1,5 @@
 (set-logic LIA)
-(synth-fun findSum ( (y1 Int) (y2 Int) (y3 Int) (y4 Int) (y5 Int) (y6 Int) )Int ((Start Int ( 0 1 2 3 4 5 6 y1 y2 y3 y4 y5 y6 z  (let ((z Int Start)) Start)  (ite BoolExpr Start Start))) (BoolExpr Bool ((< Start Start) (<= Start Start) (> Start Start) (>= Start Start)))))
+(synth-fun findSum ( (y1 Int) (y2 Int) (y3 Int) (y4 Int) (y5 Int) (y6 Int) )Int ((Start Int ( 0 1 2 3 4 5 6 y1 y2 y3 y4 y5 y6 z (+ Start Start)  (let ((z Int Start)) Start)  (ite BoolExpr Start Start))) (BoolExpr Bool ((< Start Start) (<= Start Start) (> Start Start) (>= Start Start)))))
 (declare-var x1 Int)
 (declare-var x2 Int)
 (declare-var x3 Int)

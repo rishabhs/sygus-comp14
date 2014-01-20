@@ -8,7 +8,7 @@
 		)
 	     )
 	     (ConstBV (BitVec 8) (
-	       #x00 #xAA #xBB #xCC #xDD #xEE #xFF #xA0 #xB0 #xC0 #xD0 #xE0 #xF0
+	       #x00 #xAA #xBB #xCC #xDD #xEE #xFF #xA0 #xB0 #xC0 #xD0 #xE0 #xF0 #x01 #x02 #x04
     		 )
 	     
 	     )
