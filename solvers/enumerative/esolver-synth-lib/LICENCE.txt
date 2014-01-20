@@ -1,0 +1,57 @@
+Most of the code in this software distribution falls under the purview
+of the following license:
+
+Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania, All
+rights reserved.
+ 
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met: 1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+3. All advertising materials mentioning features or use of this
+software must display the following acknowledgement: This product
+includes software developed by The University of Pennsylvania
+4. Neither the name of the University of Pennsylvania nor the names of
+its contributors may be used to endorse or promote products derived
+from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
+
+The above license does NOT apply to the code found in the following
+subdirectories in the original distribution:
+
+src/z3-4.3.1:
+This software is packaged along with the Z3 SMT solver as a
+convenience, and as such, the SMT solver does not fall under the
+purview of the above license. Details of the licensing terms for Z3
+can be found under the src/z3-4.3.1 directory in the original
+distribution. 
+
+src/external/sparsehash:
+In addition, certain parts of this code depends on the
+hash map and hash set libraries developed by Google Inc. The licensing
+terms for these may be found in the appropriate directory.
+
+src/external/spookyhash:
+The licensing terms for this hash library can be found in the
+appropriate directory as well.
+
+The author and the University of Pennsylvania make no claims of
+ownership or having developed the code in the Z3 SMT solver, the
+Google Sparse Hash Libraries and the Spooky Hash Library. They are
+only packaged together for convenience of the user. The user must
+ensure that the licensing terms of these software packages are met as
+well.

@@ -1,0 +1,48 @@
+Z3 is a theorem prover from Microsoft Research.
+Z3 is licensed under MSR-LA (Microsoft Research License Agreement). 
+See http://z3.codeplex.com/license for more information about this license.
+Z3 can be built using Visual Studio Command Prompt and make/g++.
+
+1) Building Z3 on Windows using Visual Studio Command Prompt
+   
+   python scripts/mk_make.py
+   cd build
+   nmake
+
+2) Building Z3 using make/g++ and Python
+Execute:
+
+   autconf
+   ./configure
+   python scripts/mk_make.py
+   cd build
+   make
+   sudo make install
+
+It will install z3 executable at /usr/bin, libraries at /usr/lib, and include files at /usr/include.
+You can change the installation p
+
+Use the following commands to install in a different prefix (e.g., /home/leo).
+
+  autoconf
+  ./configure --prefix=/home/leo
+  python scripts/mk_make.py
+  cd build
+  make
+  sudo make install
+
+To uninstall Z3, use
+
+  sudo make uninstall
+
+3) Building Z3 using clang++ on Linux/OSX
+Remark: clang does not support OpenMP yet.   
+
+   autoconf
+   ./configure CXX=clang++
+   python scripts/mk_make.py
+   cd build
+   make
+
+
+
