@@ -1,0 +1,2697 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\usepackage{amssymb}
+\usepackage{bussproofs}
+\usepackage{centernot}
+\usepackage{datetime}
+\usepackage{filecontents}
+\usepackage{fullpage}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{stmaryrd}
+
+\usetikzlibrary{automata}
+\usetikzlibrary{backgrounds}
+\usetikzlibrary{fit}
+\usetikzlibrary{positioning}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Language to Specify Syntax-Guided Synthesis Problems
+\end_layout
+
+\begin_layout Author
+Mukund Raghothaman 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+and
+\end_layout
+
+\end_inset
+
+ Abhishek Udupa
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand input
+filename "latex/macros/macros.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand input
+filename "sygus-macros.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Introduction 
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Intro"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We present a language to specify syntax guided synthesis (SyGuS) problems.
+ Syntax guidance is a prominent theme in contemporary program synthesis
+ approaches, and SyGuS was first described in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "FMCAD13"
+
+\end_inset
+
+.
+ An instance of a SyGuS problem has four parts:
+\end_layout
+
+\begin_layout Enumerate
+A base vocabulary and theory, specifying the basic types, primitive operations
+ over the types, and their properties,
+\end_layout
+
+\begin_layout Enumerate
+a finite set of typed 
+\begin_inset Quotes eld
+\end_inset
+
+synthesis
+\begin_inset Quotes erd
+\end_inset
+
+ functions 
+\begin_inset Formula $f_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $f_{2}$
+\end_inset
+
+, \SpecialChar \ldots{}
+, whose bodies are to be synthesized,
+\end_layout
+
+\begin_layout Enumerate
+syntactic constraints: for each synthesis function 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+, a grammar 
+\begin_inset Formula $G_{i}$
+\end_inset
+
+ describing the syntactic structure of the potential solutions, and
+\end_layout
+
+\begin_layout Enumerate
+semantic constraints: a formula 
+\begin_inset Formula $\varphi$
+\end_inset
+
+, with some universally quantified variables 
+\begin_inset Formula $v_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $v_{2}$
+\end_inset
+
+, \SpecialChar \ldots{}
+, which constrains the values of the synthesis functions.
+\end_layout
+
+\begin_layout Standard
+The problem is to find expression bodies for each synthesis function 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+ from the grammar 
+\begin_inset Formula $G_{i}$
+\end_inset
+
+ so that the constraint is universally satisfied:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \forall v_{1},v_{2},\ldots,\funcapptrad{\varphi}{f_{1},f_{2},\ldots,v_{1},v_{2},\ldots}.
+\end{alignat*}
+
+\end_inset
+
+The constraint formula 
+\begin_inset Formula $\varphi$
+\end_inset
+
+ is quantifier-free, and the logical symbols and their interpretation in
+ 
+\begin_inset Formula $\varphi$
+\end_inset
+
+ and the grammar are restricted to a background theory.
+\end_layout
+
+\begin_layout Standard
+For example, over the theory of linear integer arithmetic, the functions
+ computing the maximum 
+\begin_inset Formula $\autobox{max}_{2}$
+\end_inset
+
+ and minimum 
+\begin_inset Formula $\autobox{min}_{2}$
+\end_inset
+
+ of a pair of integers may be specified as 
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{ll}
+\forall x,y:\Z, & \funcapptrad{\autobox{max}_{2}}{x,y}\geq x\land\funcapptrad{\autobox{max}_{2}}{x,y}\geq y\\
+ & \land\left(\funcapptrad{\autobox{max}_{2}}{x,y}=x\lor\funcapptrad{\autobox{max}_{2}}{x,y}=y\right)\\
+ & \land\left(\funcapptrad{\autobox{max}_{2}}{x,y}+\funcapptrad{\autobox{min}_{2}}{x,y}=x+y\right).
+\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We are interested in piecewise linear functions, so the grammar 
+\begin_inset Formula $G$
+\end_inset
+
+ for both functions would be 
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+{\tt Expr} & ::= & \begin{array}{lllllll}
+0 & | & 1 & | & x & | & y\end{array}\\
+ & | & {\tt Expr}+{\tt Expr}\\
+ & | & {\tt Expr}-{\tt Expr}\\
+ & | & \paren{{\tt ite}\mbox{ }{\tt BoolExpr}\mbox{ }{\tt Expr}\mbox{ }{\tt Expr}}\\
+{\tt BoolExpr} & ::= & {\tt BoolExpr}\land{\tt BoolExpr}\\
+ & | & \lnot{\tt BoolExpr}\\
+ & | & {\tt Expr}\leq{\tt Expr}
+\end{array}
+\end{alignat*}
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Section
+Example SyGuS Specification 
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Example"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Before formally describing the language, we present a concrete example of
+ a SyGuS specification.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+lstparams "basicstyle={\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+(set-logic LIA)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(synth-fun max2 ((x Int) (y Int)) Int
+\end_layout
+
+\begin_layout Plain Layout
+
+   ((Start Int (0 1 x y
+\end_layout
+
+\begin_layout Plain Layout
+
+                (+ Start Start)
+\end_layout
+
+\begin_layout Plain Layout
+
+                (- Start Start)
+\end_layout
+
+\begin_layout Plain Layout
+
+                (ite StartBool Start Start)))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    (StartBool Bool ((and StartBool StartBool)
+\end_layout
+
+\begin_layout Plain Layout
+
+                     (not StartBool)
+\end_layout
+
+\begin_layout Plain Layout
+
+                     (<=  Start Start)))))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(synth-fun min2 ((x Int) (y Int)) Int
+\end_layout
+
+\begin_layout Plain Layout
+
+   ((Start Int ((Constant Int) (Variable Int)
+\end_layout
+
+\begin_layout Plain Layout
+
+                (+ Start Start)
+\end_layout
+
+\begin_layout Plain Layout
+
+                (- Start Start)
+\end_layout
+
+\begin_layout Plain Layout
+
+                (ite StartBool Start Start)))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    (StartBool Bool ((and StartBool StartBool)
+\end_layout
+
+\begin_layout Plain Layout
+
+                     (not StartBool)
+\end_layout
+
+\begin_layout Plain Layout
+
+                     (<=  Start Start)))))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(declare-var x Int)
+\end_layout
+
+\begin_layout Plain Layout
+
+(declare-var y Int)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(constraint (>= (max2 x y) x))
+\end_layout
+
+\begin_layout Plain Layout
+
+(constraint (>= (max2 x y) y))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(constraint (or (= x (max2 x y))
+\end_layout
+
+\begin_layout Plain Layout
+
+            (or (= y (max2 x y)))))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(constraint (= (+ (max2 x y) (min2 x y))
+\end_layout
+
+\begin_layout Plain Layout
+
+               (+ x y)))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(check-synth)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+SyGuS specification for functions computing the maximum and minimum of two
+ integers.
+ 
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Example:Max2"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We continue the example of 
+\begin_inset Formula $\autobox{max}_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\autobox{min}_{2}$
+\end_inset
+
+ from the previous section, and present the corresponding SyGuS code in
+ figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example:Max2"
+
+\end_inset
+
+.
+ The first command 
+\begin_inset Formula $\paren{\setlogickwd\mbox{ }{\tt LIA}}$
+\end_inset
+
+ informs the synthesizer to load symbols corresponding to linear integer
+ arithmetic.
+ Next, we describe the functions to be synthesized: the command 
+\begin_inset Formula $\paren{\synthfunkwd\mbox{ }{\tt max2}\mbox{ }\ldots}$
+\end_inset
+
+ command first specifies that 
+\begin_inset Formula ${\tt max2}$
+\end_inset
+
+ is a function of two integer arguments 
+\begin_inset Formula ${\tt x}$
+\end_inset
+
+ and 
+\begin_inset Formula ${\tt y}$
+\end_inset
+
+, and returns an integer value.
+ The rest of the command describes the grammar for 
+\begin_inset Formula ${\tt max2}$
+\end_inset
+
+.
+ 
+\begin_inset Formula ${\tt Start}$
+\end_inset
+
+ and 
+\begin_inset Formula ${\tt StartBool}$
+\end_inset
+
+ are integer-valued and boolean-valued non-terminal symbols respectively.
+ 
+\begin_inset Formula ${\tt Start}$
+\end_inset
+
+ is the special starting non-terminal of the grammar.
+ The description of 
+\begin_inset Formula ${\tt min2}$
+\end_inset
+
+ is identical to that of 
+\begin_inset Formula ${\tt max2}$
+\end_inset
+
+, except for the function name, and some useful shorthands 
+\begin_inset Formula $\paren{\constantkwd\mbox{ }\intkwd}$
+\end_inset
+
+ and 
+\begin_inset Formula $\paren{\varkwd\mbox{ }\intkwd}$
+\end_inset
+
+ which respectively expand to any integer constant and integer-valued variable
+ currently in scope.
+ Finally, the code lists the constraints that these functions satisfy.
+ Pick a pair of integers 
+\begin_inset Formula ${\tt x}$
+\end_inset
+
+ and 
+\begin_inset Formula ${\tt y}$
+\end_inset
+
+.
+ The first constraint requires that 
+\begin_inset Formula $\funcapptrad{{\tt max2}}{{\tt x},{\tt y}}\geq{\tt x}$
+\end_inset
+
+.
+ The final synthesis contraint 
+\begin_inset Formula $\varphi$
+\end_inset
+
+ is the conjunction of the constraints imposed by the individual constraint
+ commands.
+\end_layout
+
+\begin_layout Section
+Specification Language 
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Spec"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The SyGuS specification language is closely modeled on SMT-Lib2.
+ A SyGuS input file is a sequence of commands; in subsections 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Spec:SetLogic"
+
+\end_inset
+
+-
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Spec:SetOpts"
+
+\end_inset
+
+, we describe the syntax of each command.
+ In the following description, italicized text within angle-brackets represents
+ EBNF non-terminals, and text in typewriter font represents terminal symbols.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\sygus & ::= & \setlogiccmd\kplus{\cmd}\\
+ & | & \kplus{\cmd}\\
+\cmd & ::= & \sortdefcmd\\
+ & | & \vardeclcmd\\
+ & | & \fundeclcmd\\
+ & | & \fundefcmd\\
+ & | & \synthfuncmd\\
+ & | & \constraintcmd\\
+ & | & \checksynthcmd\\
+ & | & \setoptscmd
+\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Language trivia 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:Trivia"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Reserved words 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:Trivia:Keywords"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The following keywords are reserved, and may not be used as identifiers
+ in any context: 
+\begin_inset Formula $\setlogickwd$
+\end_inset
+
+, 
+\begin_inset Formula $\sortdefkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\vardeclkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\fundeclkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\fundefkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\synthfunkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\constraintkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\checksynthkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\setoptskwd$
+\end_inset
+
+, 
+\begin_inset Formula $\bitveckwd$
+\end_inset
+
+, 
+\begin_inset Formula $\arraykwd$
+\end_inset
+
+, 
+\begin_inset Formula $\intkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\boolkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\enumkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\realkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\constantkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\varkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\inputvarkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\localvarkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\truekwd$
+\end_inset
+
+, 
+\begin_inset Formula $\falsekwd$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Comments 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:Trivia:Comments"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Comments in SyGuS specifications are indicated by a semicolon 
+\begin_inset Formula ${\tt ;}$
+\end_inset
+
+.
+ On encountering a 
+\begin_inset Formula ${\tt ;}$
+\end_inset
+
+, the rest of the line is ignored.
+\end_layout
+
+\begin_layout Subsubsection
+Identifiers 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:Trivia:Identifiers"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Identifiers are denoted with the non-terminal 
+\begin_inset Formula $\symbol$
+\end_inset
+
+.
+ An identifier is any non-empty sequence of upper- and lower-case alphabets,
+ digits, and certain special characters, with the restriction that it may
+ not begin with a digit.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\left\langle SpecialChar\right\rangle  & = & \roset{{\tt \_},{\tt +},{\tt -},{\tt *},{\tt \&},{\tt |},{\tt !},{\tt \sim},{\tt <},{\tt >},{\tt =},{\tt /},{\tt \%},{\tt ?},{\tt .},{\tt \$},{\tt \mathcircumflex}}\\
+\symbol & ::= & \left(\begin{array}{lllll}
+\left[{\tt a}-{\tt z}\right] & | & \left[{\tt A}-{\tt Z}\right] & | & \left\langle SpecialChar\right\rangle \end{array}\right)\\
+ &  & \kstar{\left(\begin{array}{ccccccc}
+\left[{\tt a}-{\tt z}\right] & | & \left[{\tt A}-{\tt Z}\right] & | & \left[{\tt 0}-{\tt 9}\right] & | & \left\langle SpecialChar\right\rangle \end{array}\right)}
+\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A quoted literal, 
+\begin_inset Formula $\left\langle QuotedLiteral\right\rangle $
+\end_inset
+
+ is a non-empty sequence of alphabets, digits and the period (
+\begin_inset Formula ${\tt .}$
+\end_inset
+
+) enclosed within double-quotes.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\left\langle QuotedLiteral\right\rangle  & ::= & \texttt{"}\kplus{\left(\begin{array}{ccccccc}
+\left[{\tt a}-{\tt z}\right] & | & \left[{\tt A}-{\tt Z}\right] & | & \left[{\tt 0}-{\tt 9}\right] & | & {\tt .}\end{array}\right)}\texttt{"}\end{array}
+\end{alignat*}
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Literals 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:Trivia:Literals"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\literal & ::= & \begin{array}{ccccc}
+\intconst & | & \realconst & | & \boolconst\end{array}\\
+ & | & \begin{array}{ccc}
+\bvconst & | & \enumconst\end{array}\\
+\intconst & ::= & \begin{array}{ccc}
+\kplus{\left[{\tt 0}-{\tt 9}\right]} & | & {\tt -}\kplus{\left[{\tt 0}-{\tt 9}\right]}\end{array}\\
+\realconst & ::= & \begin{array}{ccc}
+\kplus{\left[{\tt 0}-{\tt 9}\right]}{\tt .}\kplus{\left[{\tt 0}-{\tt 9}\right]} & | & {\tt -}\kplus{\left[{\tt 0}-{\tt 9}\right]}{\tt .}\kplus{\left[{\tt 0}-{\tt 9}\right]}\end{array}\\
+\boolconst & ::= & \begin{array}{ccc}
+\truekwd & | & \falsekwd\end{array}\\
+\bvconst & ::= & \begin{array}{ccc}
+{\tt \#b}\kplus{\left[{\tt 0}-{\tt 1}\right]} & | & {\tt \#x}\kplus{\left(\begin{array}{ccccc}
+\left[{\tt 0-9}\right] & | & \left[{\tt a}-{\tt f}\right] & | & \left[{\tt A}-{\tt F}\right]\end{array}\right)}\end{array}\\
+\bvconst & ::= & \symbol{\tt ::}\symbol
+\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Integer constants are written as usual, in decimal, with an optional minus
+ at the beginning to denote a negative number.
+ Real numbers are written using their decimal expansion: at least one decimal
+ digit before and after a mandatory period, and an optional minus sign at
+ the beginning.
+ 
+\begin_inset Formula $\truekwd$
+\end_inset
+
+ and 
+\begin_inset Formula $\falsekwd$
+\end_inset
+
+ are the predefined boolean constants.
+ Bit-vector constants may be written using either their traditional binary
+ or hexadecimal representations.
+ Enumerated constants are written in two parts: the first identifier names
+ the sort the constant belongs to, and the second identifier names the construct
+or.
+ The definition of enumerated sorts is described in subsection 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Spec:SortDef"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Declaring the problem logic 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:SetLogic"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\setlogiccmd$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+On encountering the optional 
+\begin_inset Formula $\setlogiccmd$
+\end_inset
+
+, the synthesizer loads appropriate pre-defined function symbols and constants.
+ Current theories include
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula ${\tt LIA}$
+\end_inset
+
+: Linear integer arithmetic, for functions such as 
+\begin_inset Formula ${\tt +}$
+\end_inset
+
+ and 
+\begin_inset Formula ${\tt -}$
+\end_inset
+
+,
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula ${\tt BV}$
+\end_inset
+
+: Theory of bit-vectors, for functions such as 
+\begin_inset Formula ${\tt bvadd}$
+\end_inset
+
+ and 
+\begin_inset Formula ${\tt bvlshr}$
+\end_inset
+
+,
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula ${\tt Reals}$
+\end_inset
+
+: Theory of real numbers, and
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula ${\tt Arrays}$
+\end_inset
+
+: Theory of arrays.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\setlogiccmd & ::= & \paren{\setlogickwd\mbox{ }\symbol}\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Defining new sorts 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:SortDef"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\sortdefcmd$
+\end_inset
+
+, 
+\begin_inset Formula $\sortexpr$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+SyGuS expects that the sorts of functions, variables, and grammar symbols
+ be explicitly specified.
+ The syntactic construct 
+\begin_inset Formula $\sortexpr$
+\end_inset
+
+ is used for this, and the sort definition command 
+\begin_inset Formula $\sortdefcmd$
+\end_inset
+
+ permits defining useful shorthands.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\sortexpr & ::= & \begin{array}{lllll}
+\intkwd & | & \boolkwd & | & \realkwd\end{array}\\
+ & | & \paren{\bitveckwd\mbox{ }\left\langle PositiveInteger\right\rangle }\\
+ & | & \paren{\enumkwd\mbox{ }\paren{\kplus{\symbol}}}\\
+ & | & \paren{\arraykwd\mbox{ }\sortexpr\mbox{ }\sortexpr}\\
+ & | & \symbol\\
+\sortdefcmd & ::= & \paren{\sortdefkwd\mbox{ }\symbol\mbox{ }\sortexpr}
+\end{array}
+\end{alignat*}
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+The sorts 
+\begin_inset Formula $\intkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\boolkwd$
+\end_inset
+
+, and 
+\begin_inset Formula $\realkwd$
+\end_inset
+
+ refer to integers, booleans and real numbers respectively.
+ For each positive integer 
+\begin_inset Formula $n$
+\end_inset
+
+, 
+\begin_inset Formula $\bitveckwd\mbox{ }n$
+\end_inset
+
+ refers to the sort of bit-vectors 
+\begin_inset Formula $n$
+\end_inset
+
+ bits long.
+ Given a set of constructor symbols 
+\begin_inset Formula $S_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $S_{2}$
+\end_inset
+
+, \SpecialChar \ldots{}
+, the sort 
+\begin_inset Formula $\paren{\enumkwd\mbox{ }\paren{S_{1}\mbox{ }S_{2}\mbox{ }\ldots}}$
+\end_inset
+
+ refers to the enumerated type having those elements.
+ Since the only way to represent an enumerated constant (subsection 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Spec:Trivia:Literals"
+
+\end_inset
+
+) is by also specifying the sort-name, the constructors 
+\begin_inset Formula $S_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $S_{2}$
+\end_inset
+
+ etc.
+ may have the same names as previously defined variables, functions, or
+ sorts.
+ The sort 
+\begin_inset Formula $\paren{\arraykwd\mbox{ }S_{1}\mbox{ }S_{2}}$
+\end_inset
+
+ represents arrays that map elements of sort 
+\begin_inset Formula $S_{1}$
+\end_inset
+
+ to elements of sort 
+\begin_inset Formula $S_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Once a sort 
+\begin_inset Formula $S$
+\end_inset
+
+ has been defined using the command 
+\begin_inset Formula $\paren{\sortdefkwd\mbox{ }S\mbox{ }\sortexpr}$
+\end_inset
+
+, it may subsequently be referred to simply as 
+\begin_inset Formula $S$
+\end_inset
+
+ rather than the full expression 
+\begin_inset Formula $\sortexpr$
+\end_inset
+
+.
+ The identifier 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ used to name a sort should not have been previously used as a sort name.
+ Every 
+\begin_inset Formula $\sortexpr$
+\end_inset
+
+ in a SyGuS specification must be well-formed.
+ We say that a 
+\begin_inset Formula $\sortexpr$
+\end_inset
+
+ is well-formed if
+\end_layout
+
+\begin_layout Enumerate
+it is an instance of 
+\begin_inset Formula $\intkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\boolkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\realkwd$
+\end_inset
+
+, 
+\begin_inset Formula $\bitveckwd$
+\end_inset
+
+ or 
+\begin_inset Formula $\enumkwd$
+\end_inset
+
+, or
+\end_layout
+
+\begin_layout Enumerate
+it is an instance of 
+\begin_inset Formula $\arraykwd$
+\end_inset
+
+ and both domain and range of the array sort are well-formed, or
+\end_layout
+
+\begin_layout Enumerate
+it is a 
+\begin_inset Formula $\symbol$
+\end_inset
+
+, and 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ has been previously defined using a 
+\begin_inset Formula $\sortdefcmd$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Universally quantified variables 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:VarDecl"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\vardeclcmd$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Universally quantified variables may be declared with 
+\begin_inset Formula $\vardeclcmd$
+\end_inset
+
+.
+ 
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\vardeclcmd & ::= & \paren{\vardeclkwd\mbox{ }\symbol\mbox{ }\sortexpr}\end{array}
+\end{alignat*}
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+The variable name 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ must not clash with the following:
+\end_layout
+
+\begin_layout Enumerate
+any previously declared universally quantified variable (
+\begin_inset Formula $\vardeclcmd$
+\end_inset
+
+), 
+\end_layout
+
+\begin_layout Enumerate
+any previously declared 
+\begin_inset Formula $0$
+\end_inset
+
+-arity uninterpreted function (
+\begin_inset Formula $\fundeclcmd$
+\end_inset
+
+), 
+\end_layout
+
+\begin_layout Enumerate
+any previously defined 
+\begin_inset Formula $0$
+\end_inset
+
+-arity function macro (
+\begin_inset Formula $\fundefcmd$
+\end_inset
+
+), and
+\end_layout
+
+\begin_layout Enumerate
+any previously declared 
+\begin_inset Formula $0$
+\end_inset
+
+-arity synthesis function (
+\begin_inset Formula $\synthfuncmd$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Subsection
+Uninterpreted functions 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:Uninterp"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\fundeclcmd$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Uninterpreted functions are declared using 
+\begin_inset Formula $\fundeclcmd$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Syntax 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:Uninterp:Syntax"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\fundeclcmd & ::= & \paren{\fundeclkwd\mbox{ }\symbol\mbox{ }\paren{\kstar{\sortexpr}}\mbox{ }\sortexpr}\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ names the uninterpreted function being declared, the first list of 
+\begin_inset Formula $\sortexpr$
+\end_inset
+
+ identifies the number and sorts of the input arguments, and the final 
+\begin_inset Formula $\sortexpr$
+\end_inset
+
+ identifies the sort of the function return value.
+ The function name 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ must not clash with the following:
+\end_layout
+
+\begin_layout Enumerate
+if the funtion is of 
+\begin_inset Formula $0$
+\end_inset
+
+-arity, then 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ should not clash with any previously declared universally quantified variable
+ (
+\begin_inset Formula $\vardeclcmd$
+\end_inset
+
+),
+\end_layout
+
+\begin_layout Enumerate
+any previously declared uninterpreted function (
+\begin_inset Formula $\fundeclcmd$
+\end_inset
+
+) with the same input argument type signature,
+\end_layout
+
+\begin_layout Enumerate
+any previously defined function macro (
+\begin_inset Formula $\fundefcmd$
+\end_inset
+
+) with the same input argument type signature, and
+\end_layout
+
+\begin_layout Enumerate
+any previously declared synthesis function (
+\begin_inset Formula $\synthfuncmd$
+\end_inset
+
+) with the same input argument type signature.
+\end_layout
+
+\begin_layout Subsubsection
+Semantics 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:Uninterp:Semantics"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+When uninterpreted functions are used in a SyGuS problem, the synthesized
+ functions must satisfy the specification for all models of the uninterpreted
+ functions.
+ Uninterpreted functions may only be used in constraints (section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Spec:Constraint"
+
+\end_inset
+
+), and not in function macros or grammars (sections 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Spec:FunDef"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Spec:SynthFun"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+For example, consider the specification in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Spec:Uninterp:Semantics:Ex"
+
+\end_inset
+
+.
+ Informally, this requires that for all functions 
+\begin_inset Formula $\func{{\tt uf}}{\Z}{\Z}$
+\end_inset
+
+ and integers 
+\begin_inset Formula $x\in\Z$
+\end_inset
+
+, 
+\begin_inset Formula $\funcapptrad{{\tt f}}{\funcapptrad{{\tt uf}}x,\funcapptrad{{\tt uf}}x}$
+\end_inset
+
+ must hold.
+ Therefore, the function in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Spec:Uninterp:Semantics:ExAns"
+
+\end_inset
+
+ satisfies the specification, but the function in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Spec:Uninterp:Semantics:ExNonAns"
+
+\end_inset
+
+ does not, even though it works for a specific instance of 
+\begin_inset Formula ${\tt uf}$
+\end_inset
+
+, viz.
+ 
+\begin_inset Formula $\forall x\in\Z$
+\end_inset
+
+, 
+\begin_inset Formula $\funcapptrad{{\tt uf}}x=5$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+lstparams "basicstyle={\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+(set-logic LIA)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(declare-fun uf (Int) Int)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(synth-fun f ((x Int) (y Int)) Bool
+\end_layout
+
+\begin_layout Plain Layout
+
+   ((Start Bool (true false
+\end_layout
+
+\begin_layout Plain Layout
+
+                 (<= IntExpr IntExpr)
+\end_layout
+
+\begin_layout Plain Layout
+
+                 (= IntExpr IntExpr)
+\end_layout
+
+\begin_layout Plain Layout
+
+                 (and Start Start)
+\end_layout
+
+\begin_layout Plain Layout
+
+                 (or Start Start)
+\end_layout
+
+\begin_layout Plain Layout
+
+                 (not Start)))
+\end_layout
+
+\begin_layout Plain Layout
+
+    (IntExpr Int (0 1 x y
+\end_layout
+
+\begin_layout Plain Layout
+
+                  (+ IntExpr IntExpr)
+\end_layout
+
+\begin_layout Plain Layout
+
+                  (- IntExpr IntExpr)))))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(declare-var x Int)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(constraint (f (uf x) (uf x)))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(check-synth)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Spec:Uninterp:Semantics:Ex"
+
+\end_inset
+
+ Example SyGuS specification using uninterpreted functions.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+lstparams "basicstyle={\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+(define-fun f ((x Int) (y Int)) Bool
+\end_layout
+
+\begin_layout Plain Layout
+
+   (= x y))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Spec:Uninterp:Semantics:ExAns"
+
+\end_inset
+
+ Sample valid answer for SyGuS specification of figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Spec:Uninterp:Semantics:Ex"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+lstparams "basicstyle={\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+(define-fun f ((x Int) (y Int)) Bool
+\end_layout
+
+\begin_layout Plain Layout
+
+   (= x 5))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Spec:Uninterp:Semantics:ExNonAns"
+
+\end_inset
+
+ Example incorrect solution to the specification of figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Spec:Uninterp:Semantics:Ex"
+
+\end_inset
+
+.
+ Note that even though this works for some instances of 
+\begin_inset Formula ${\tt uf}$
+\end_inset
+
+, it is incorrect because it does not work for all.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Terms and grammars 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:TermGTerm"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\term$
+\end_inset
+
+, 
+\begin_inset Formula $\gterm$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\term & ::= & \paren{\symbol\mbox{ }\kstar{\term}}\\
+ & | & \literal\\
+ & | & \symbol\\
+ & | & \letterm\\
+\letterm & ::= & \paren{\letkwd\mbox{ }\paren{\kplus{\paren{\symbol\mbox{ }\sortexpr\mbox{ }\term}}}\mbox{ }\term}
+\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\gterm & ::= & \paren{\symbol\mbox{ }\kstar{\gterm}}\\
+ & | & \literal\\
+ & | & \symbol\\
+ & | & \letgterm\\
+ & | & \paren{\constantkwd\mbox{ }\sortexpr}\\
+ & | & \paren{\varkwd\mbox{ }\sortexpr}\\
+ & | & \paren{\inputvarkwd\mbox{ }\sortexpr}\\
+ & | & \paren{\localvarkwd\mbox{ }\sortexpr}\\
+\letgterm & ::= & \paren{\letkwd\mbox{ }\paren{\kplus{\paren{\symbol\mbox{ }\sortexpr\mbox{ }\gterm}}}\mbox{ }\gterm}
+\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+To describe function macros, grammars and constraints in SyGuS, one uses
+ the 
+\begin_inset Formula $\term$
+\end_inset
+
+ and 
+\begin_inset Formula $\gterm$
+\end_inset
+
+ constructs.
+ The difference between the two is the set of predefined macros (such as
+ 
+\begin_inset Formula $\paren{\constantkwd\mbox{ }\ldots}$
+\end_inset
+
+, etc.) that a 
+\begin_inset Formula $\gterm$
+\end_inset
+
+ may expand to.
+ To allow synthesizers to perform common subexpression elimination to speed
+ up their computation or reduce the size of their answers, 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-expressions are allowed.
+\end_layout
+
+\begin_layout Standard
+In grammars, a grammar expansion 
+\begin_inset Formula ${\tt (}\constantkwd\mbox{ }\sortexpr{\tt )}$
+\end_inset
+
+ expands to any literal of type 
+\begin_inset Formula $\sortexpr$
+\end_inset
+
+.
+ 
+\begin_inset Formula ${\tt (}\varkwd\mbox{ }\sortexpr{\tt )}$
+\end_inset
+
+ expands to any variable currently in score of appropriate type, 
+\begin_inset Formula ${\tt (}\inputvarkwd\mbox{ }\sortexpr{\tt )}$
+\end_inset
+
+ and 
+\begin_inset Formula ${\tt (}\localvarkwd\mbox{ }\sortexpr{\tt )}$
+\end_inset
+
+ expand to any formal argument of the synthesis function, and any variable
+ bound locally within a 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-expression respectively.
+\end_layout
+
+\begin_layout Standard
+The interpretation of the various syntactic constructs is as usual.
+ In a 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-construct, the first set of bindings 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula ${\tt (}{\tt (}\symbol\mbox{ }\term{\tt )}^{+}{\tt )}$
+\end_inset
+
+ (resp.
+ 
+\begin_inset Formula $\gterm$
+\end_inset
+
+) refers to the parallel assignment of each 
+\begin_inset Formula $\term$
+\end_inset
+
+ (resp.
+ 
+\begin_inset Formula $\gterm$
+\end_inset
+
+) to the corresponding 
+\begin_inset Formula $\symbol$
+\end_inset
+
+, as is the case in SMT-Lib2.
+ If the 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ bound by a 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-expression is already bound, then its value is shadowed while evaluating
+ the nested 
+\begin_inset Formula $\term$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\term$
+\end_inset
+
+ and 
+\begin_inset Formula $\gterm$
+\end_inset
+
+ constructs are type-checked in the intuitive manner.
+ The important restriction is that 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-bound variables can shadow previously declared variables only if they are
+ of the same sort.
+\end_layout
+
+\begin_layout Subsection
+Defining macros 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:FunDef"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\fundefcmd$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\fundefcmd & ::= & \paren{\fundefkwd\mbox{ }\symbol\mbox{ }\paren{\kstar{\paren{\symbol\mbox{ }\sortexpr}}}\mbox{ }\sortexpr\mbox{ }\term}\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $\fundefcmd$
+\end_inset
+
+ command defines a function macro.
+\end_layout
+
+\begin_layout Enumerate
+The function name 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ may not clash with the following:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+if the funtion is of 
+\begin_inset Formula $0$
+\end_inset
+
+-arity, then 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ should not clash with any previously declared universally quantified variable
+ (
+\begin_inset Formula $\vardeclcmd$
+\end_inset
+
+),
+\end_layout
+
+\begin_layout Enumerate
+any previously declared uninterpreted function (
+\begin_inset Formula $\fundeclcmd$
+\end_inset
+
+) with the same input argument type signature,
+\end_layout
+
+\begin_layout Enumerate
+any previously defined function macro (
+\begin_inset Formula $\fundefcmd$
+\end_inset
+
+) with the same input argument type signature, and
+\end_layout
+
+\begin_layout Enumerate
+any previously declared synthesis function (
+\begin_inset Formula $\synthfuncmd$
+\end_inset
+
+) with the same input argument type signature.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+All arguments must have distinct names.
+\end_layout
+
+\begin_layout Enumerate
+No nested 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-bound variable in 
+\begin_inset Formula $\term$
+\end_inset
+
+ may shadow an input argument to the function.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\term$
+\end_inset
+
+ is interpreted in the scope containing all previously defined function
+ macros and formal arguments.
+\end_layout
+
+\begin_layout Enumerate
+The sort of 
+\begin_inset Formula $\term$
+\end_inset
+
+ must match the return sort mentioned in 
+\begin_inset Formula $\sortexpr$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Defining synthesis functions 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:SynthFun"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\synthfuncmd$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\synthfuncmd & ::= & \paren{\synthfunkwd\mbox{ }\symbol\mbox{ }\paren{\kstar{\paren{\symbol\mbox{ }\sortexpr}}}\mbox{ }\sortexpr\mbox{ }\paren{\kplus{\ntdef}}}\\
+\ntdef & ::= & \paren{\symbol\mbox{ }\sortexpr\mbox{ }\kplus{\gterm}}
+\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\synthfuncmd$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ describes the sort and syntax of a function to be synthesized.
+ The 
+\begin_inset Formula $\synthfuncmd$
+\end_inset
+
+ specifies the function name, input parameters, output sort, and grammar
+ production rules respectively.
+ The production rules corresponding to each non-terminal are described by
+ an 
+\begin_inset Formula $\ntdef$
+\end_inset
+
+, which specifies, in order, the non-terminal name, the sort of the resulting
+ productions, and a non-empty sequence of production rules.
+ Each 
+\begin_inset Formula $\gterm$
+\end_inset
+
+ corresponds to a production rule.
+\end_layout
+
+\begin_layout Enumerate
+The function name 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ may not clash with the following:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+if the funtion is of 
+\begin_inset Formula $0$
+\end_inset
+
+-arity, then 
+\begin_inset Formula $\symbol$
+\end_inset
+
+ should not clash with any previously declared universally quantified variable
+ (
+\begin_inset Formula $\vardeclcmd$
+\end_inset
+
+),
+\end_layout
+
+\begin_layout Enumerate
+any previously declared uninterpreted function (
+\begin_inset Formula $\fundeclcmd$
+\end_inset
+
+) with the same input argument type signature,
+\end_layout
+
+\begin_layout Enumerate
+any previously defined function macro (
+\begin_inset Formula $\fundefcmd$
+\end_inset
+
+) with the same input argument type signature, and
+\end_layout
+
+\begin_layout Enumerate
+any previously declared synthesis function (
+\begin_inset Formula $\synthfuncmd$
+\end_inset
+
+) with the same input argument type signature.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+All arguments must have distinct names.
+\end_layout
+
+\begin_layout Enumerate
+No nested 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-bound variable in any 
+\begin_inset Formula $\gterm$
+\end_inset
+
+ may shadow an input argument to the function.
+\end_layout
+
+\begin_layout Enumerate
+All non-terminals must have unique names.
+ For each non-terminal, its name should not clash with any of the following:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+any previously defined 
+\begin_inset Formula $0$
+\end_inset
+
+-arity function macro (
+\begin_inset Formula $\fundefcmd$
+\end_inset
+
+),
+\end_layout
+
+\begin_layout Enumerate
+any formal argument to the function, and
+\end_layout
+
+\begin_layout Enumerate
+any 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-bound variable in any production rule.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+All 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-bound variables in all 
+\begin_inset Formula $\gterm$
+\end_inset
+
+s with the same name have the same type.
+\end_layout
+
+\begin_layout Enumerate
+Each production rule is interpreted in the scope with the following in scope:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+all previously defined function macros,
+\end_layout
+
+\begin_layout Enumerate
+all formal arguments to the function, and
+\end_layout
+
+\begin_layout Enumerate
+all 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-bound variables in all production rules.
+ For an example of why this is the case, consider that the expansion 
+\begin_inset Formula ${\tt Start}\to{\tt z}$
+\end_inset
+
+ is well-formed in the grammar of figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Spec:SynthFun:Example:Let"
+
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+The sort of each production rule 
+\begin_inset Formula $\gterm$
+\end_inset
+
+ must match the sort at the non-terminal declaration.
+\end_layout
+
+\begin_layout Enumerate
+There must be a non-terminal named 
+\begin_inset Formula ${\tt Start}$
+\end_inset
+
+.
+ The sort of this non-terminal must match the ouput sort of the 
+\begin_inset Formula $\synthfuncmd$
+\end_inset
+
+ being declared.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+lstparams "basicstyle={\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+(synth-fun f ((x Int) (y Int)) Int
+\end_layout
+
+\begin_layout Plain Layout
+
+   ((Start Int (x y z
+\end_layout
+
+\begin_layout Plain Layout
+
+                (+ Start Start)
+\end_layout
+
+\begin_layout Plain Layout
+
+                (let ((z Int Start)) Start)))))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Example of a well-formed 
+\begin_inset Formula $\synthfuncmd$
+\end_inset
+
+ involving 
+\begin_inset Formula $\letkwd$
+\end_inset
+
+-expressions.
+ 
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Spec:SynthFun:Example:Let"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Describing synthesis constraints 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:Constraint"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\constraintcmd$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\constraintcmd & ::= & \paren{\constraintkwd\mbox{ }\term}\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A 
+\begin_inset Formula $\constraintcmd$
+\end_inset
+
+ adds the constraint that when the synthesized functions are substituted
+ into 
+\begin_inset Formula $\term$
+\end_inset
+
+, for all values of the universally quantified variables, and all models
+ of uniterpreted functions, 
+\begin_inset Formula $\term$
+\end_inset
+
+ evaluates to true.
+ 
+\begin_inset Formula $\term$
+\end_inset
+
+ must have boolean sort in the context with the following in scope:
+\end_layout
+
+\begin_layout Enumerate
+all previously declared universally quantified variables,
+\end_layout
+
+\begin_layout Enumerate
+all previously declared uninterpreted functions,
+\end_layout
+
+\begin_layout Enumerate
+all previously defined function macros and
+\end_layout
+
+\begin_layout Enumerate
+all previously declared synthesis functions.
+\end_layout
+
+\begin_layout Subsection
+Initiating synthesis and synthesizer output 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:CheckSynth"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\checksynthcmd$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\checksynthcmd & ::= & \paren{\checksynthkwd}\end{array}
+\end{alignat*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Synthesis is initiated with 
+\begin_inset Formula $\checksynthcmd$
+\end_inset
+
+.
+ Exactly those synthesis functions declared before the occurrence of this
+ command need to be synthesized.
+ Exactly those constraints occurring before this command should be satisfied.
+ On successful completion of synthesis, the synthesizer prints, for each
+ previously declared synthesis function, a well-typed 
+\begin_inset Formula $\fundefcmd$
+\end_inset
+
+ drawn from the appropriate syntax, so that all synthesized functions together
+ satisfy the specification.
+ Otherwise, the synthesizer prints 
+\begin_inset Formula ${\tt (fail)}$
+\end_inset
+
+.
+ We give an example of the output produced by a valid synthesizer on successfull
+y synthesizing the specification of figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example:Max2"
+
+\end_inset
+
+ in figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Spec:CheckSynth:Output"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset listings
+lstparams "basicstyle={\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+(define-fun max2 ((x Int) (y Int)) Int
+\end_layout
+
+\begin_layout Plain Layout
+
+    (ite (<= x y) y x))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+(define-fun min2 ((x Int) (y Int)) Int
+\end_layout
+
+\begin_layout Plain Layout
+
+    (ite (<= x y) x y))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+An example of valid synthesizer output to the specification of figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Example:Max2"
+
+\end_inset
+
+.
+ 
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Spec:CheckSynth:Output"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Solver-specific options 
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Spec:SetOpts"
+
+\end_inset
+
+ 
+\begin_inset space \hfill{}
+\end_inset
+
+ 
+\begin_inset Formula $\setoptscmd$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Synthesizer flags and parameters may be controlled with 
+\begin_inset Formula $\setoptscmd$
+\end_inset
+
+ -- examples include specifying the search strategy, or search parameters
+ such as expression size.
+ The syntax is as follows: 
+\begin_inset Formula 
+\begin{alignat*}{1}
+ & \begin{array}{rcl}
+\setoptscmd & ::= & \paren{\setoptskwd\mbox{ }\paren{\kplus{\paren{\symbol\mbox{ }\quotedliteral}}}}\end{array}
+\end{alignat*}
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+The behavior of a synthesizer on encountering a 
+\begin_inset Formula $\setoptscmd$
+\end_inset
+
+ is implementation defined.
+ It is recommended however, that synthesizers ignore unrecognized options,
+ and choose reasonable defaults when the options are left unspecified.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "references"
+options "plain"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

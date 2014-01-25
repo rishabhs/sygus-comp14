@@ -1,0 +1,599 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\begin_preamble
+\usepackage{bussproofs}
+%
+\usepackage[charter]{mathdesign}
+\DeclareSymbolFont{cmmathcal}{OMS}{cmsy}{m}{n}
+\DeclareSymbolFontAlphabet{\mathcal}{cmmathcal}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language british
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman charter
+\font_sans helvet
+\font_typewriter cmtl
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 93
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry false
+\use_amsmath 2
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "lyxproofs.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Title
+Proof derivations for LyX
+\end_layout
+
+\begin_layout Author
+GM
+\end_layout
+
+\begin_layout Abstract
+LyX is a time saver for producing TeX documents, but has no built-in support
+ for the visual edition of proof derivation as used in logic.
+ We give a set of LyX macros that ease the construction of proof derivations
+ that rely on the LaTeX package 
+\family typewriter
+bussproofs
+\family default
+, and describe here how to use them in LyX.
+\end_layout
+
+\begin_layout Section
+Installation
+\end_layout
+
+\begin_layout Standard
+Add 
+\family typewriter
+
+\backslash
+usepackage{bussproofs}
+\family default
+ in the preamble of your main document.
+ This package is present in most LaTeX distributions.
+ Include the file 
+\family typewriter
+lyxproofs.lyx
+\family default
+ as a sub-document at the beginning of the document.
+ Requires LyX 
+\begin_inset Formula $\geq$
+\end_inset
+
+ 1.6.
+\end_layout
+
+\begin_layout Section
+Inference rules
+\end_layout
+
+\begin_layout Standard
+Some macros are defined for writing (non-nestable) inference rules in a
+ straightforward manner.
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{align*}
+\axrule{}{!A}{(\ensuremath{\vdash u})} &  & \unrule{\Gamma}{A,\Delta}{\Gamma}{!A,\Delta}{(\ensuremath{\vdash\partial})} &  & \binrule{\Gamma}{!A,\Delta}{\Gamma'}{!A,\Delta'}{\Gamma,\Gamma'}{!A,\Delta,\Delta'}{(\ensuremath{\vdash m})}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+
+\family typewriter
+
+\backslash
+axrule
+\family default
+, 
+\family typewriter
+
+\backslash
+unrule
+\family default
+ and 
+\family typewriter
+
+\backslash
+binrule
+\family default
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+Macros names
+\end_layout
+
+\begin_layout Standard
+The following macros are to be entered in a math environment:
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+axrule
+\family default
+: an inference rule with zero premises (
+\emph on
+axiom rule
+\emph default
+).
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+axrulesp
+\family default
+: same as above but with adjustable vertical position.
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+unrule
+\family default
+: an inference rule with one premise (
+\emph on
+unary rule
+\emph default
+).
+ Premise and conclusion are aligned at the proof separator.
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+unrulec
+\family default
+: an inference rule with one premise (
+\emph on
+centered unary rule
+\emph default
+).
+ Premise and conclusion are centred.
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+binrule
+\family default
+: an inference rule with two premises (
+\emph on
+binary rule
+\emph default
+).
+\end_layout
+
+\begin_layout Section
+Proof derivations
+\end_layout
+
+\begin_layout Standard
+We give a more flexible set of macros that allows the construction of proof
+ derivations.
+ Example:
+\begin_inset Formula 
+\begin{align*}
+\bussproof{\unaryinf{\binaryinf{\axiom{\Gamma}{A\vee B,\Delta}}{\binaryinf{\unaryinf{\axiomc{}}AA{(ax)}}{\unaryinf{\axiomc{}}BB{(ax)}}{A\vee B}{A,B}{(\ensuremath{\vee\vdash})}}{\Gamma}{A,B,\Delta}{(cut)}}{\Gamma}{A\vee B,\Delta}{(\ensuremath{\vdash\vee})}}
+\end{align*}
+
+\end_inset
+
+All proof derivations begin with a 
+\family typewriter
+
+\backslash
+bussproof
+\family default
+ macro in a math environment.
+ Then the tree of the derivation is specified from bottom to top using the
+ macros 
+\family typewriter
+
+\backslash
+unaryinf
+\family default
+, 
+\family typewriter
+
+\backslash
+binaryinf
+\family default
+, etc., described below, starting with the root inference.
+ Then the leaves of the tree must be put inside an 
+\family typewriter
+
+\backslash
+axiom
+\family default
+ or an 
+\family typewriter
+
+\backslash
+axiomc
+\family default
+ macro.
+\end_layout
+
+\begin_layout Paragraph
+Macros names
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+bussproof
+\family default
+: Indicates the beginning of a proof derivation.
+\end_layout
+
+\begin_layout Itemize
+Inference rules that include a separator in the conclusion which is 
+\emph on
+aligned
+\emph default
+ with the one from the premise:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+unaryinf
+\family default
+: unary inference rule,
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+binaryinf
+\family default
+: etc.
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+trinaryinf
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Inference rules that are 
+\emph on
+centred
+\emph default
+ (no automatic separator):
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+unaryinfc
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+binaryinfc
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+trinaryinfc
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Indicates the leaves of the derivation:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+axiom
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+
+\backslash
+axiomc
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+For an axiom rule, i.e.
+ an inference rule with no premise, use 
+\family typewriter
+
+\backslash
+unaryinf
+\family default
+ or 
+\family typewriter
+
+\backslash
+unaryinfc
+\family default
+ together with an empty 
+\family typewriter
+
+\backslash
+axiomc
+\family default
+ in the premise.
+\begin_inset Note Note
+status open
+
+\begin_layout Subsection
+Separator and labels
+\end_layout
+
+\begin_layout Plain Layout
+See and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Separator"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:Labels"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Labels"
+
+\end_inset
+
+Labels
+\end_layout
+
+\begin_layout Standard
+On the right of the horizontal line there is room for some label.
+ This label is in text mode.
+ To add math inside it, use 
+\family typewriter
+
+\backslash
+ensuremath
+\family default
+.
+ 
+\emph on
+Failure to follow this advice might lead to opaque error messages during
+ compilation.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:Separator"
+
+\end_inset
+
+Separator
+\end_layout
+
+\begin_layout Standard
+Sequents are separated by default by the standard 
+\begin_inset Formula $\vdash$
+\end_inset
+
+ (
+\begin_inset Quotes eld
+\end_inset
+
+turnstile
+\begin_inset Quotes erd
+\end_inset
+
+) symbol.
+ This behaviour can be changed by redefining the 
+\family typewriter
+
+\backslash
+proofsep 
+\family default
+macro in the following manner:
+\begin_inset FormulaMacro
+\renewcommand{\proofsep}{\Rightarrow}
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\unrule{A\wedge B}CA{\neg B\vee C}{}
+\]
+
+\end_inset
+
+
+\begin_inset FormulaMacro
+\renewcommand{\proofsep}{\vdash}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Adjusting the vertical position of an axiom rule with 
+\family typewriter
+
+\backslash
+axrulesp
+\end_layout
+
+\begin_layout Standard
+Compare the three following uses of 
+\family typewriter
+
+\backslash
+axrulesp
+\family default
+ in the compiled document:
+\begin_inset Formula 
+\begin{align*}
+\axrulesp{}{!A}{}{} &  & \axrulesp{}{!A}{}x &  & \axrulesp{}{!A}{}{\proofsep\Gamma,\Delta} &  & \unrule{\Gamma}{A,\Delta}{\Gamma}{!A,\Delta}{}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The size of the (invisible) premises of 
+\family typewriter
+
+\backslash
+axrulesp 
+\family default
+is entered by hand, as displayed under LyX.
+ The third instance corresponds to the spacing used by the 
+\family typewriter
+
+\backslash
+axrule
+\family default
+ macro.
+\end_layout
+
+\end_body
+\end_document
