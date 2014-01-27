@@ -5,23 +5,13 @@ Repository for solvers and benchmarks for the 1st Syntax-Guided Synthesis Compet
 
 Directory structure:
 
-benchmarks
+benchmarks: set of initial benchmarks
 
--- set of initial benchmarks
+docs: the sygus-lib format documentation
 
-docs
+parser: parser for sygus-lib format
 
--- the sygus-lib format documentation
+format-checker: checker script for sygus benchmarks
 
-parser
-
--- parser for sygus-lib format
-
-format-checker
-
--- checker script for sygus benchmarks
-
-solvers
-
--- three initial solvers : enumerative, stochastic, symbolic
+solvers: three initial solvers -- enumerative, stochastic, symbolic
 
