@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="stoch" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/stoch" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="clang" />
+				<Compiler>
+					<Add option="-Wextra" />
+					<Add option="-Wall" />
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/stoch" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O3" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-pedantic" />
+			<Add option="-std=c++0x" />
+			<Add option="-fexceptions" />
+			<Add directory="include" />
+		</Compiler>
+		<Linker>
+			<Add library="gmpxx" />
+			<Add library="gmp" />
+			<Add library="z3" />
+		</Linker>
+		<Unit filename="include/context.h" />
+		<Unit filename="include/context/context_infr.h" />
+		<Unit filename="include/context/context_infr_fterm.h" />
+		<Unit filename="include/context/context_infr_grammar.h" />
+		<Unit filename="include/context/context_infr_logic.h" />
+		<Unit filename="include/context/context_infr_term.h" />
+		<Unit filename="include/expr.h" />
+		<Unit filename="include/expr/expr_infr.h" />
+		<Unit filename="include/expr/expr_infr_binop.h" />
+		<Unit filename="include/expr/expr_infr_const.h" />
+		<Unit filename="include/expr/expr_infr_ite.h" />
+		<Unit filename="include/expr/expr_infr_ops.h" />
+		<Unit filename="include/expr/expr_infr_unop.h" />
+		<Unit filename="include/expr/expr_infr_var.h" />
+		<Unit filename="include/expr_search.h" />
+		<Unit filename="include/expr_search/expr_search_infr.h" />
+		<Unit filename="include/fexpr.h" />
+		<Unit filename="include/fexpr/fexpr_infr.h" />
+		<Unit filename="include/fexpr/fexpr_infr_binop.h" />
+		<Unit filename="include/fexpr/fexpr_infr_call.h" />
+		<Unit filename="include/fexpr/fexpr_infr_const.h" />
+		<Unit filename="include/fexpr/fexpr_infr_ite.h" />
+		<Unit filename="include/fexpr/fexpr_infr_ops.h" />
+		<Unit filename="include/fexpr/fexpr_infr_unop.h" />
+		<Unit filename="include/fexpr/fexpr_infr_var.h" />
+		<Unit filename="include/grammar.h" />
+		<Unit filename="include/grammar/grammar_infr.h" />
+		<Unit filename="include/grammar/grammar_sample.h" />
+		<Unit filename="include/grammar/grammar_std.h" />
+		<Unit filename="include/nonstd.h" />
+		<Unit filename="include/nonstd/big_bv.h" />
+		<Unit filename="include/nonstd/bv.h" />
+		<Unit filename="include/nonstd/bv_ops.h" />
+		<Unit filename="include/nonstd/nonfunctional.h" />
+		<Unit filename="include/nonstd/small_bv.h" />
+		<Unit filename="include/parser/binding.h" />
+		<Unit filename="include/parser/exceptions.h" />
+		<Unit filename="include/parser/iface.h" />
+		<Unit filename="main.cpp" />
+		<Unit filename="parser/synthlib2lexer.l">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="parser/synthlib2parser.y">
+			<Option compile="1" />
+		</Unit>
+		<Unit filename="parser/synthlib2parsercallbacks.cpp" />
+		<Unit filename="parser/synthlib2parserdeepcopy.cpp" />
+		<Unit filename="parser/synthlib2parserdest.cpp" />
+		<Unit filename="parser/synthlib2parserexceptions.cpp" />
+		<Extensions>
+			<envvars />
+			<code_completion />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

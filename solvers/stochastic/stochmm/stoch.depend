@@ -1,0 +1,1011 @@
+# depslib dependency file v1.0
+1374445475 source:/home/rmukund/stoch/main.cpp
+	<iostream>
+	"nonstd.h"
+	"parser/binding.h"
+
+1374445051 source:/home/rmukund/stoch/parser/synthlib2parser.y
+	"parser/iface.h"
+	<iostream>
+	<string.h>
+
+1369761500 /home/rmukund/stoch/parser/synthlib2parseriface.h
+	<string>
+	<utility>
+	<vector>
+	<functional>
+
+1374445041 source:/home/rmukund/stoch/parser/synthlib2lexer.l
+	<utility>
+	<vector>
+	"parser/iface.h"
+	"synthlib2parser.tab.hpp"
+
+1374784227 /home/rmukund/stoch/parser/synthlib2parser.tab.hpp
+
+1374453930 source:/home/rmukund/stoch/parser/synthlib2parsercallbacks.cpp
+	"parser/iface.h"
+	<cstdio>
+	<iostream>
+
+1374445075 source:/home/rmukund/stoch/parser/synthlib2parserdeepcopy.cpp
+	"parser/iface.h"
+
+1374445083 source:/home/rmukund/stoch/parser/synthlib2parserdest.cpp
+	"parser/iface.h"
+
+1374445091 source:/home/rmukund/stoch/parser/synthlib2parserexceptions.cpp
+	"parser/exceptions.h"
+
+1369101833 /home/rmukund/stoch/parser/synthlib2parserexceptions.h
+	<exception>
+	<string>
+	<iostream>
+
+1374435943 /home/rmukund/stoch/nonstd/nonstd.h
+	<string>
+	<boost/current_function.hpp>
+	<boost/lexical_cast.hpp>
+	"bv.h"
+	"nonfunctional.h"
+
+1374435910 /home/rmukund/stoch/nonstd/bv.h
+	"small_bv.h"
+	"big_bv.h"
+	"bv_ops.h"
+
+1374435918 /home/rmukund/stoch/nonstd/small_bv.h
+	<algorithm>
+	<cstdint>
+	<limits>
+	<iostream>
+	<sstream>
+	<stdexcept>
+	<boost/lexical_cast.hpp>
+	"bv.h"
+
+1374435930 /home/rmukund/stoch/nonstd/big_bv.h
+	<vector>
+	<gmpxx.h>
+	"nonfunctional.h"
+	"bv.h"
+
+1374435696 /home/rmukund/stoch/nonstd/nonfunctional.h
+	<functional>
+	<string>
+
+1374435937 /home/rmukund/stoch/nonstd/bv_ops.h
+	<z3++.h>
+	"bv.h"
+
+1374442609 source:/home/rmukund/stoch/jha.cpp
+	<iostream>
+	<random>
+	"nonstd/nonstd.h"
+	"expr.h"
+	"fexpr.h"
+	"grammar.h"
+	"expr_search.h"
+
+1374444237 /home/rmukund/stoch/expr.h
+	<functional>
+	<map>
+	<memory>
+	<ostream>
+	<tuple>
+	<vector>
+	<gmpxx.h>
+	<z3++.h>
+	"nonstd.h"
+	"expr/expr_infr.h"
+	"fexpr.h"
+
+1369248360 /home/rmukund/stoch/expr/expr_infr.h
+	<functional>
+	<map>
+	<vector>
+	"../expr.h"
+	"expr_infr_const.h"
+	"expr_infr_var.h"
+	"expr_infr_unop.h"
+	"expr_infr_binop.h"
+	"expr_infr_ite.h"
+	"expr_infr_ops.h"
+
+1374444249 /home/rmukund/stoch/expr/expr_infr_const.h
+	<memory>
+	<ostream>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1374444261 /home/rmukund/stoch/expr/expr_infr_var.h
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1374444272 /home/rmukund/stoch/expr/expr_infr_unop.h
+	<algorithm>
+	<memory>
+	<ostream>
+	<vector>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1374444282 /home/rmukund/stoch/expr/expr_infr_binop.h
+	<algorithm>
+	<memory>
+	<ostream>
+	<vector>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1374444296 /home/rmukund/stoch/expr/expr_infr_ite.h
+	<memory>
+	<ostream>
+	<vector>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1369685176 /home/rmukund/stoch/expr/expr_infr_ops.h
+	"expr_infr.h"
+
+1369326077 /home/rmukund/stoch/fexpr.h
+	<functional>
+	<map>
+	<memory>
+	<ostream>
+	<string>
+	<vector>
+	"expr.h"
+	"fexpr/fexpr_infr.h"
+
+1368169415 /home/rmukund/stoch/fexpr/fexpr_infr.h
+	"../fexpr.h"
+	"fexpr_infr_const.h"
+	"fexpr_infr_var.h"
+	"fexpr_infr_unop.h"
+	"fexpr_infr_binop.h"
+	"fexpr_infr_ite.h"
+	"fexpr_infr_call.h"
+	"fexpr_infr_ops.h"
+
+1374444305 /home/rmukund/stoch/fexpr/fexpr_infr_const.h
+	<map>
+	<memory>
+	<ostream>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444316 /home/rmukund/stoch/fexpr/fexpr_infr_var.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444326 /home/rmukund/stoch/fexpr/fexpr_infr_unop.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	<boost/optional.hpp>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444336 /home/rmukund/stoch/fexpr/fexpr_infr_binop.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	<boost/optional.hpp>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444347 /home/rmukund/stoch/fexpr/fexpr_infr_ite.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444358 /home/rmukund/stoch/fexpr/fexpr_infr_call.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1368588065 /home/rmukund/stoch/fexpr/fexpr_infr_ops.h
+	"fexpr_infr.h"
+
+1369855719 /home/rmukund/stoch/grammar.h
+	<algorithm>
+	<functional>
+	<memory>
+	<vector>
+	"expr.h"
+	"grammar/grammar_infr.h"
+
+1368226878 /home/rmukund/stoch/grammar/grammar_infr.h
+	"../grammar.h"
+	"grammar_std.h"
+	"grammar_sample.h"
+
+1369021073 /home/rmukund/stoch/grammar/grammar_std.h
+	"grammar_infr.h"
+
+1368226897 /home/rmukund/stoch/grammar/grammar_sample.h
+	<algorithm>
+	<functional>
+	<map>
+	<random>
+	<tuple>
+	<vector>
+	<boost/none.hpp>
+	<boost/optional.hpp>
+	"grammar_infr.h"
+
+1374442811 /home/rmukund/stoch/expr_search.h
+	<algorithm>
+	<cassert>
+	<map>
+	<memory>
+	<random>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<boost/optional.hpp>
+	<z3++.h>
+	"nonstd/nonfunctional.h"
+	"expr.h"
+	"fexpr.h"
+	"grammar.h"
+	"expr_search/expr_search_infr.h"
+
+1369919471 /home/rmukund/stoch/expr_search/expr_search_infr.h
+	<random>
+	"../expr_search.h"
+
+1374445011 /home/rmukund/stoch/parser_binding.h
+	"context.h"
+	"parser/iface.h"
+
+1374444974 /home/rmukund/stoch/context.h
+	<cassert>
+	<map>
+	<string>
+	<utility>
+	<vector>
+	<boost/optional.hpp>
+	<boost/variant.hpp>
+	"parser/iface.h"
+	"expr.h"
+	"fexpr.h"
+	"grammar.h"
+	"expr_search.h"
+	"context/context_infr.h"
+
+1374444993 /home/rmukund/stoch/context/context_infr.h
+	<algorithm>
+	<cassert>
+	<cstdlib>
+	<functional>
+	<random>
+	<string>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<boost/optional.hpp>
+	"parser/iface.h"
+	"../context.h"
+	"context_infr_lia.h"
+	"context_infr_term.h"
+	"context_infr_fterm.h"
+	"context_infr_grammar.h"
+
+1369918130 /home/rmukund/stoch/context/context_infr_lia.h
+	<cstdlib>
+	<iostream>
+	<map>
+	<memory>
+	<utility>
+	<vector>
+	"context_infr.h"
+
+1369899471 /home/rmukund/stoch/context/context_infr_term.h
+	<memory>
+	<utility>
+	<boost/variant.hpp>
+	"context_infr.h"
+
+1369899354 /home/rmukund/stoch/context/context_infr_fterm.h
+	<memory>
+	<utility>
+	<boost/variant.hpp>
+	"context_infr.h"
+
+1374443587 /home/rmukund/stoch/context/context_infr_grammar.h
+	<boost/variant.hpp>
+	"context_infr.h"
+
+1374705057 /home/rmukund/stoch/include/nonstd.h
+	<string>
+	<boost/current_function.hpp>
+	<boost/lexical_cast.hpp>
+	"nonstd/bv.h"
+	"nonstd/nonfunctional.h"
+
+1374435910 /home/rmukund/stoch/include/nonstd/bv.h
+	"small_bv.h"
+	"big_bv.h"
+	"bv_ops.h"
+
+1374435918 /home/rmukund/stoch/include/nonstd/small_bv.h
+	<algorithm>
+	<cstdint>
+	<limits>
+	<iostream>
+	<sstream>
+	<stdexcept>
+	<boost/lexical_cast.hpp>
+	"bv.h"
+
+1374435930 /home/rmukund/stoch/include/nonstd/big_bv.h
+	<vector>
+	<gmpxx.h>
+	"nonfunctional.h"
+	"bv.h"
+
+1374435696 /home/rmukund/stoch/include/nonstd/nonfunctional.h
+	<functional>
+	<string>
+
+1374435937 /home/rmukund/stoch/include/nonstd/bv_ops.h
+	<z3++.h>
+	"bv.h"
+
+1374444237 /home/rmukund/stoch/include/expr.h
+	<functional>
+	<map>
+	<memory>
+	<ostream>
+	<tuple>
+	<vector>
+	<gmpxx.h>
+	<z3++.h>
+	"nonstd.h"
+	"expr/expr_infr.h"
+	"fexpr.h"
+
+1369248360 /home/rmukund/stoch/include/expr/expr_infr.h
+	<functional>
+	<map>
+	<vector>
+	"../expr.h"
+	"expr_infr_const.h"
+	"expr_infr_var.h"
+	"expr_infr_unop.h"
+	"expr_infr_binop.h"
+	"expr_infr_ite.h"
+	"expr_infr_ops.h"
+
+1374444249 /home/rmukund/stoch/include/expr/expr_infr_const.h
+	<memory>
+	<ostream>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1374444261 /home/rmukund/stoch/include/expr/expr_infr_var.h
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1374444272 /home/rmukund/stoch/include/expr/expr_infr_unop.h
+	<algorithm>
+	<memory>
+	<ostream>
+	<vector>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1374444282 /home/rmukund/stoch/include/expr/expr_infr_binop.h
+	<algorithm>
+	<memory>
+	<ostream>
+	<vector>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1374444296 /home/rmukund/stoch/include/expr/expr_infr_ite.h
+	<memory>
+	<ostream>
+	<vector>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1369685176 /home/rmukund/stoch/include/expr/expr_infr_ops.h
+	"expr_infr.h"
+
+1369326077 /home/rmukund/stoch/include/fexpr.h
+	<functional>
+	<map>
+	<memory>
+	<ostream>
+	<string>
+	<vector>
+	"expr.h"
+	"fexpr/fexpr_infr.h"
+
+1368169415 /home/rmukund/stoch/include/fexpr/fexpr_infr.h
+	"../fexpr.h"
+	"fexpr_infr_const.h"
+	"fexpr_infr_var.h"
+	"fexpr_infr_unop.h"
+	"fexpr_infr_binop.h"
+	"fexpr_infr_ite.h"
+	"fexpr_infr_call.h"
+	"fexpr_infr_ops.h"
+
+1374444305 /home/rmukund/stoch/include/fexpr/fexpr_infr_const.h
+	<map>
+	<memory>
+	<ostream>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444316 /home/rmukund/stoch/include/fexpr/fexpr_infr_var.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444326 /home/rmukund/stoch/include/fexpr/fexpr_infr_unop.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	<boost/optional.hpp>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444336 /home/rmukund/stoch/include/fexpr/fexpr_infr_binop.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	<boost/optional.hpp>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444347 /home/rmukund/stoch/include/fexpr/fexpr_infr_ite.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444358 /home/rmukund/stoch/include/fexpr/fexpr_infr_call.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1368588065 /home/rmukund/stoch/include/fexpr/fexpr_infr_ops.h
+	"fexpr_infr.h"
+
+1369761500 /home/rmukund/stoch/include/parser/iface.h
+	<string>
+	<utility>
+	<vector>
+	<functional>
+
+1374780436 /home/rmukund/stoch/include/context.h
+	<cassert>
+	<map>
+	<string>
+	<utility>
+	<vector>
+	<boost/optional.hpp>
+	<boost/variant.hpp>
+	"parser/iface.h"
+	"expr.h"
+	"fexpr.h"
+	"grammar.h"
+	"expr_search.h"
+	"context/context_infr.h"
+
+1374783556 /home/rmukund/stoch/include/context/context_infr.h
+	<algorithm>
+	<cassert>
+	<cstdlib>
+	<functional>
+	<random>
+	<string>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<boost/optional.hpp>
+	"parser/iface.h"
+	"context.h"
+	"context_infr_logic.h"
+	"context_infr_term.h"
+	"context_infr_fterm.h"
+	"context_infr_grammar.h"
+
+1369918130 /home/rmukund/stoch/include/context/context_infr_lia.h
+	<cstdlib>
+	<iostream>
+	<map>
+	<memory>
+	<utility>
+	<vector>
+	"context_infr.h"
+
+1374790519 /home/rmukund/stoch/include/context/context_infr_term.h
+	<memory>
+	<utility>
+	<boost/variant.hpp>
+	"context_infr.h"
+
+1369899354 /home/rmukund/stoch/include/context/context_infr_fterm.h
+	<memory>
+	<utility>
+	<boost/variant.hpp>
+	"context_infr.h"
+
+1374443587 /home/rmukund/stoch/include/context/context_infr_grammar.h
+	<boost/variant.hpp>
+	"context_infr.h"
+
+1369101833 /home/rmukund/stoch/include/parser/exceptions.h
+	<exception>
+	<string>
+	<iostream>
+
+1374445011 /home/rmukund/stoch/include/parser_binding.h
+	"context.h"
+	"parser/iface.h"
+
+1369855719 /home/rmukund/stoch/include/grammar.h
+	<algorithm>
+	<functional>
+	<memory>
+	<vector>
+	"expr.h"
+	"grammar/grammar_infr.h"
+
+1368226878 /home/rmukund/stoch/include/grammar/grammar_infr.h
+	"../grammar.h"
+	"grammar_std.h"
+	"grammar_sample.h"
+
+1369021073 /home/rmukund/stoch/include/grammar/grammar_std.h
+	"grammar_infr.h"
+
+1368226897 /home/rmukund/stoch/include/grammar/grammar_sample.h
+	<algorithm>
+	<functional>
+	<map>
+	<random>
+	<tuple>
+	<vector>
+	<boost/none.hpp>
+	<boost/optional.hpp>
+	"grammar_infr.h"
+
+1374442811 /home/rmukund/stoch/include/expr_search.h
+	<algorithm>
+	<cassert>
+	<map>
+	<memory>
+	<random>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<boost/optional.hpp>
+	<z3++.h>
+	"nonstd/nonfunctional.h"
+	"expr.h"
+	"fexpr.h"
+	"grammar.h"
+	"expr_search/expr_search_infr.h"
+
+1369919471 /home/rmukund/stoch/include/expr_search/expr_search_infr.h
+	<random>
+	"../expr_search.h"
+
+1374445444 /home/rmukund/stoch/include/parser/binding.h
+	"context.h"
+	"parser/iface.h"
+
+1374783460 /home/rmukund/stoch/include/context/context_infr_logic.h
+	<cstdlib>
+	<iostream>
+	<map>
+	<memory>
+	<utility>
+	<vector>
+	"context_infr.h"
+
+1375962216 source:/home/rmukund/prog/stoch/main.cpp
+	<iostream>
+	"nonstd.h"
+	"parser/binding.h"
+
+1375818494 /home/rmukund/prog/stoch/include/nonstd.h
+	<cmath>
+	<string>
+	<boost/current_function.hpp>
+	<boost/lexical_cast.hpp>
+	<boost/optional.hpp>
+	"nonstd/bv.h"
+	"nonstd/nonfunctional.h"
+
+1374435910 /home/rmukund/prog/stoch/include/nonstd/bv.h
+	"small_bv.h"
+	"big_bv.h"
+	"bv_ops.h"
+
+1375829549 /home/rmukund/prog/stoch/include/nonstd/small_bv.h
+	<algorithm>
+	<cstdint>
+	<limits>
+	<iostream>
+	<sstream>
+	<stdexcept>
+	<boost/lexical_cast.hpp>
+	"bv.h"
+
+1374435930 /home/rmukund/prog/stoch/include/nonstd/big_bv.h
+	<vector>
+	<gmpxx.h>
+	"nonfunctional.h"
+	"bv.h"
+
+1374435696 /home/rmukund/prog/stoch/include/nonstd/nonfunctional.h
+	<functional>
+	<string>
+
+1375840201 /home/rmukund/prog/stoch/include/nonstd/bv_ops.h
+	<z3++.h>
+	"bv.h"
+
+1374445444 /home/rmukund/prog/stoch/include/parser/binding.h
+	"context.h"
+	"parser/iface.h"
+
+1375744314 /home/rmukund/prog/stoch/include/context.h
+	<cassert>
+	<map>
+	<string>
+	<utility>
+	<vector>
+	<boost/optional.hpp>
+	<boost/variant.hpp>
+	"parser/iface.h"
+	"expr.h"
+	"fexpr.h"
+	"grammar.h"
+	"expr_search.h"
+	"context/context_infr.h"
+
+1369761500 /home/rmukund/prog/stoch/include/parser/iface.h
+	<string>
+	<utility>
+	<vector>
+	<functional>
+
+1374444237 /home/rmukund/prog/stoch/include/expr.h
+	<functional>
+	<map>
+	<memory>
+	<ostream>
+	<tuple>
+	<vector>
+	<gmpxx.h>
+	<z3++.h>
+	"nonstd.h"
+	"expr/expr_infr.h"
+	"fexpr.h"
+
+1369248360 /home/rmukund/prog/stoch/include/expr/expr_infr.h
+	<functional>
+	<map>
+	<vector>
+	"../expr.h"
+	"expr_infr_const.h"
+	"expr_infr_var.h"
+	"expr_infr_unop.h"
+	"expr_infr_binop.h"
+	"expr_infr_ite.h"
+	"expr_infr_ops.h"
+
+1375818405 /home/rmukund/prog/stoch/include/expr/expr_infr_const.h
+	<memory>
+	<ostream>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1375818435 /home/rmukund/prog/stoch/include/expr/expr_infr_var.h
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1375018124 /home/rmukund/prog/stoch/include/expr/expr_infr_unop.h
+	<algorithm>
+	<memory>
+	<ostream>
+	<vector>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1375840395 /home/rmukund/prog/stoch/include/expr/expr_infr_binop.h
+	<algorithm>
+	<memory>
+	<ostream>
+	<vector>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1375026883 /home/rmukund/prog/stoch/include/expr/expr_infr_ite.h
+	<memory>
+	<ostream>
+	<vector>
+	<z3++.h>
+	"nonstd.h"
+	"expr_infr.h"
+
+1375018247 /home/rmukund/prog/stoch/include/expr/expr_infr_ops.h
+	"expr_infr.h"
+
+1369326077 /home/rmukund/prog/stoch/include/fexpr.h
+	<functional>
+	<map>
+	<memory>
+	<ostream>
+	<string>
+	<vector>
+	"expr.h"
+	"fexpr/fexpr_infr.h"
+
+1368169415 /home/rmukund/prog/stoch/include/fexpr/fexpr_infr.h
+	"../fexpr.h"
+	"fexpr_infr_const.h"
+	"fexpr_infr_var.h"
+	"fexpr_infr_unop.h"
+	"fexpr_infr_binop.h"
+	"fexpr_infr_ite.h"
+	"fexpr_infr_call.h"
+	"fexpr_infr_ops.h"
+
+1375818614 /home/rmukund/prog/stoch/include/fexpr/fexpr_infr_const.h
+	<map>
+	<memory>
+	<ostream>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1375818547 /home/rmukund/prog/stoch/include/fexpr/fexpr_infr_var.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444326 /home/rmukund/prog/stoch/include/fexpr/fexpr_infr_unop.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	<boost/optional.hpp>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1375840400 /home/rmukund/prog/stoch/include/fexpr/fexpr_infr_binop.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	<boost/optional.hpp>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444347 /home/rmukund/prog/stoch/include/fexpr/fexpr_infr_ite.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1374444358 /home/rmukund/prog/stoch/include/fexpr/fexpr_infr_call.h
+	<map>
+	<memory>
+	<ostream>
+	<stdexcept>
+	<vector>
+	"nonstd.h"
+	"fexpr_infr.h"
+
+1368588065 /home/rmukund/prog/stoch/include/fexpr/fexpr_infr_ops.h
+	"fexpr_infr.h"
+
+1369855719 /home/rmukund/prog/stoch/include/grammar.h
+	<algorithm>
+	<functional>
+	<memory>
+	<vector>
+	"expr.h"
+	"grammar/grammar_infr.h"
+
+1368226878 /home/rmukund/prog/stoch/include/grammar/grammar_infr.h
+	"../grammar.h"
+	"grammar_std.h"
+	"grammar_sample.h"
+
+1369021073 /home/rmukund/prog/stoch/include/grammar/grammar_std.h
+	"grammar_infr.h"
+
+1375743998 /home/rmukund/prog/stoch/include/grammar/grammar_sample.h
+	<algorithm>
+	<functional>
+	<map>
+	<random>
+	<tuple>
+	<vector>
+	<boost/none.hpp>
+	<boost/optional.hpp>
+	"grammar_infr.h"
+
+1375646793 /home/rmukund/prog/stoch/include/expr_search.h
+	<algorithm>
+	<cassert>
+	<map>
+	<memory>
+	<random>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<boost/optional.hpp>
+	<z3++.h>
+	"nonstd/nonfunctional.h"
+	"expr.h"
+	"fexpr.h"
+	"grammar.h"
+	"expr_search/expr_search_infr.h"
+
+1375840413 /home/rmukund/prog/stoch/include/expr_search/expr_search_infr.h
+	<random>
+	"expr_search.h"
+	"expr_search_sizefree.h"
+
+1375743316 /home/rmukund/prog/stoch/include/context/context_infr.h
+	<algorithm>
+	<cassert>
+	<cstdlib>
+	<functional>
+	<random>
+	<string>
+	<vector>
+	<boost/lexical_cast.hpp>
+	<boost/optional.hpp>
+	"parser/iface.h"
+	"context.h"
+	"context_infr_logic.h"
+	"context_infr_term.h"
+	"context_infr_fterm.h"
+	"context_infr_grammar.h"
+
+1375960861 /home/rmukund/prog/stoch/include/context/context_infr_logic.h
+	<cstdlib>
+	<iostream>
+	<map>
+	<memory>
+	<utility>
+	<vector>
+	"context_infr.h"
+
+1375962490 /home/rmukund/prog/stoch/include/context/context_infr_term.h
+	<memory>
+	<utility>
+	<boost/variant.hpp>
+	"context_infr.h"
+
+1374940369 /home/rmukund/prog/stoch/include/context/context_infr_fterm.h
+	<memory>
+	<utility>
+	<boost/variant.hpp>
+	"context_infr.h"
+
+1375817723 /home/rmukund/prog/stoch/include/context/context_infr_grammar.h
+	<boost/variant.hpp>
+	"context_infr.h"
+
+1374445041 source:/home/rmukund/prog/stoch/parser/synthlib2lexer.l
+	<utility>
+	<vector>
+	"parser/iface.h"
+	"synthlib2parser.tab.hpp"
+
+1375742450 /home/rmukund/prog/stoch/parser/synthlib2parser.tab.hpp
+
+1374445051 source:/home/rmukund/prog/stoch/parser/synthlib2parser.y
+	"parser/iface.h"
+	<iostream>
+	<string.h>
+
+1374453930 source:/home/rmukund/prog/stoch/parser/synthlib2parsercallbacks.cpp
+	"parser/iface.h"
+	<cstdio>
+	<iostream>
+
+1374445075 source:/home/rmukund/prog/stoch/parser/synthlib2parserdeepcopy.cpp
+	"parser/iface.h"
+
+1374445083 source:/home/rmukund/prog/stoch/parser/synthlib2parserdest.cpp
+	"parser/iface.h"
+
+1374445091 source:/home/rmukund/prog/stoch/parser/synthlib2parserexceptions.cpp
+	"parser/exceptions.h"
+
+1369101833 /home/rmukund/prog/stoch/include/parser/exceptions.h
+	<exception>
+	<string>
+	<iostream>
+
+1375744298 /home/rmukund/prog/stoch/include/expr_search/expr_search_sizefree.h
+	"expr_search/expr_search_infr.h"
+

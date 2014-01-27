@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="Release" />
+	<File name="include/context.h" open="0" top="0" tabpos="2">
+		<Cursor position="1971" topLine="71" />
+	</File>
+	<File name="include/context/context_infr.h" open="0" top="0" tabpos="1">
+		<Cursor position="7586" topLine="277" />
+	</File>
+	<File name="include/context/context_infr_fterm.h" open="0" top="0" tabpos="3">
+		<Cursor position="378" topLine="11" />
+	</File>
+	<File name="include/context/context_infr_grammar.h" open="0" top="0" tabpos="2">
+		<Cursor position="21722" topLine="134" />
+	</File>
+	<File name="include/context/context_infr_logic.h" open="0" top="0" tabpos="6">
+		<Cursor position="8256" topLine="149" />
+	</File>
+	<File name="include/context/context_infr_term.h" open="1" top="0" tabpos="5">
+		<Cursor position="4718" topLine="146" />
+	</File>
+	<File name="include/expr/expr_infr_binop.h" open="0" top="0" tabpos="5">
+		<Cursor position="1270" topLine="28" />
+	</File>
+	<File name="include/expr/expr_infr_const.h" open="0" top="0" tabpos="10">
+		<Cursor position="872" topLine="31" />
+	</File>
+	<File name="include/expr/expr_infr_ite.h" open="0" top="0" tabpos="0">
+		<Cursor position="1440" topLine="54" />
+	</File>
+	<File name="include/expr/expr_infr_ops.h" open="0" top="0" tabpos="8">
+		<Cursor position="2597" topLine="93" />
+	</File>
+	<File name="include/expr/expr_infr_unop.h" open="0" top="0" tabpos="7">
+		<Cursor position="773" topLine="10" />
+	</File>
+	<File name="include/expr/expr_infr_var.h" open="1" top="0" tabpos="4">
+		<Cursor position="756" topLine="25" />
+	</File>
+	<File name="include/expr_search.h" open="0" top="0" tabpos="1">
+		<Cursor position="3820" topLine="107" />
+	</File>
+	<File name="include/expr_search/expr_search_infr.h" open="0" top="0" tabpos="2">
+		<Cursor position="4389" topLine="141" />
+	</File>
+	<File name="include/fexpr.h" open="0" top="0" tabpos="0">
+		<Cursor position="1383" topLine="37" />
+	</File>
+	<File name="include/fexpr/fexpr_infr_binop.h" open="0" top="0" tabpos="3">
+		<Cursor position="1390" topLine="26" />
+	</File>
+	<File name="include/fexpr/fexpr_infr_unop.h" open="0" top="0" tabpos="0">
+		<Cursor position="533" topLine="0" />
+	</File>
+	<File name="include/grammar.h" open="0" top="0" tabpos="0">
+		<Cursor position="296" topLine="3" />
+	</File>
+	<File name="include/grammar/grammar_infr.h" open="0" top="0" tabpos="0">
+		<Cursor position="811" topLine="11" />
+	</File>
+	<File name="include/grammar/grammar_sample.h" open="0" top="0" tabpos="0">
+		<Cursor position="1413" topLine="30" />
+	</File>
+	<File name="include/grammar/grammar_std.h" open="0" top="0" tabpos="0">
+		<Cursor position="553" topLine="16" />
+	</File>
+	<File name="include/nonstd.h" open="1" top="0" tabpos="3">
+		<Cursor position="949" topLine="45" />
+	</File>
+	<File name="include/nonstd/bv.h" open="0" top="0" tabpos="0">
+		<Cursor position="262" topLine="0" />
+	</File>
+	<File name="include/nonstd/bv_ops.h" open="0" top="0" tabpos="4">
+		<Cursor position="3733" topLine="138" />
+	</File>
+	<File name="include/nonstd/nonfunctional.h" open="0" top="0" tabpos="0">
+		<Cursor position="1" topLine="0" />
+	</File>
+	<File name="include/nonstd/small_bv.h" open="1" top="0" tabpos="2">
+		<Cursor position="935" topLine="41" />
+	</File>
+	<File name="include/parser/binding.h" open="0" top="0" tabpos="1">
+		<Cursor position="1079" topLine="10" />
+	</File>
+	<File name="include/parser/iface.h" open="0" top="0" tabpos="3">
+		<Cursor position="2002" topLine="94" />
+	</File>
+	<File name="main.cpp" open="1" top="1" tabpos="1">
+		<Cursor position="431" topLine="6" />
+	</File>
+	<File name="parser/synthlib2parserdeepcopy.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="17" topLine="0" />
+	</File>
+	<File name="parser/synthlib2parserdest.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="17" topLine="0" />
+	</File>
+	<File name="parser/synthlib2parserexceptions.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="17" topLine="0" />
+	</File>
+</CodeBlocks_layout_file>

@@ -1,0 +1,32 @@
+stoch: Stochastic SynthLib Solver
+
+1. To build
+
+Requirements
+
+Depends on some new C++11 features. Please note the minimal versions of the compilers needed.
+
+a. GCC. >= 4.6.2, 4.7.x recommended.
+b. Clang. Optional, >= 3.3, for debug builds and nice error messages.
+c. Flex, bison. Any recent version.
+d. Z3. 4.3.0 appears to be the latest. Anything released within the last year is probably fine.
+e. GMP, GMPXX. For multiprecision support. The code supports big integer LIA, but I've never tested it. Any recent version should be fine.
+
+Build procedure
+
+a. Update the the INCDIRS, LDDIRSDEB, and LDDIRSOPT variables in the build script to point to your installation of Z3.
+b. If you're modifying the code, then uncommenting the Clang compile command is probably wise, since the error messages are more readable.
+c. Run ./build. On GCC >= 4.7, it should compile cleanly with the only warnings coming from Flex / Bison code and z3++.h.
+d. ./a.out benchmarkfile.sl
+
+2. Supported options
+
+Several options can be set with the (set-options) command. These are:
+
+a. expr-size. The size of the expression. Actually, only approximately proportional to this, because of the way we parse function grammars.
+b. beta. Magic number for the MCMC search. Indicates how likely the solver is to accept a mutation even if it is worse than the current candidate. Set to 0.5 by default. Not recently optimized, but I remember searching for the best beta once.
+c. mutation-limit. How many mutations to process before admitting defeat. Set by default to size_t(-1), i.e. infinity for practical purposes.
+d. samples. How many random concrete examples to initially populate with. Set by default to 100. Setting it to very large values slows down the search, and setting it to small values means the CEGIS loop iterates multiple times. I tried to strike a balance, but did no formal tests.
+e. random-seed. The random seed. Set this for reproducibility. If not set, we query std::random_device for our seed, which I think is truly random -- accessing either the OS entropy store or processor instructions for randomness.
+f. move-probability. The probability of switching from one expression size to the next. Set to 0.01, but not optimized rigorously.
+

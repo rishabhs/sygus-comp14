@@ -1,0 +1,16 @@
+#!/bin/bash
+
+CXXFLAGS="-std=c++0x -Wall -pedantic";
+OPTFLAGS="-O3";
+LDFLAGS="-lgmpxx -lgmp -lz3";
+
+INCDIRS="-Iinclude/ -I/home1/r/rmukund/include/";
+LDDIRSDEB="-L/home1/r/rmukund/lib/";
+LDDIRSOPT="-L/home1/r/rmukund/lib/";
+
+bison -v -d parser/synthlib2parser.y -o parser/synthlib2parser.tab.cpp && \
+flex -oparser/synthlib2lexer.cpp parser/synthlib2lexer.l && \
+# clang++ $CXXFLAGS $INCDIRS $LDDIRSDEB $LDFLAGS main.cpp parser/*.cpp && \
+# echo "Clang done. Proceeding with GCC build." && \
+g++ $CXXFLAGS $OPTFLAGS $INCDIRS $LDDIRSOPT $LDFLAGS main.cpp parser/*.cpp;
+

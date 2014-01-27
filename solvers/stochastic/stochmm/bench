@@ -1,0 +1,65 @@
+#!/usr/bin/python
+
+def run_prog(prog_name, arg_fname, log_file, timeout):
+	import subprocess
+	import sys
+	import threading
+	import time
+
+	def bounded_exec(p):
+		if (p.poll() == None):
+			try:
+				p.kill()
+				sys.stderr.write(prog_name + " times out on " + arg_fname + "\n")
+			except:
+				pass
+
+	t_start = time.time()
+	proc = subprocess.Popen([prog_name, arg_fname], stdout = log_file, stderr = log_file)
+	# proc = subprocess.Popen([prog_name, arg_fname], stdout = log_file, stderr = sys.stdout)
+	timer = threading.Timer(timeout, bounded_exec, [proc])
+	timer.start()
+	proc.wait()
+	timer.cancel()
+	t_end = time.time()
+
+	return t_end - t_start
+
+if __name__ == "__main__":
+	import argparse
+	import os
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument("program", help = "Program to be benchmarked")
+	parser.add_argument("benchmark_dir", help = "Directory containing benchmarks")
+	parser.add_argument("log_dir", help = "Directory in which to dump output logs")
+	parser.add_argument("-n", "--nruns", type = int, default = 5, help = "Number of runs for each benchmark")
+	parser.add_argument("-t", "--timeout", type = int, default = 300, help = "Benchmark timeout (in seconds)")
+	args = parser.parse_args()
+
+	files = [ f for f in os.listdir(args.benchmark_dir) \
+			if os.path.isfile(os.path.join(args.benchmark_dir, f)) \
+			and f.endswith(".sl") ]
+
+	if not os.path.exists(args.log_dir):
+		os.makedirs(args.log_dir)
+	results_fname = os.path.join(args.log_dir, "results.csv")
+	results = open(results_fname, "w")
+
+	for f in files:
+		result_line = f
+		for i in range(args.nruns):
+			print("Executing " + f + ". Iteration " + str(i))
+			full_f = os.path.join(args.benchmark_dir, f)
+			log_fname = os.path.join(args.log_dir, f + "." + str(i) + ".log")
+			log_file = open(log_fname, "w")
+			result_line = result_line + ", " + str(run_prog(args.program, full_f, log_file, args.timeout))
+			log_file.flush()
+			log_file.close()
+			pass
+		results.write(result_line + "\n")
+		results.flush()
+
+	results.flush()
+	results.close()
+
