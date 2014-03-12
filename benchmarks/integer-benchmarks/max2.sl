@@ -1,5 +1,5 @@
 ; max3.sl
-; Synthesize the maximum of 3 integers, from a purely declarative spec
+; Synthesize the maximum of 2 integers, from a purely declarative spec
 
 (set-logic LIA)
 
