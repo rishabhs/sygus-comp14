@@ -4,14 +4,15 @@
 # circuit (or function expression) and realted functions
 
 import sys
-from z3 import Int, And, Bool, Implies, Not
-from z3 import IntSort, BoolSort, BitVecSort, IntVal, BoolVal, BitVecVal, Bool, is_bv_sort
-import component
+from z3 import (Int, And, Bool, Implies,
+                IntSort, BoolSort, BitVecSort, IntVal, BoolVal, BitVecVal,
+                is_bv_sort)
 from component import SynthException
 
 if __name__ == "__main__":
     print 'This module is only intended to be used as a library!\n'
     sys.exit(1)
+
 
 def GetSortFromType(typ):
     if typ == 'Int':
@@ -19,17 +20,15 @@ def GetSortFromType(typ):
     elif typ == 'Bool':
         return BoolSort()
     elif isinstance(typ, list):
-        if (len(typ) != 2
-           or typ[0] != 'BitVec'
-           ):
-            raise SynthException('Unknown Type %r'%(typ))
+        if (len(typ) != 2 or typ[0] != 'BitVec'):
+            raise SynthException('Unknown Type %r' % (typ))
         else:
             intName, size = typ[1]
             return BitVecSort(size)
     else:
-        raise SynthException('Unknown Type %r'%(typ))
-            
-        
+        raise SynthException('Unknown Type %r' % (typ))
+
+
 def GetValFromType(typ, raw_val):
     srt = GetSortFromType(typ)
     if srt == IntSort():
@@ -41,9 +40,11 @@ def GetValFromType(typ, raw_val):
         return BitVecVal(raw_val, sz)
     else:
         raise SynthException('Unknown sort')
-    
+
+
 class Circuit:
     numCircuits = 0
+
     def __init__(self, funcName, components, inputPorts, outputPort):
         self.funcName = funcName
         self.components = components
@@ -54,22 +55,21 @@ class Circuit:
         self.GenerateLabels()
 
     def __repr__(self):
-        retVal ='<Circuit for %s_%s:\n\t' % (self.funcName, str(self.id))
+        retVal = '<Circuit for %s_%s:\n\t' % (self.funcName, str(self.id))
         for inputPort in self.inputPorts:
             retVal += '%s,' % (inputPort.name)
         retVal += '--> %s\n' % (self.outputPort.name)
         for component in self.components:
-            retVal += '\n\t%r'%component
+            retVal += '\n\t%r' % component
         retVal += '>'
         return retVal
-
 
     def GenerateLabels(self):
         numLabels = 0
         labels = {}
         compPortNameToLabelNameMap = {}
         labelNameToCompPortMap = {}
-        
+
         for comp in self.components:
             inputLabels = []
             for i in range(len(comp.inputPorts)):
@@ -80,7 +80,7 @@ class Circuit:
                 labelNameToCompPortMap[labelName] = comp.inputPorts[i]
                 inputLabels.append(labelName)
             comp.SetInputLabels(inputLabels)
-            
+
         for comp in self.components:
             labelName = 'L_%s_o' % comp.GetIndexedName()
             labels[numLabels] = labelName
@@ -103,15 +103,17 @@ class Circuit:
         outputLabelLo = numInputPorts
         outputLabelHi = numInputPorts + numComponents
 
-
         for comp in self.components:
             for inputPort in comp.inputPorts:
-                constraints.append(Int(self.PN2LNMap[inputPort.name]) >= inputLabelLo)
-                constraints.append(Int(self.PN2LNMap[inputPort.name]) < inputLabelHi)
-                
-            constraints.append(Int(self.PN2LNMap[comp.outputPort.name]) >= outputLabelLo)
-            constraints.append(Int(self.PN2LNMap[comp.outputPort.name]) < outputLabelHi)
+                constraints.append(Int(self.PN2LNMap[inputPort.name])
+                                   >= inputLabelLo)
+                constraints.append(Int(self.PN2LNMap[inputPort.name])
+                                   < inputLabelHi)
 
+            constraints.append(Int(self.PN2LNMap[comp.outputPort.name])
+                               >= outputLabelLo)
+            constraints.append(Int(self.PN2LNMap[comp.outputPort.name])
+                               < outputLabelHi)
 
         return And(constraints)
 
@@ -120,31 +122,30 @@ class Circuit:
 
         for i in range(len(self.components)):
             for j in range(i+1, len(self.components)):
-                dist_ij = (Int(self.PN2LNMap[self.components[i].outputPort.name]) !=
-                    Int(self.PN2LNMap[self.components[j].outputPort.name]))
+                dist_ij = (Int(self.PN2LNMap[
+                               self.components[i].outputPort.name]) !=
+                           Int(self.PN2LNMap[
+                               self.components[j].outputPort.name]))
                 constraints.append(dist_ij)
 
         return And(constraints)
 
     def GenerateAcycConstraints(self):
         constraints = [Bool(True)]
-    
+
         for comp in self.components:
             for inputPort in comp.inputPorts:
                 constraints.append(Int(self.PN2LNMap[inputPort.name]) <
                                    Int(self.PN2LNMap[comp.outputPort.name]))
-                
+
         return And(constraints)
 
     def GenerateWellFormednessConstraints(self):
-        constraints = [Bool(True)]
-
         psiRange = self.GenerateLabelRangeConstraints()
         psiDiffLoc = self.GenerateDistinctOutputLabelConstraints()
         psiAcyc = self.GenerateAcycConstraints()
 
         return And(psiRange, psiDiffLoc, psiAcyc)
-
 
     def GenerateConnectionConstraints(self):
         constraints = [Bool(True)]
@@ -159,7 +160,8 @@ class Circuit:
                         consequent = (inputPort.var == self.inputPorts[i].var)
                         constraints.append(Implies(antecedent, consequent))
                     else:
-                        constraints.append(Int(self.PN2LNMap[inputPort.name]) != i)
+                        constraints.append(Int(self.PN2LNMap[inputPort.name])
+                                           != i)
 
         numLabels = len(self.labels)
 
@@ -180,19 +182,17 @@ class Circuit:
 
         for comp in self.components:
             if comp.outputPort.breed == self.outputPort.breed:
-                antecedent = (Int(self.PN2LNMap[comp.outputPort.name]) == 
-                    numInputPorts + numComponents - 1)
+                antecedent = (Int(self.PN2LNMap[comp.outputPort.name]) ==
+                              numInputPorts + numComponents - 1)
                 consequent = (self.outputPort.var == comp.outputPort.var)
                 constraints.append(Implies(antecedent, consequent))
             else:
                 constraints.append(Int(self.PN2LNMap[comp.outputPort.name]) !=
-                    numInputPorts + numComponents - 1)
-
+                                   numInputPorts + numComponents - 1)
 
         constraints.extend([comp.spec for comp in self.components])
 
         return And(constraints)
-
 
     def GetLModel(self, model):
         return {labelName: int(model.eval(Int(labelName), True).__repr__())
@@ -201,7 +201,7 @@ class Circuit:
     # Helper functions for LValToProg
     def ConstructProgramListing(self, LModel):
         ProgList = [None] * (len(self.components))
-        
+
         for comp in self.components:
             Pos = LModel[comp.outputLabel] - len(self.inputPorts)
             ProgList[Pos] = comp
@@ -212,28 +212,28 @@ class Circuit:
     def RefineProgList(self, ProgList, LModel):
         # The last element in the proglist is the output
         #WorkList = [ProgList[len(ProgList) - 1]]
-        
-        numInputPorts = len(self.inputPorts)
-        numComponents = len(self.components)
 
-        WorkList = [ProgList[numComponents - 1]]
+        WorkList = [ProgList[len(self.components) - 1]]
         RefinedProgList = []
         VisitedSet = set()
         VisitedSet.add(WorkList[0])
         while len(WorkList) > 0:
-            WorkList = list(reversed(sorted(WorkList, key=lambda Comp: Comp.pos)))
+            WorkList = list(reversed(sorted(WorkList,
+                                            key=lambda Comp: Comp.pos)))
             CurComp = WorkList.pop(0)
             CompArgs = []
             # Handle constants differently
-            
+
             for InputLabel in CurComp.inputLabels:
                 if (LModel[InputLabel] < len(self.inputPorts)):
                     # This is an input. Do nothing
-                    CompArgs.append(self.inputPorts[LModel[InputLabel]].namewoid)
+                    CompArgs.append(
+                        self.inputPorts[LModel[InputLabel]].namewoid)
                 else:
                     # This is an output. Add the appropriate component
                     # to the worklist if not already present
-                    SourceComp = ProgList[LModel[InputLabel] - len(self.inputPorts)]
+                    SourceComp = ProgList[LModel[InputLabel] -
+                                          len(self.inputPorts)]
                     if (SourceComp not in VisitedSet):
                         WorkList.append(SourceComp)
                         VisitedSet.add(SourceComp)
@@ -243,7 +243,6 @@ class Circuit:
             RefinedProgList.append((CurComp, CompArgs))
 
         return RefinedProgList[::-1]
-
 
     # Converts a labeling to a program while eliminating dead code
     # LModel is {labelName: value in model, ...}
@@ -270,7 +269,7 @@ class Circuit:
             for i in range(len(CompArgs)):
                 CompArgs[i] = RenameMap.get(CompArgs[i], CompArgs[i])
         # Generate the program
-     
+
         Prog = ''
         for i in range(len(RefinedProgList)):
             Comp, CompArgs = RefinedProgList[i]
@@ -278,7 +277,6 @@ class Circuit:
             Prog += Comp.Print(CompArgs, OutputName)
             Prog += '\n'
         return Prog
-
 
     def GenerateCircuitExpression(self, model):
         LModel = self.GetLModel(model)
@@ -291,7 +289,6 @@ class Circuit:
         for i in range(len(RefinedProgList)):
             (comp, _) = RefinedProgList[i]
             tmpMap[comp.outputPort.name] = i
-
 
         def GenerateSubexpr(i):
             (comp, compArgs) = RefinedProgList[i]
@@ -317,17 +314,3 @@ class Circuit:
                 raise SynthException('Unknown type of production')
 
         return '(synth-fun %s %s)' % (self.funcName, GenerateSubexpr(0))
-
-
-        
-
-
-
-
-
-
-
-
-
-
-

@@ -3,10 +3,12 @@
 # logger.py contains logging service functions
 
 logging = True
-    
+
+
 def IsLogging():
     return logging
 
+
 def SetLogging(doLog):
-	global logging
-	logging = doLog
+    global logging
+    logging = doLog
