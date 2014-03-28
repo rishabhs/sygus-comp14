@@ -10,13 +10,21 @@ VPATH=$(SRC_DIR)
 
 SYNTH_LIB_PARSER_SOURCES= \
 		SynthLib2ParserAST.cpp \
+		SymbolTable.cpp \
+		LogicSymbols.cpp \
+		SymtabBuilder.cpp \
 		SynthLib2ParserExceptions.cpp \
 		PrintVisitor.cpp \
+
+SYNTH_LIB_PARSER_TESTER_SOURCES = \
+		SynthLib2ParserTester.cpp \
 
 
 SYNTH_LIB_PARSER_OBJS=$(addprefix $(SYNTH_LIB_PARSER_ROOT)/obj/$(BUILD_SUFFIX)/, $(SYNTH_LIB_PARSER_SOURCES:.cpp=.o))
 SYNTH_LIB_PARSER_DEPS=$(addprefix $(SYNTH_LIB_PARSER_ROOT)/obj/$(BUILD_SUFFIX)/, $(SYNTH_LIB_PARSER_SOURCES:.cpp=.d))
 
+SYNTH_LIB_PARSER_TESTER_OBJS=$(addprefix $(SYNTH_LIB_PARSER_ROOT)/obj/$(BUILD_SUFFIX)/, $(SYNTH_LIB_PARSER_TESTER_SOURCES:.cpp=.o))
+SYNTH_LIB_PARSER_TESTER_DEPS=$(addprefix $(SYNTH_LIB_PARSER_ROOT)/obj/$(BUILD_SUFFIX)/, $(SYNTH_LIB_PARSER_TESTER_SOURCES:.cpp=.o))
 
 SYNTH_LIB_PARSER_PARSER_GEN=$(SRC_DIR)/SynthLib2Parser.tab.cpp
 SYNTH_LIB_PARSER_LEXER_GEN=$(SRC_DIR)/SynthLib2Lexer.cpp
@@ -36,10 +44,8 @@ opt:				all
 optlto:				all
 eopt:				all
 eoptlto:			all
-eprof:				all
-eproflto:			all
 
-all:				$(SYNTH_LIB_PARSER_STATIC) $(SYNTH_LIB_PARSER_DYNAMIC)
+all:				$(SYNTH_LIB_PARSER_STATIC) $(SYNTH_LIB_PARSER_DYNAMIC) $(SYNTH_LIB_PARSER_TESTER)
 
 $(SYNTH_LIB_PARSER_DYNAMIC):		$(SYNTH_LIB_PARSER_PARSER_OBJ) $(SYNTH_LIB_PARSER_LEXER_OBJ) \
 									$(SYNTH_LIB_PARSER_DEPS) $(SYNTH_LIB_PARSER_OBJS)
@@ -91,6 +97,16 @@ else
 		$(CXX) $(CXXFLAGS) $(OPTFLAGS) -c $< -o $@
 endif
 
+$(SYNTH_LIB_PARSER_TESTER): $(SYNTH_LIB_PARSER_TESTER_DEPS) $(SYNTH_LIB_PARSER_TESTER_OBJS) $(SYNTH_LIB_PARSER_STATIC)
+ifeq "x$(VERBOSE_BUILD)" "x"
+		@echo "$(LDPRINTNAME) `basename $@`"; \
+		$(CXX) $(CXXFLAGS) $(OPTFLAGS) $(SYNTH_LIB_PARSER_TESTER_OBJS) -L $(SYNTH_LIB_PARSER_ROOT)/lib/$(BUILD_SUFFIX) -Wl,-Bstatic -lsynthlib2parser -Wl,-Bdynamic -o $@
+else
+		$(CXX) $(CXXFLAGS) $(OPTFLAGS) $(SYNTH_LIB_PARSER_TESTER_OBJS) -L $(SYNTH_LIB_PARSER_ROOT)/lib/$(BUILD_SUFFIX) -Wl,-Bstatic -lsynthlib2parser -Wl,-Bdynamic -o $@
+endif
+
+
+
 $(OBJ_DIR)/%.d:		%.cpp
 ifeq "x$(VERBOSE_BUILD)" "x"
 	@set -e; rm -f $@; \
@@ -117,19 +133,13 @@ endif
 clean:
 	rm -rf obj/debug/*
 	rm -rf obj/opt/*
-	rm -rf obj/prof/*
 	rm -rf lib/debug/*
 	rm -rf lib/opt/*
-	rm -rf lib/prof/*
 	rm -rf bin/debug/*
 	rm -rf bin/opt/*
-	rm -rf bin/prof/*
 	rm -rf $(SYNTH_LIB_PARSER_LEXER_GEN) $(SYNTH_LIB_PARSER_PARSER_GEN) src/SynthLib2Parser.tab.h src/SynthLib2Parser.output
 
-distclean: clean
-
 ifneq ($(MAKECMDGOALS), clean)
-ifneq ($(MAKECMDGOALS), distclean)
 -include $(SYNTH_LIB_PARSER_DEPS)
 endif
-endif
+
