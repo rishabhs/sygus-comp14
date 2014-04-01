@@ -20,10 +20,14 @@ namespace SynthLib2Parser {
     {
         vector<const SortExpr*> UnOpVec(1);
         vector<const SortExpr*> BinOpVec(2);
-
+        vector<const SortExpr*> ITEOpVec(3);
         UnOpVec[0] = new BoolSortExpr();
         BinOpVec[0] = new BoolSortExpr();
         BinOpVec[1] = new BoolSortExpr();
+        ITEOpVec[0] = new BoolSortExpr();
+        ITEOpVec[1] = new BoolSortExpr();
+        ITEOpVec[2] = new BoolSortExpr();
+        
         auto BS = new BoolSortExpr();
 
         // Load the usual boolean operators
@@ -37,10 +41,15 @@ namespace SynthLib2Parser {
         SymTab->BindTheoryFun("nor", BinOpVec, BS);
         SymTab->BindTheoryFun("iff", BinOpVec, BS);
         SymTab->BindTheoryFun("=", BinOpVec, BS);
+        SymTab->BindTheoryFun("ite", ITEOpVec, BS);
 
         delete BinOpVec[0];
         delete BinOpVec[1];
+                              
         delete UnOpVec[0];
+        delete ITEOpVec[0];
+        delete ITEOpVec[1];
+        delete ITEOpVec[2];
         delete BS;
     }
 
