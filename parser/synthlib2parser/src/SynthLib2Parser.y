@@ -1,9 +1,10 @@
 %{
-    #include "include/SynthLib2ParserIFace.hpp"
-    #include "include/SynthLib2ParserExceptions.hpp"
+    #include <SynthLib2ParserIFace.hpp>
+    #include <SymbolTable.hpp>
     #include <iostream>
     #include <string.h>
     #include <boost/lexical_cast.hpp>
+    #include <LogicSymbols.hpp>
     
     using namespace std;
     using namespace SynthLib2Parser;
@@ -19,8 +20,8 @@
     extern int yylex(void);
     int yyerror(char* s)
     {
-        cerr << "Parse error: Last token read was: '" << yytext
-             << "' at line: " << yylinenum << ", column: " 
+        cerr << "Parse error: Last token read was: " << yytext
+             << " at line: " << yylinenum << ", column: " 
              << yycolnum - strlen(yytext) << endl;
         cerr.flush();
         exit(1);
@@ -182,11 +183,12 @@ SortDefCmd : TK_LPAREN TK_DEFINE_SORT Symbol SortExpr TK_RPAREN
 
 SortExpr : TK_LPAREN TK_BV IntConst TK_RPAREN
          {
-             if (boost::lexical_cast<u32>(*$3) <= 0) {
-                 throw SynthLib2ParserException("Zero and negative length bitvectors are not supported.\n" + 
+             if (boost::lexical_cast<u32>(*$3) == 0) {
+                 throw SynthLib2ParserException("Zero-length bitvectors not supported.\n" +
                                                 GetCurrentLocation().ToString());
              }
-             $$ = new BVSortExpr(GetCurrentLocation(), boost::lexical_cast<u32>(*$3));
+             $$ = new BVSortExpr(GetCurrentLocation(),
+                                 boost::lexical_cast<u32>(*$3));
              delete $3;
          }
          | TK_INT
@@ -297,7 +299,7 @@ SymbolPair : TK_LPAREN Symbol TK_QUOTED_LITERAL TK_RPAREN
 FunDefCmd : TK_LPAREN TK_DEFINE_FUN Symbol ArgList SortExpr Term TK_RPAREN
           {
               $$ = new FunDefCmd(GetCurrentLocation(),
-                                 *$3, *$4, $5, $6);
+                                 *$3, *$4, $5, $6, NULL);
 
               delete $3;
               delete $4;
@@ -360,7 +362,7 @@ Term : TK_LPAREN Symbol TermStar TK_RPAREN
 
 LetTerm : TK_LPAREN TK_LET TK_LPAREN LetBindingTermPlus TK_RPAREN Term TK_RPAREN
         {
-            $$ = new LetTerm(GetCurrentLocation(), *$4, $6);
+            $$ = new LetTerm(GetCurrentLocation(), *$4, $6, NULL);
             delete $4;
         }
 
@@ -473,7 +475,7 @@ SynthFunCmd : TK_LPAREN TK_SYNTH_FUN Symbol ArgList SortExpr
               TK_LPAREN NTDefPlus TK_RPAREN TK_RPAREN
             {
                 $$ = new SynthFunCmd(GetCurrentLocation(), *$3,
-                                     *$4, $5, *$7);
+                                     *$4, $5, *$7, new SymbolTableScope());
 
 
                 delete $3;
@@ -519,7 +521,7 @@ GTerm : Symbol
 
 LetGTerm : TK_LPAREN TK_LET TK_LPAREN LetBindingGTermPlus TK_RPAREN GTerm TK_RPAREN
          {
-             $$ = new LetGTerm(GetCurrentLocation(), *$4, $6);
+             $$ = new LetGTerm(GetCurrentLocation(), *$4, $6, new SymbolTableScope());
              delete $4;
          }
 

@@ -1,7 +1,7 @@
 %{
     #include <utility>
     #include <vector>
-    #include "include/SynthLib2ParserIFace.hpp"
+    #include <SynthLib2ParserIFace.hpp>
     using namespace std;
     using namespace SynthLib2Parser;
 

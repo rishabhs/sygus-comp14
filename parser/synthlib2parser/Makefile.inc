@@ -44,7 +44,7 @@ CXX=g++
 CC=$(CXX)
 LD=$(CXX)
 CXXFLAGS+=-Wall -pedantic -Wno-write-strings -Wno-unused-function -D__STDC_LIMIT_MACROS
-CXXFLAGS+=-pipe -std=c++11
+CXXFLAGS+=-pipe -std=c++11 -I $(SYNTH_LIB_PARSER_ROOT)/src/include
 CXXFLAGS+=$(FEAT_FLAGS)
 AR=ar
 ARFLAGS=rcs

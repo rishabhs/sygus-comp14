@@ -1,43 +1,3 @@
-// SynthLib2ParserIFace.hpp --- 
-// 
-// Filename: SynthLib2ParserIFace.hpp
-// Author: Abhishek Udupa
-// Created: Sat Jan 18 16:42:19 2014 (-0500)
-// 
-// 
-// Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
-// All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-// 3. All advertising materials mentioning features or use of this software
-//    must display the following acknowledgement:
-//    This product includes software developed by The University of Pennsylvania
-// 4. Neither the name of the University of Pennsylvania nor the
-//    names of its contributors may be used to endorse or promote products
-//    derived from this software without specific prior written permission.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
-// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
-
-// Code:
-
-
 #if !defined __SYNTH_LIB2_PARSER_IFACE_H
 #define __SYNTH_LIB2_PARSER_IFACE_H
 
@@ -155,13 +115,15 @@ namespace SynthLib2Parser {
         ArgList Arguments;
         const SortExpr* Type;
         Term* Def;
+        mutable SymbolTableScope* Scope;
 
     public:
         FunDefCmd(const SourceLocation& Location, 
                   const string& FunSymbol,
                   const ArgList& FunArgs,
                   const SortExpr* FunType,
-                  Term* FunDef);
+                  Term* FunDef,
+                  SymbolTableScope* Scope);
 
         virtual ~FunDefCmd();
         virtual void Accept(ASTVisitorBase* Visitor) const override;
@@ -172,6 +134,9 @@ namespace SynthLib2Parser {
         const ArgList& GetArgs() const;
         const SortExpr* GetSort() const;
         Term* GetTerm() const;
+
+        SymbolTableScope* GetScope() const;
+        void SetScope(SymbolTableScope* Scope) const;
     };
 
     class FunDeclCmd : public ASTCmd
@@ -203,13 +168,15 @@ namespace SynthLib2Parser {
         ArgList Arguments;
         const SortExpr* FunType;
         vector<NTDef*> GrammarRules;
+        mutable SymbolTableScope* Scope;
 
     public:
         SynthFunCmd(const SourceLocation& Location,
                     const string& Name,
                     const ArgList& Args,
                     const SortExpr* FunType,
-                    const vector<NTDef*> GrammarRules);
+                    const vector<NTDef*> GrammarRules,
+                    SymbolTableScope* Scope);
         virtual ~SynthFunCmd();
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
@@ -220,6 +187,8 @@ namespace SynthLib2Parser {
         const ArgList& GetArgs() const;
         const SortExpr* GetSort() const;
         const vector<NTDef*>& GetGrammarRules() const;
+        void SetScope(SymbolTableScope* Scope) const;
+        SymbolTableScope* GetScope() const;
     };
 
     class ConstraintCmd : public ASTCmd
@@ -331,9 +300,9 @@ namespace SynthLib2Parser {
     {
     private:
         u32 Size;
-
     public:
-        BVSortExpr(const SourceLocation& Location, u32 Size);
+        BVSortExpr(const SourceLocation& Location,
+                   u32 Size);
         BVSortExpr(u32 Size);
         virtual ~BVSortExpr();
 
@@ -485,8 +454,9 @@ namespace SynthLib2Parser {
         
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        
+        const SortExpr* GetSort(SymbolTable* SymTab) const;
         const string& GetLiteralString() const;
-        SortExpr* GetSort() const;
     };
 
     class Term : public ASTBase
@@ -500,6 +470,7 @@ namespace SynthLib2Parser {
         virtual ~Term();
         
         TermKind GetKind() const;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const = 0;
     };
 
     class FunTerm : public Term
@@ -516,6 +487,7 @@ namespace SynthLib2Parser {
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
 
         // accessors
         const string& GetFunName() const;
@@ -534,6 +506,7 @@ namespace SynthLib2Parser {
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
 
         // accessors
         Literal* GetLiteral() const;
@@ -551,6 +524,7 @@ namespace SynthLib2Parser {
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
 
         const string& GetSymbol() const;
     };
@@ -583,20 +557,24 @@ namespace SynthLib2Parser {
     private:
         vector<LetBindingTerm*> Bindings;
         Term* BoundInTerm;
+        mutable SymbolTableScope* Scope;
 
     public:
         LetTerm(const SourceLocation& Location,
                 const vector<LetBindingTerm*>& Bindings,
-                Term* BoundInTerm);
+                Term* BoundInTerm,
+                SymbolTableScope* Scope);
         virtual ~LetTerm();
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
-
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
 
         // Accessors
         const vector<LetBindingTerm*>& GetBindings() const;
         Term* GetBoundInTerm() const;
+        void SetScope(SymbolTableScope* Scope) const;
+        SymbolTableScope* GetScope() const;
     };
 
     // TODO: uggh, this code is similar to Term, consider refactoring
@@ -611,6 +589,7 @@ namespace SynthLib2Parser {
         virtual ~GTerm();
         
         GTermKind GetKind() const;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const = 0;
     };
 
     class SymbolGTerm : public GTerm
@@ -625,6 +604,7 @@ namespace SynthLib2Parser {
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
         
         // Accessors
         const string& GetSymbol() const;
@@ -644,6 +624,7 @@ namespace SynthLib2Parser {
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
 
         // Accessors
         const string& GetName() const;
@@ -662,6 +643,7 @@ namespace SynthLib2Parser {
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
 
         Literal* GetLiteral() const;
     };
@@ -678,6 +660,7 @@ namespace SynthLib2Parser {
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
 
         // accessor
         const SortExpr* GetSort() const;
@@ -697,6 +680,7 @@ namespace SynthLib2Parser {
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
 
         // accessors
         const SortExpr* GetSort() const;
@@ -730,20 +714,25 @@ namespace SynthLib2Parser {
     private:
         vector<LetBindingGTerm*> Bindings;
         GTerm* BoundInTerm;
+        mutable SymbolTableScope* Scope;
 
     public:
         LetGTerm(const SourceLocation& Location,
                  const vector<LetBindingGTerm*>& Bindings,
-                 GTerm* BoundInTerm);
+                 GTerm* BoundInTerm,
+                 SymbolTableScope* Scope);
 
         virtual ~LetGTerm();
 
         virtual void Accept(ASTVisitorBase* Visitor) const override;
         virtual ASTBase* Clone() const override;
+        virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
         
         // accessors
         const vector<LetBindingGTerm*>& GetBindings() const;
         GTerm* GetBoundInTerm() const;
+        void SetScope(SymbolTableScope* Scope) const;
+        SymbolTableScope* GetScope() const;
     };
 
     class NTDef : public ASTBase
@@ -844,6 +833,7 @@ namespace SynthLib2Parser {
     {
     private:
         Program* TheProgram;
+        SymbolTable* TheSymbolTable;
         
         // type-state variable :-(
         bool ParseComplete;
@@ -853,11 +843,12 @@ namespace SynthLib2Parser {
         ~SynthLib2Parser();
 
         // The main parse action
-        void operator () (const string& Filename);
-        void operator () (FILE* Handle);
+        void operator () (const string& Filename, bool Pedantic = false);
+        void operator () (FILE* Handle, bool Pedantic = false);
         
         // Accessors
         Program* GetProgram() const;
+        SymbolTable* GetSymbolTable() const;
     };
 
     // General vector of AST cloner
@@ -879,6 +870,3 @@ namespace SynthLib2Parser {
 
 #endif /* __SYNTH_LIB2_PARSER_IFACE_H */
 
-
-// 
-// SynthLib2ParserIFace.hpp ends here

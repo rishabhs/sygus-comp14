@@ -1,47 +1,9 @@
-// SynthLib2ParserAST.cpp --- 
-// 
-// Filename: SynthLib2ParserAST.cpp
-// Author: Abhishek Udupa
-// Created: Sat Jan 18 16:42:37 2014 (-0500)
-// 
-// 
-// Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
-// All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-// 3. All advertising materials mentioning features or use of this software
-//    must display the following acknowledgement:
-//    This product includes software developed by The University of Pennsylvania
-// 4. Neither the name of the University of Pennsylvania nor the
-//    names of its contributors may be used to endorse or promote products
-//    derived from this software without specific prior written permission.
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
-// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
-// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
-
-// Code:
-
-
-#include "include/SynthLib2ParserIFace.hpp"
-#include "include/SynthLib2ParserExceptions.hpp"
+#include <SynthLib2ParserIFace.hpp>
+#include <SymbolTable.hpp>
 #include <algorithm>
 #include <boost/functional/hash.hpp>
+#include <LogicSymbols.hpp>
+#include <SymtabBuilder.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 
@@ -51,7 +13,6 @@ namespace SynthLib2Bison {
 
 extern FILE* yyin;
 extern int yyparse();
-extern void yylex_destroy();
 
 namespace SynthLib2Parser {
 
@@ -220,10 +181,11 @@ namespace SynthLib2Parser {
                          const string& FunSymbol,
                          const ArgList& FunArgs,
                          const SortExpr* FunType,
-                         Term* FunDef)
+                         Term* FunDef,
+                         SymbolTableScope* Scope)
         : ASTCmd(Location, CMD_FUNDEF),
           Symbol(FunSymbol), Arguments(FunArgs),
-          Type(FunType), Def(FunDef)
+          Type(FunType), Def(FunDef), Scope(Scope)
     {
         // Nothing here
     }
@@ -235,6 +197,7 @@ namespace SynthLib2Parser {
         }
         delete Type;
         delete Def;
+        delete Scope;
     }
 
     void FunDefCmd::Accept(ASTVisitorBase* Visitor) const
@@ -246,7 +209,8 @@ namespace SynthLib2Parser {
     {
         return new FunDefCmd(Location, Symbol, CloneVector(Arguments),
                              static_cast<const SortExpr*>(Type->Clone()),
-                             static_cast<Term*>(Def->Clone()));
+                             static_cast<Term*>(Def->Clone()),
+                             Scope->Clone());
     }
 
     const string& FunDefCmd::GetFunName() const
@@ -269,6 +233,15 @@ namespace SynthLib2Parser {
         return Def;
     }
 
+    void FunDefCmd::SetScope(SymbolTableScope* Scope) const
+    {
+        this->Scope = Scope;
+    }
+
+    SymbolTableScope* FunDefCmd::GetScope() const
+    {
+        return Scope;
+    }
 
     FunDeclCmd::FunDeclCmd(const SourceLocation& Location,
                            const string& FunSymbol,
@@ -318,9 +291,11 @@ namespace SynthLib2Parser {
                              const string& Name,
                              const ArgList& Args,
                              const SortExpr* FunType,
-                             const vector<NTDef*> GrammarRules)
+                             const vector<NTDef*> GrammarRules,
+                             SymbolTableScope* Scope)
         : ASTCmd(Location, CMD_SYNTHFUN), SynthFunName(Name),
-          Arguments(Args), FunType(FunType), GrammarRules(GrammarRules)
+          Arguments(Args), FunType(FunType), GrammarRules(GrammarRules),
+          Scope(Scope)
     {
         // Nothing here
     }
@@ -336,6 +311,7 @@ namespace SynthLib2Parser {
             delete NonTerm;
         }
 
+        delete Scope;
     }
 
     void SynthFunCmd::Accept(ASTVisitorBase* Visitor) const
@@ -347,7 +323,7 @@ namespace SynthLib2Parser {
     {
         return new SynthFunCmd(Location, SynthFunName, CloneVector(Arguments),
                                static_cast<const SortExpr*>(FunType->Clone()),
-                               CloneVector(GrammarRules));
+                               CloneVector(GrammarRules), Scope->Clone());
     }
 
     const string& SynthFunCmd::GetFunName() const
@@ -369,7 +345,17 @@ namespace SynthLib2Parser {
     {
         return GrammarRules;
     }
-        
+    
+    void SynthFunCmd::SetScope(SymbolTableScope* Scope) const
+    {
+        this->Scope = Scope;
+    }
+
+    SymbolTableScope* SynthFunCmd::GetScope() const
+    {
+        return Scope;
+    }
+    
     ConstraintCmd::ConstraintCmd(const SourceLocation& Location, Term* TheTerm)
         : ASTCmd(Location, CMD_CONSTRAINT), TheTerm(TheTerm)
     {
@@ -573,11 +559,12 @@ namespace SynthLib2Parser {
 
     bool BVSortExpr::Equals(const SortExpr& Other) const
     {
-        auto OtherAsBVSort = dynamic_cast<const BVSortExpr*>(&Other);
-        if (OtherAsBVSort == nullptr) {
+        auto OtherPtr = dynamic_cast<const BVSortExpr*>(&Other);
+        if(OtherPtr == NULL) {
             return false;
+        } else {
+            return OtherPtr->Size == Size;
         }
-        return (Size == OtherAsBVSort->Size);
     }
 
     u32 BVSortExpr::Hash() const
@@ -992,7 +979,7 @@ namespace SynthLib2Parser {
                      const string& Constructor,
                      SortExpr* Sort)
     : ASTBase(Location), LiteralString(Constructor),
-      LiteralSort(Sort)
+          LiteralSort(Sort)
     {
         // Nothing here
     }
@@ -1012,14 +999,53 @@ namespace SynthLib2Parser {
         return new Literal(Location, LiteralString, static_cast<SortExpr*>(LiteralSort->Clone()));
     }
 
+    const SortExpr* Literal::GetSort(SymbolTable* SymTab) const
+    {
+        if (LiteralSort != NULL) {
+            return LiteralSort;
+        } else {
+            // This must be an enum constant
+            // lookup the type of the enumerated type in the symbol table
+            vector<string> SplitVec;
+            boost::algorithm::split(SplitVec, LiteralString, 
+                                    boost::algorithm::is_any_of(":"),
+                                    boost::algorithm::token_compress_on);
+            if (SplitVec.size() != 2) {
+                throw SynthLib2ParserException("Internal: Expected a well-formed enum literal");
+            }
+            auto const& EnumTypeName = SplitVec[0];
+            auto const& EnumConsName = SplitVec[1];
+            
+            // Lookup the type in the symbol table
+            auto STE = SymTab->LookupSort(EnumTypeName);
+            if(STE == NULL || STE->GetKind() != STENTRY_SORT) {
+                throw SynthLib2ParserException((string)"Identifier \"" + EnumTypeName + "\" does not " + 
+                                               "refer to an enumeration sort\n" + 
+                                               Location.ToString());
+            }
+            // Resolve this sort
+            auto Sort = SymTab->ResolveSort(STE->GetSort());
+            if (Sort == NULL || Sort->GetKind() != SORTKIND_ENUM) {
+                throw SynthLib2ParserException((string)"Identifier \"" + EnumTypeName + "\" does not " + 
+                                               "refer to an enumeration sort\n" + 
+                                               Location.ToString());
+            }
+            // Check that the constructor is valid for the sort
+            
+            if(!(dynamic_cast<const EnumSortExpr*>(Sort)->IsConstructorValid(EnumConsName))) {
+                throw SynthLib2ParserException((string)"Constructor \"" + EnumConsName + "\" is not " + 
+                                               "a valid constructor for enumeration type \"" + 
+                                               EnumTypeName + "\"" + 
+                                               Location.ToString());
+            }
+            // return the enumeration sort
+            return Sort;
+        }
+    }
+
     const string& Literal::GetLiteralString() const
     {
         return LiteralString;
-    }
-    
-    SortExpr* Literal::GetSort() const
-    {
-        return LiteralSort;
     }
 
     Term::Term(const SourceLocation& Location,
@@ -1064,6 +1090,37 @@ namespace SynthLib2Parser {
         return new FunTerm(Location, FunName, CloneVector(Args));
     }
 
+    const SortExpr* FunTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        ostringstream SS;
+
+        // determine this function's sort from the symbol table
+        const u32 NumArgs = Args.size();
+        vector<const SortExpr*> ArgSorts(NumArgs);
+        
+        for(u32 i = 0; i < NumArgs; ++i) {
+            ArgSorts[i] = Args[i]->GetTermSort(SymTab);
+        }
+        
+        auto Entry = SymTab->LookupFun(FunName, ArgSorts);
+        if(Entry == NULL) {
+            SS.str("");
+            SS << "Could not determine type of term: " 
+               << *this << endl;
+            SS << "This could be due to an undeclared function or "
+               << "mismatched arguments to function" << endl;
+            SS << Location;
+            throw SynthLib2ParserException(SS.str());
+        }
+        
+        auto FunSort = dynamic_cast<const FunSortExpr*>(Entry->GetSort());
+        if(FunSort == NULL) {
+            throw SynthLib2ParserException("Identifier \"" + FunName + "\" does " +
+                                           "not refer to an function, but used as one");
+        }
+        return FunSort->GetRetSort();
+    }
+
     const string& FunTerm::GetFunName() const
     {
         return FunName;
@@ -1096,6 +1153,11 @@ namespace SynthLib2Parser {
         return new LiteralTerm(Location, static_cast<Literal*>(TheLiteral->Clone()));
     }
 
+    const SortExpr* LiteralTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        return TheLiteral->GetSort(SymTab);
+    }
+
     Literal* LiteralTerm::GetLiteral() const
     {
         return TheLiteral;
@@ -1122,6 +1184,26 @@ namespace SynthLib2Parser {
     {
         return new SymbolTerm(Location, TheSymbol);
     } 
+
+    const SortExpr* SymbolTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        auto Entry = SymTab->Lookup(TheSymbol);
+        if(Entry == NULL) {
+            throw SynthLib2ParserException("Could not resolve identifier \"" + 
+                                           TheSymbol + "\"");
+        }
+
+        auto const SymSort = Entry->GetSort();
+        if(Entry->GetKind() == STENTRY_USER_FUNCTION ||
+           Entry->GetKind() == STENTRY_SYNTH_FUNCTION ||
+           Entry->GetKind() == STENTRY_THEORY_FUNCTION ||
+           Entry->GetKind() == STENTRY_UNINTERP_FUNCTION) {
+            auto SymFunSort = dynamic_cast<const FunSortExpr*>(SymSort);
+            return SymFunSort->GetRetSort();
+        } else {
+            return SymSort;
+        }
+    }
 
     const string& SymbolTerm::GetSymbol() const
     {
@@ -1173,10 +1255,12 @@ namespace SynthLib2Parser {
 
     LetTerm::LetTerm(const SourceLocation& Location,
                      const vector<LetBindingTerm*>& Bindings,
-                     Term* BoundInTerm)
+                     Term* BoundInTerm,
+                     SymbolTableScope* Scope)
         : Term(Location, TERMKIND_LET),
           Bindings(Bindings),
-          BoundInTerm(BoundInTerm)
+          BoundInTerm(BoundInTerm),
+          Scope(Scope)
     {
         // Nothing here
     }
@@ -1188,6 +1272,7 @@ namespace SynthLib2Parser {
         }
 
         delete BoundInTerm;
+        delete Scope;
     }
 
     void LetTerm::Accept(ASTVisitorBase* Visitor) const 
@@ -1198,7 +1283,17 @@ namespace SynthLib2Parser {
     ASTBase* LetTerm::Clone() const 
     {
         return new LetTerm(Location, CloneVector(Bindings),
-                           static_cast<Term*>(BoundInTerm->Clone()));
+                           static_cast<Term*>(BoundInTerm->Clone()),
+                           Scope->Clone());
+    }
+
+    const SortExpr* LetTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        // push the scope onto the symbol table
+        SymTab->Push(Scope);
+        auto Retval = BoundInTerm->GetTermSort(SymTab);
+        SymTab->Pop();
+        return Retval;
     }
 
     const vector<LetBindingTerm*>& LetTerm::GetBindings() const
@@ -1209,6 +1304,16 @@ namespace SynthLib2Parser {
     Term* LetTerm::GetBoundInTerm() const
     {
         return BoundInTerm;
+    }
+
+    void LetTerm::SetScope(SymbolTableScope* Scope) const
+    {
+        this->Scope = Scope;
+    }
+
+    SymbolTableScope* LetTerm::GetScope() const
+    {
+        return Scope;
     }
 
     GTerm::GTerm(const SourceLocation& Location,
@@ -1251,6 +1356,22 @@ namespace SynthLib2Parser {
         return new SymbolGTerm(Location, TheSymbol);
     }
 
+    const SortExpr* SymbolGTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        auto Entry = SymTab->Lookup(TheSymbol);
+        auto SymSort = Entry->GetSort();
+        if(Entry->GetKind() == STENTRY_THEORY_FUNCTION ||
+           Entry->GetKind() == STENTRY_SYNTH_FUNCTION ||
+           Entry->GetKind() == STENTRY_USER_FUNCTION || 
+           Entry->GetKind() == STENTRY_UNINTERP_FUNCTION) {
+            
+            auto SymFunSort = dynamic_cast<const FunSortExpr*>(SymSort);
+            return SymFunSort->GetRetSort();
+        } else {
+            return SymSort;
+        }
+    }
+
     const string& SymbolGTerm::GetSymbol() const
     {
         return TheSymbol;
@@ -1283,6 +1404,30 @@ namespace SynthLib2Parser {
                             CloneVector(Args));
     }
                        
+    const SortExpr* FunGTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        const u32 NumArgs = Args.size();
+        vector<const SortExpr*> ArgSorts(NumArgs);
+
+        for(u32 i = 0; i < NumArgs; ++i) {
+            ArgSorts[i] = Args[i]->GetTermSort(SymTab);
+        }
+
+
+        auto Entry = SymTab->LookupFun(FunName, ArgSorts);
+        if(Entry == NULL) {
+            throw SynthLib2ParserException("Could not resolve identifier \"" + 
+                                           FunName + "\"");
+        }
+        auto EntrySort = Entry->GetSort();
+        auto EntryFunSort = dynamic_cast<const FunSortExpr*>(EntrySort);
+        if(EntryFunSort == NULL) {
+            throw SynthLib2ParserException("Identifier \"" + FunName + "\" does not " + 
+                                           "refer to a function, but is used as one");
+        }
+        return EntryFunSort->GetRetSort();
+    }
+
     const string& FunGTerm::GetName() const
     {
         return FunName;
@@ -1316,6 +1461,11 @@ namespace SynthLib2Parser {
                                 static_cast<Literal*>(TheLiteral->Clone()));
     }
 
+    const SortExpr* LiteralGTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        return TheLiteral->GetSort(SymTab);
+    }
+
     Literal* LiteralGTerm::GetLiteral() const
     {
         return TheLiteral;
@@ -1342,6 +1492,11 @@ namespace SynthLib2Parser {
     {
         return new ConstantGTerm(Location, 
                                  static_cast<const SortExpr*>(ConstantSort->Clone()));
+    }
+
+    const SortExpr* ConstantGTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        return ConstantSort;
     }
 
     const SortExpr* ConstantGTerm::GetSort() const
@@ -1372,6 +1527,11 @@ namespace SynthLib2Parser {
     {
         return new VariableGTerm(Location, static_cast<const SortExpr*>(VariableSort->Clone()),
                                  Kind);
+    }
+
+    const SortExpr* VariableGTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        return VariableSort;
     }
 
     const SortExpr* VariableGTerm::GetSort() const
@@ -1429,10 +1589,12 @@ namespace SynthLib2Parser {
 
     LetGTerm::LetGTerm(const SourceLocation& Location,
                        const vector<LetBindingGTerm*>& Bindings,
-                       GTerm* BoundInTerm)
+                       GTerm* BoundInTerm,
+                       SymbolTableScope* Scope)
         : GTerm(Location, GTERMKIND_LET),
           Bindings(Bindings),
-          BoundInTerm(BoundInTerm)
+          BoundInTerm(BoundInTerm),
+          Scope(Scope)
     {
         // Nothing here
     }
@@ -1444,6 +1606,7 @@ namespace SynthLib2Parser {
         }
         
         delete BoundInTerm;
+        delete Scope;
     }
 
     void LetGTerm::Accept(ASTVisitorBase* Visitor) const 
@@ -1454,7 +1617,16 @@ namespace SynthLib2Parser {
     ASTBase* LetGTerm::Clone() const 
     {
         return new LetGTerm(Location, CloneVector(Bindings),
-                            static_cast<GTerm*>(BoundInTerm->Clone()));
+                            static_cast<GTerm*>(BoundInTerm->Clone()),
+                            Scope->Clone());
+    }
+
+    const SortExpr* LetGTerm::GetTermSort(SymbolTable* SymTab) const 
+    {
+        SymTab->Push(Scope);
+        auto Retval = BoundInTerm->GetTermSort(SymTab);
+        SymTab->Pop();
+        return Retval;
     }
 
     const vector<LetBindingGTerm*>& LetGTerm::GetBindings() const
@@ -1467,6 +1639,10 @@ namespace SynthLib2Parser {
         return BoundInTerm;
     }
 
+    SymbolTableScope* LetGTerm::GetScope() const
+    {
+        return Scope;
+    }
 
     NTDef::NTDef(const SourceLocation& Location,
                  const string& Symbol,
@@ -1779,7 +1955,7 @@ namespace SynthLib2Parser {
     }
 
     SynthLib2Parser::SynthLib2Parser()
-        : TheProgram(NULL),
+        : TheProgram(NULL), TheSymbolTable(NULL),
           ParseComplete(false)
     {
         // Nothing here
@@ -1791,20 +1967,47 @@ namespace SynthLib2Parser {
             delete TheProgram;
             TheProgram = NULL;
         } 
+        if(TheSymbolTable != NULL) {
+            delete TheSymbolTable;
+            TheSymbolTable = NULL;
+        }
     }
 
-    void SynthLib2Parser::operator () (const string& FileName)
+    void SynthLib2Parser::operator () (const string& FileName,
+                                       bool Pedantic)
     {
         if(TheProgram != NULL) {
             delete TheProgram;
             TheProgram = NULL;
+        } 
+        if(TheSymbolTable != NULL) {
+            delete TheSymbolTable;
+            TheSymbolTable = NULL;
         }
 
+
         yyin = fopen(FileName.c_str(), "r");
-        (*this)(yyin);
+        if (yyin == NULL) {
+            throw SynthLib2ParserException("Could not open input file \"" + FileName + "\"");
+        }
+        if(yyparse() != 0) {
+            throw SynthLib2ParserException("Error parsing input file \"" + FileName + "\"");
+        }
+
+        fclose(yyin);
+
+        TheProgram = SynthLib2Bison::TheProgram;
+        TheSymbolTable = new SymbolTable();
+
+        LogicSymbolLoader::LoadAll(TheSymbolTable);
+        SymtabBuilder::Do(TheProgram, TheSymbolTable);
+        LogicSymbolLoader::Reset();
+
+        SynthLib2Bison::TheProgram = NULL;
     }
 
-    void SynthLib2Parser::operator () (FILE* Handle)
+    void SynthLib2Parser::operator () (FILE* Handle,
+                                       bool Pedantic)
     {
         if (Handle == NULL) {
             throw SynthLib2ParserException("Cannot parse NULL handle");
@@ -1814,18 +2017,26 @@ namespace SynthLib2Parser {
             delete TheProgram;
             TheProgram = NULL;
         }
+        if(TheSymbolTable != NULL) {
+            delete TheSymbolTable;
+            TheSymbolTable = NULL;
+        }
+
         yyin = Handle;
         
         if(yyparse() != 0) {
             throw SynthLib2ParserException("Error parsing input file via handle");
         }
-
-        fclose(yyin);
-        yylex_destroy();
         
         // Not ours to close;
         
         TheProgram = SynthLib2Bison::TheProgram;
+        TheSymbolTable = new SymbolTable();
+
+        LogicSymbolLoader::LoadAll(TheSymbolTable);
+        SymtabBuilder::Do(TheProgram, TheSymbolTable);
+        LogicSymbolLoader::Reset();
+
         SynthLib2Bison::TheProgram = NULL;
     }
 
@@ -1838,8 +2049,14 @@ namespace SynthLib2Parser {
         return TheProgram;
     }
 
+    SymbolTable* SynthLib2Parser::GetSymbolTable() const
+    {
+        if(TheSymbolTable == NULL) {
+            throw SynthLib2ParserException((string)"SynthLib2Parser: No program parsed yet!" +
+                                           " But SynthLib2Parser::GetSymbolTable() called");
+        }
+        return TheSymbolTable;
+    }
+
 } /* end namespace */
 
-
-// 
-// SynthLib2ParserAST.cpp ends here
