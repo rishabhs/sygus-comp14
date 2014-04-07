@@ -8,6 +8,8 @@ from component import Component, Port, SynthException
 from circuit import Circuit, GetValFromType, GetSortFromType
 from z3 import And, Bool
 import theory
+import pprint
+import logger
 
 funcDefsMap = {}
 synthFunsMap = {}
@@ -129,8 +131,13 @@ def GenerateCircuit(synthFun, K):
 def GenerateFunctionConstraints(spec, localVarConstraintsMap):
 
     if not isinstance(spec, list):
-        raise SynthException('Improper function call')
+        if isinstance(spec, tuple):
+            (typ, raw_val) = spec
+            return GetValFromType(typ, raw_val)
+        raise SynthException('Improper function call %s'%spec)
 
+    if logger.IsLogging():
+        print spec
     opSym = spec[0]
     argConstraints = []
 
@@ -140,6 +147,17 @@ def GenerateFunctionConstraints(spec, localVarConstraintsMap):
         elif isinstance(arg, tuple):
             (typ, raw_val) = arg
             argConstraints.append(GetValFromType(typ, raw_val))
+        elif arg in funcDefsMap.keys():
+            funcDef = funcDefsMap[arg]
+            funcFormalArgsList = funcDef[2]
+            funcDefExpr = funcDef[4]
+
+            if funcFormalArgsList:
+                raise SynthException('Cannot call constant function' +
+                ' with arguments')
+            argConstraints.append(GenerateFunctionConstraints(
+                funcDefExpr, localVarConstraintsMap))
+
         else:
             funcConstraint = GenerateFunctionConstraints(
                 arg, localVarConstraintsMap)
@@ -166,22 +184,38 @@ def GenerateFunctionConstraints(spec, localVarConstraintsMap):
         return op(*argConstraints)
 
 
-def GenerateAll(spec, K):
+def GenerateAll(spec, K, localVarConstraintsMap):
+    if logger.IsLogging():
+        print spec
     if not isinstance(spec, list):
-        raise SynthException('Improper function call')
+        raise SynthException('Improper function call %r' % spec)
 
     opSym = spec[0]
     argConstraints = []
     specConnList = []
     circuitList = []
     for arg in spec[1:]:
-        if arg in declaredVar2PortMap.keys():
+        if arg in localVarConstraintsMap.keys():
+            argConstraints.append(localVarConstraintsMap[arg])
+        elif arg in declaredVar2PortMap.keys():
             argConstraints.append(declaredVar2PortMap[arg].var)
         elif isinstance(arg, tuple):
             (typ, raw_val) = arg
             argConstraints.append(GetValFromType(typ, raw_val))
+        # specifically for constant functions
+        elif arg in funcDefsMap.keys():
+            funcDef = funcDefsMap[arg]
+            funcFormalArgsList = funcDef[2]
+            funcDefExpr = funcDef[4]
+
+            if funcFormalArgsList:
+                raise SynthException('Cannot call constant function' +
+                ' with arguments')
+            (typ, raw_val) = funcDefExpr
+            argConstraints.append(GetValFromType(typ, raw_val))
         else:
-            (funcConstraint, specConns, circuits) = GenerateAll(arg, K)
+            (funcConstraint, specConns, circuits) = GenerateAll(arg, K,
+                    localVarConstraintsMap)
             argConstraints.append(funcConstraint)
             specConnList.extend(specConns)
             circuitList.extend(circuits)
@@ -197,27 +231,31 @@ def GenerateAll(spec, K):
             formalArgName = formalArg[0]
             newLocalVarConstraintsMap[formalArgName] = argConstraints[ii]
 
-        funcDefExprConstraint = GenerateFunctionConstraints(
-            funcDefExpr,
+        (funcDefExprConstraint, specConns, circuits) = GenerateAll(
+            funcDefExpr, K,
             newLocalVarConstraintsMap)
+        specConnList.extend(specConns)
+        circuitList.extend(circuits)
         return (funcDefExprConstraint, specConnList, circuitList)
 
     elif opSym in synthFunsMap:
-        if spec in [circuitExpr for (circuitExpr, _) in circuitsCache]:
-            circuit = next(
-                circ for (expr, circ) in circuitsCache if expr == spec)
-            return (circuit.outputPort.var, [], [])
-        else:
-            circuit = GenerateCircuit(synthFunsMap[opSym], K)
-            circuitsCache.append((spec, circuit))
-            circuitList.append(circuit)
-            if len(circuit.inputPorts) != len(argConstraints):
-                raise SynthException('Improper function call at %r' % spec)
-            for ii in range(len(circuit.inputPorts)):
-                specConnList.append(circuit.inputPorts[ii].var ==
-                                    argConstraints[ii])
+        if not localVarConstraintsMap:
+            if spec in [circuitExpr for (circuitExpr, _) in circuitsCache]:
+                circuit = next(
+                        circ for (expr, circ) in circuitsCache if expr == spec)
+                return (circuit.outputPort.var, [], [])
 
-            return (circuit.outputPort.var, specConnList, circuitList)
+        circuit = GenerateCircuit(synthFunsMap[opSym], K)
+        if not localVarConstraintsMap:
+            circuitsCache.append((spec, circuit))
+        circuitList.append(circuit)
+        if len(circuit.inputPorts) != len(argConstraints):
+            raise SynthException('Improper function call at %r' % spec)
+        for ii in range(len(circuit.inputPorts)):
+            specConnList.append(circuit.inputPorts[ii].var ==
+                    argConstraints[ii])
+
+        return (circuit.outputPort.var, specConnList, circuitList)
 
     else:
         op = theory.GetFunctionFromSymbol(opSym)
@@ -268,7 +306,7 @@ def ReadQuery(synthesisQuery, K):
             specInputPorts = [
                 port for (_, port) in declaredVar2PortMap.iteritems()]
             (spec, specConnList, circuits) = GenerateAll(
-                JoinConstraints(specificationConstraints), K)
+                JoinConstraints(specificationConstraints), K, {})
         else:
             pass
     return (spec, specInputPorts, And(specConnList), circuits)
