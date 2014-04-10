@@ -63,19 +63,18 @@ namespace ESolver {
     
     void ExprManager::GC()
     {
-        bool Changed = false;
+        vector<Expression> ToDelete;
         do {
-            for (auto it = ExpSet.begin(); it != ExpSet.end();) {
+            for (auto const& Elem : ToDelete) {
+                ExpSet.erase(Elem);
+            }
+            ToDelete.clear();
+            for (auto it = ExpSet.begin(); it != ExpSet.end(); ++it) {
                 if ((*it)->__GetRefCount() == 1) {
-                    auto OldIt = it;
-                    ++it;
-                    ExpSet.erase(OldIt);
-                    Changed = true;
-                } else {
-                    ++it;
+                    ToDelete.push_back(*it);
                 }
             }
-        } while (Changed);
+        } while (ToDelete.size() > 0);
     }
 } /* end namespace */
 

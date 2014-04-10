@@ -214,7 +214,6 @@ namespace ESolver {
 
     public:
         SynthLib2Exception(uint32 LineNum, uint32 ColNum, const string& ExceptionInfo);
-        virtual const char* what() const throw () override;
     };
 
     extern ostream& operator << (ostream& out, const ESException& TheException);

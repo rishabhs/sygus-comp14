@@ -532,6 +532,9 @@ namespace ESolver {
                 // This can only be a const operator now
                 if (OpInfo->As<ConstOperator>() != nullptr) {
                     NewExp = new UserConstExpression(OpInfo->As<ConstOperator>());
+                } else if (OpInfo->As<MacroOperator>() != nullptr) {
+                    // OR it can be a constant macro expression
+                    NewExp = new UserInterpretedFuncExpression(OpInfo->As<MacroOperator>(), Children);
                 } else {
                     throw TypeException((string)"Error: Could not find a meaningful way to construct " +
                                         "an expression with operator having name \"" + OpInfo->GetName() + 
@@ -650,6 +653,10 @@ namespace ESolver {
         if (Op == nullptr) {
             Op = ScopeMgr->LookupOperator(VariableName)->As<ConstOperator>();
         }
+        // audupa: it might just be a constant macro
+        if (Op == nullptr) {
+            Op = ScopeMgr->LookupOperator(VariableName)->As<MacroOperator>();
+        }
         if(Op == NULL) {
             throw UndefinedVarException((string)"Variable or constant \"" + VariableName +
                                         + "\" not found to create expression");
@@ -759,6 +766,8 @@ namespace ESolver {
         // SolveStartTime = TimeValue::GetTimeValue();
         
         // Also setup the signal handlers for mem and timeout
+        ResourceLimitManager::SetMemLimit(Opts.MemoryLimit);
+        ResourceLimitManager::SetCPULimit(Opts.CPULimit);
         ResourceLimitManager::QueryStart();
     }
 

@@ -56,7 +56,7 @@ namespace ESolverSynthLib {
 
     static inline void ParseOptions(int argc, char* argv[], ESolverOpts& Opts, string& InputFileName)
     {
-        po::options_description desc("Allowed Options");
+        po::options_description desc("Usage and Allowed Options");
         po::positional_options_description pdesc;
         pdesc.add("input-file", -1);
 
@@ -78,7 +78,7 @@ namespace ESolverSynthLib {
         po::variables_map vm;
         po::store(po::command_line_parser(argc, argv).options(desc).positional(pdesc).run(), vm);
         po::notify(vm);
-        if(vm.count("help") > 0) {
+        if(vm.count("help") > 0 || argc < 2) {
             cout << desc << endl;
             exit(0);
         }

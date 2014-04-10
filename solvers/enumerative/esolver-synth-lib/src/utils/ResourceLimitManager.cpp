@@ -55,7 +55,7 @@ namespace ESolver {
     uint64 ResourceLimitManager::CPULimit = CPU_LIMIT_INFINITE;
     bool ResourceLimitManager::TimerHandlerInstalled = false;
     bool ResourceLimitManager::TimerCreated = false;
-    timer_t ResourceLimitManager::TimerID;
+    timer_t ResourceLimitManager::TimerID = (timer_t)0;
     struct sigaction ResourceLimitManager::OldAction;
     uint64 ResourceLimitManager::TimerFrequency = ESOLVER_TIMER_INTERVAL;
 
