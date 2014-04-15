@@ -28,6 +28,17 @@ def GetSortFromType(typ):
     else:
         raise SynthException('Unknown Type %r' % (typ))
 
+def GetStringFromType(typ):
+    srt = GetSortFromType(typ)
+    if srt == IntSort():
+        return 'Int'
+    elif srt == BoolSort():
+        return 'Bool'
+    elif is_bv_sort(srt):
+        sz = srt.size()
+        return '(BitVec ' + str(sz) + ')'
+    else:
+        raise SynthException('Unknonw sort for string conversion.')
 
 def GetValFromType(typ, raw_val):
     srt = GetSortFromType(typ)
@@ -45,11 +56,12 @@ def GetValFromType(typ, raw_val):
 class Circuit:
     numCircuits = 0
 
-    def __init__(self, funcName, components, inputPorts, outputPort):
+    def __init__(self, funcName, components, inputPorts, outputPort, synthFun):
         self.funcName = funcName
         self.components = components
         self.inputPorts = inputPorts
         self.outputPort = outputPort
+        self.synthFun = synthFun
         self.id = Circuit.numCircuits
         Circuit.numCircuits += 1
         self.GenerateLabels()
@@ -313,4 +325,16 @@ class Circuit:
             else:
                 raise SynthException('Unknown type of production')
 
-        return '(synth-fun %s %s)' % (self.funcName, GenerateSubexpr(0))
+
+        funcRetType = self.synthFun[3]
+        argList = self.synthFun[2]
+
+        
+        argListStr = ['(' + arg[0] + ' ' + GetStringFromType(arg[1]) + ')' for arg in argList]
+
+        args = '(' + ' '.join(argListStr) + ')'
+
+
+        return '(define-fun %s %s %s %s)' % (self.funcName, args,
+                                             GetStringFromType(funcRetType),
+                                             GenerateSubexpr(0))

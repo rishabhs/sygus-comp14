@@ -125,7 +125,7 @@ def GenerateCircuit(synthFun, K):
                 raise SynthException('Unknown kind of production')
 
     return Circuit(
-        funcName, componentBag, circuitInputPorts, circuitOutputPort)
+        funcName, componentBag, circuitInputPorts, circuitOutputPort, synthFun)
 
 
 def GenerateFunctionConstraints(spec, localVarConstraintsMap):
