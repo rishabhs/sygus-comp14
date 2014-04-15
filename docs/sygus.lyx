@@ -901,7 +901,7 @@ name "sub:Spec:Trivia:Literals"
 \bvconst & ::= & \begin{array}{ccc}
 {\tt \#b}\kplus{\left[{\tt 0}-{\tt 1}\right]} & | & {\tt \#x}\kplus{\left(\begin{array}{ccccc}
 \left[{\tt 0-9}\right] & | & \left[{\tt a}-{\tt f}\right] & | & \left[{\tt A}-{\tt F}\right]\end{array}\right)}\end{array}\\
-\bvconst & ::= & \symbol{\tt ::}\symbol
+\enumconst & ::= & \symbol{\tt ::}\symbol
 \end{array}
 \end{alignat*}
 

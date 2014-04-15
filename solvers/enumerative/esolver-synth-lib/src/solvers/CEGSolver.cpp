@@ -182,6 +182,15 @@ namespace ESolver {
         NumExpressionsTried++;
         NumDistExpressions++;
         CheckResourceLimits();
+
+        if (Opts.StatsLevel >= 4) {
+            TheLogger.Log4("Trying Expressions:\n");
+            for (uint32 i = 0; i < SynthFuncs.size(); ++i) {
+                TheLogger.Log4(i).Log4((string)". " + Exps[i]->ToString()).Log4("\n");
+            }
+            TheLogger.Log4("\n");
+        }
+        
         auto ConcValid = ConcEval->CheckConcreteValidity(Exps);
         if (!ConcValid) {
             return NONE_STATUS;

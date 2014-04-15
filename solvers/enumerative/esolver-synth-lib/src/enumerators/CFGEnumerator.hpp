@@ -67,6 +67,7 @@ namespace ESolver {
         // To recursively propagate a STOP_ENUMERATION signal
         bool Done;
         uint32 Index;
+        uint64 NumExpsCached;
 
         // memory pools for fast allocation/deallocation
         // We use the type unsafe versions here :-( for speed
@@ -158,7 +159,8 @@ namespace ESolver {
             virtual SolutionMap Solve(const Expression& Constraint) override;
 
             virtual void EndSolve() override;
-
+            
+            void SetEnumerator (uint32 Index, CFGEnumeratorSingle* Enumerator);
             void EnumerateOfCosts(const vector<uint32>& Sizes);
         };
 

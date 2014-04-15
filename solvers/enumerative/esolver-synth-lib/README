@@ -1,0 +1,22 @@
+To compile the enumerative solver, simply do
+
+make -j <# cores> eoptlto
+
+in this directory. If that fails with some linker errors, then your
+C++ compiler does not have full support for link-time
+optimizations. Try the following instead
+
+make -j <# cores> eopt
+
+PREREQUISITES:
+The solver REQUIRES a C++11 compliant compiler. This means LLVM 3.4+
+or g++ 4.8.2+. 
+
+The solver requires boost libraries.
+
+Please ensure that you have all the prerequisites before filing any
+bug reports.
+
+Please report bugs at
+https://github.com/rishabhs/sygus-comp14/issues and DO NOT email
+individual developers. This helps keep everyone in the loop.

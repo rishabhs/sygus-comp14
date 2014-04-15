@@ -77,7 +77,12 @@ namespace ESolver {
 
     void MacroExpChecker::VisitUserSynthFuncExpression(const UserSynthFuncExpression* Exp)
     {
-        throw TypeException("Synth Functions are not allowed in macro definitions!");
+        ostringstream sstr;
+        sstr <<  "Terms involving functions to be synthesized are "
+             << "not allowed in define-fun commands." << endl;
+        sstr << Exp->ToString() << " involves a function to be synthesized and " 
+             << "appears in a define-fun command." << endl;
+        throw TypeException(sstr.str());
     }
 
     void MacroExpChecker::VisitUserUQVarExpression(const UserUQVarExpression* Exp)

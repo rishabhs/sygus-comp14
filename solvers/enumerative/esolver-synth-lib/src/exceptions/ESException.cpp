@@ -242,15 +242,10 @@ namespace ESolver {
                                            const string& ExceptionInfo)
         : ESException(ExceptionInfo), LineNum(LineNum), ColNum(ColNum)
     {
-        // Nothing here
-    }
-
-    const char* SynthLib2Exception::what() const throw ()
-    {
         ostringstream sstr;
-        sstr << ExceptionInformation << endl;
-        sstr << "At line: " << LineNum << ", Column: " << ColNum << endl;
-        return sstr.str().c_str();
+        sstr << ExceptionInfo << endl;
+        sstr << "At Line: " << LineNum << ", Column: " << ColNum;
+        this->ExceptionInformation = sstr.str();
     }
 
     ostream& operator << (ostream& out, const ESException& TheException)

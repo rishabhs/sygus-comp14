@@ -1,0 +1,82 @@
+A Stochastic SyGuS Solver
+
+Copyright (c) 2013-2014, Mukund Raghothaman, University of Pennsylvania.
+rmukund@seas.upenn.edu. Unless otherwise specified, all files in this folder
+are distributed under the terms of the license described in the LICENSE file.
+
+1. Introduction
+
+This directory contains the stochastic solver for SyGuS instances, as described
+in the FMCAD paper [1] that introduced the SyGuS problem. Two versions are
+presented:
+
+a. The source code as benchmarked for the FMCAD paper. This is in the
+subdirectory stochmm. This version is presented purely for archival purposes and
+for recreating the results in that paper. As a result, some features of the
+SyGuS input format, most notably multi-function synthesis and let-keywords, are
+unsupported.
+
+b. A newer version (in the subdirectory stochpp) which supports a larger subset
+of the SyGuS language. This includes multi-function synthesis, and full support
+for let-expressions, in constraints, function macros, and expression grammars.
+Enumerated data types, arrays, and the (Constant ...), (Variable ...) and
+(InputVariable ...) shorthands in grammars are unsupported.
+
+2. Building
+
+Both versions, stochmm and stochpp have the same build requirements, and the
+procedure is outlined below:
+
+A. Requirements
+
+Depends on some new C++11 features. Please note the minimal versions of the
+compilers needed.
+
+a. GCC. >= 4.7.x recommended.
+b. Clang. Optional, >= 3.3, for debug builds and nice error messages.
+c. Flex, bison. Any recent version.
+d. Z3. >=4.3.0.
+e. GMP, GMPXX. For multiprecision support. The code supports big integer LIA,
+but the code paths are untested. Any recent version should be fine.
+
+B. Build procedure
+
+a. Run make && make opt in the SyGuS sample parser distribution.
+b. Update the PARSERINCDIRS, PARSERLIBDEB, and PARSERLIBOPT variables in the
+build script to point to the location of the SyGuS parser.
+c. Update the the INCDIRS, LDDIRSDEB, and LDDIRSOPT variables in the build
+script to point to your installation of Z3.
+c. Run ./build. On GCC >= 4.7, it should compile cleanly with the only warnings
+coming from Flex / Bison code and z3++.h.
+d. ./a.out benchmarkfile.sl
+
+C. Supported options
+
+Several options can be set with the (set-options) command. These are:
+
+a. expr-size. The size of the expression. Actually, only approximately
+proportional to this, because of the way we parse function grammars.
+b. beta. Magic number for the MCMC search. Indicates how likely the solver is to
+accept a mutation even if it is worse than the current candidate. Set to 0.5 by
+default. Not recently optimized, but I remember searching for the best beta
+once.
+c. mutation-limit. How many mutations to process before admitting defeat. Set by
+default to size_t(-1), i.e. infinity for practical purposes.
+d. samples. How many random concrete examples to initially populate with. Set by
+default to 100. Setting it to very large values slows down the search, and
+setting it to small values means the CEGIS loop iterates multiple times. I tried
+to strike a balance, but did no formal tests.
+e. random-seed. The random seed. Set this for reproducibility. If not set, we
+query std::random_device for our seed, which I think is truly random ---
+accessing either the OS entropy store or processor instructions for randomness.
+f. move-probability. The probability of switching from one expression size to
+the next. Set to 0.01, but not optimized rigorously.
+
+
+3. References
+
+[1] Rajeev Alur, Rastislav Bodik, Garvit Juniwal, Milo Martin, Mukund
+Raghothaman, Sanjit Seshia, Rishabh Singh, Armando Solar-Lezama, Emina Torlak,
+and Abhishek Udupa. Syntax-guided synthesis. In Formal Methods in Computer-Aided
+Design (FMCAD), 2013, pages 1--17, 2013.
+

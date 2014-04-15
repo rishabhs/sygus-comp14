@@ -212,6 +212,7 @@ namespace ESolver {
                     if ((Status & DELETE_EXPRESSION) == 0) {
                         CPGen->RelinquishOwnerShip();
                         Retval->PushBack(CurExp);
+                        NumExpsCached++;
                     } else {
                         FuncExpPool->free(CurExp);
                     }
@@ -325,6 +326,7 @@ namespace ESolver {
                     if ((Status & DELETE_EXPRESSION) == 0) {
                         BindVec = nullptr;
                         Retval->PushBack(CurExp);
+                        NumExpsCached++;
                     } else {
                         LetExpPool->free(CurExp);
                     }
@@ -379,7 +381,7 @@ namespace ESolver {
                                              const Grammar* InputGrammar,
                                              uint32 Index)
         : EnumeratorBase(Solver), TheGrammar(InputGrammar),
-          ExpansionTypeUIDGenerator(1), Index(Index)
+          ExpansionTypeUIDGenerator(1), Index(Index), NumExpsCached((uint64)0)
     {
         FuncExpPool = new boost::pool<>(sizeof(GenFuncExpression));
         LetExpPool = new boost::pool<>(sizeof(GenLetExpression));
@@ -410,13 +412,13 @@ namespace ESolver {
         auto StartNT = TheGrammar->MakeStartNT();
         auto Vec = GetVecForGNCost(StartNT, Cost);
         if (Vec != nullptr) {
-            PushExpansion(StartNT->GetName());
-            auto ExpansionTypeID = GetExpansionTypeID();
             auto Type = StartNT->GetType();
             auto const Begin = Vec->Begin();
             auto const End = Vec->End();
             for (auto it = Begin; it != End; ++it) {
-                Solver->ExpressionCallBack(*it, Type, ExpansionTypeID, true, Index);
+                // If we're being recalled to enumerate, 
+                // then there's no need for an expansion type id
+                Solver->ExpressionCallBack(*it, Type, 0, true, Index);
             }
         } else {
             PopulateExpsOfGNCost(StartNT, Cost, true);
@@ -533,6 +535,12 @@ namespace ESolver {
         Enumerators[0]->EnumerateOfCost(Sizes[0]);
     }
 
+    void CFGEnumeratorMulti::ESolverMultiStub::SetEnumerator(uint32 Index,
+                                                              CFGEnumeratorSingle* Enumerator)
+    {
+        Enumerators[Index] = Enumerator;
+    }
+
 
     // CFGEnumeratorMulti implementation
     CFGEnumeratorMulti::CFGEnumeratorMulti(ESolver* Solver, const vector<Grammar*>& InputGrammars)
@@ -541,13 +549,13 @@ namespace ESolver {
     {
         ESolverOpts Opts;
         const uint32 NumGrammars = InputGrammars.size();
+        Stub = new ESolverMultiStub(&Opts, Solver, Enumerators, TargetTypes);
 
         for (uint32 i = 0; i < NumGrammars; ++i) {
             Enumerators[i] = new CFGEnumeratorSingle(Stub, InputGrammars[i], i);
+            Stub->SetEnumerator(i, Enumerators[i]);
             TargetTypes[i] = InputGrammars[i]->MakeStartNT()->GetType();
         }
-
-        Stub = new ESolverMultiStub(&Opts, Solver, Enumerators, TargetTypes);
     }
 
     CFGEnumeratorMulti::~CFGEnumeratorMulti()
