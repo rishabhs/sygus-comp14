@@ -100,11 +100,26 @@ namespace ESolver {
     inline string ConcreteValueBase::BVToString(bool Simple) const
     {
         ostringstream sstr;
-        sstr << "0x" << hex << TheValue;
-        if(Simple) {
-            return sstr.str();
+        auto Type = static_cast<const ESBVType*>(this->Type);
+        auto Size = Type->GetSize();
+        if (Size % 4 == 0) {
+            sstr << "#x" << setw(Size/4) << setfill('0') << hex << TheValue;
+        } else {
+            sstr << "#b";
+            for (uint32 i = Size; i > 0; --i) {
+                uint64 Mask;
+                if (i == 1) {
+                    Mask = 1;
+                } else {
+                    Mask = (uint64)1 << (i - 1);
+                }
+                if ((Mask & TheValue) != 0) {
+                    sstr << "1";
+                } else {
+                    sstr << "0";
+                }
+            }
         }
-        sstr << " [" << dec << static_cast<const ESBVType*>(Type)->GetSize() << "]";
         return sstr.str();
     }
 

@@ -119,7 +119,7 @@ namespace ESolver {
 
     string ESIntType::ToString() const
     {
-        return "IntType";
+        return "Int";
     }
 
     string ESIntType::ToSimpleString() const
@@ -158,7 +158,7 @@ namespace ESolver {
 
     string ESBoolType::ToString() const
     {
-        return "BoolType";
+        return "Bool";
     }
 
     string ESBoolType::ToSimpleString() const
@@ -196,7 +196,7 @@ namespace ESolver {
 
     string ESRealType::ToString() const
     {
-        return "RealType";
+        return "Real";
     }
 
     string ESRealType::ToSimpleString() const
@@ -280,7 +280,7 @@ namespace ESolver {
     string ESEnumType::ToString() const
     {
         ostringstream sstr;
-        sstr << "(EnumType " << EnumTypeName;
+        sstr << "(Enum " << EnumTypeName;
         for (auto const& Constructor : EnumTypeConstructorSet) {
             sstr << " " << Constructor;
         }
@@ -291,7 +291,7 @@ namespace ESolver {
     string ESEnumType::ToSimpleString() const
     {
         ostringstream sstr;
-        sstr << "(EnumType " << EnumTypeName << ")";
+        sstr << "(Enum " << EnumTypeName << ")";
         return sstr.str();
     }
 
@@ -361,7 +361,7 @@ namespace ESolver {
 
     string ESBVType::ToString() const
     {
-        return ((string)"(BVType " + to_string(Size) + ")");
+        return ((string)"(BitVec " + to_string(Size) + ")");
     }
 
     string ESBVType::ToSimpleString() const
@@ -428,14 +428,14 @@ namespace ESolver {
     string ESArrayType::ToString() const
     {
         ostringstream sstr;
-        sstr << "(ArrayType " << IndexType->ToString() << " "
+        sstr << "(Array" << IndexType->ToString() << " "
              << ValueType->ToString() << ")";
         return sstr.str();
     }
 
     string ESArrayType::ToSimpleString() const
     {
-        return "ArrayType";
+        return "Array";
     }
 
     const ESFixedTypeBase* ESArrayType::GetIndexType() const
