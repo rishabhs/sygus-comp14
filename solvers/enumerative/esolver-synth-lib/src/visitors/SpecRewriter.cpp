@@ -61,6 +61,9 @@ namespace ESolver {
     inline bool SpecRewriter::IsPure(const Expression& Exp) const
     {
         auto&& AuxVarsInExp = AuxVarGatherer::Do(Exp);
+        if (AuxVarsInExp.size() == 0) {
+            return false;
+        }
         set<const AuxVarOperator*> BaseSet(BaseAuxVarOps.begin(), BaseAuxVarOps.end());
         for (auto const& AuxVarInExp : AuxVarsInExp) {
             if (BaseSet.find(AuxVarInExp) == BaseSet.end()) {
@@ -110,7 +113,7 @@ namespace ESolver {
         vector<Expression> NewSubstChildren;
 
         for (auto const& Child : SubstChildren) {
-            if (Child->GetOp()->GetArity() > 1) {
+            if (Child->As<UserAuxVarExpression>() == nullptr) {
                 // We need to fixup an eval rule for this child
                 // Check if one already exists for it first
                 auto it = ExpMap.find(Child);
@@ -121,7 +124,7 @@ namespace ESolver {
                     auto Op = Solver->CreateAuxVariable(AuxIDCounter++, Child->GetType());
                     auto AuxExp = Solver->CreateExpression(Op);
                     ExpMap[Child] = AuxExp;
-
+                    
                     auto Pure = IsPure(Child);
                     if (Pure) {
                         BaseAuxVarOps.push_back(Op);
@@ -133,7 +136,7 @@ namespace ESolver {
                     NewSubstChildren.push_back(AuxExp);
                 }
             } else {
-                NewSubstChildren.push_back(Child);
+                NewSubstChildren.push_back (Child);
             }
         }
 
