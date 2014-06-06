@@ -5,8 +5,8 @@
 			p1
 			P1
 			N1
-			(/ N1 P1)
-			(% N1 P1)
+			(div N1 P1)
+			(mod N1 P1)
 			(* Start Start)
 			(+ Start Start)
                      )
@@ -17,8 +17,8 @@
 			p1
 			P1
 			N1
-			(/ N1 P1)
-			(% N1 P1)
+			(div N1 P1)
+			(mod N1 P1)
 			(* Start Start)
 			(+ Start Start)
                      )
@@ -28,8 +28,8 @@
 			p1
 			P1
 			N1
-			(/ N1 P1)
-			(% N1 P1)
+			(div N1 P1)
+			(mod N1 P1)
 			(* Start Start)
 			(+ Start Start)
                      )
@@ -39,8 +39,8 @@
 			p1
 			P1
 			N1
-			(/ N1 P1)
-			(% N1 P1)
+			(div N1 P1)
+			(mod N1 P1)
 			(* Start Start)
 			(+ Start Start)
                      )
@@ -50,8 +50,8 @@
 			p1
 			P1
 			N1
-			(/ N1 P1)
-			(% N1 P1)
+			(div N1 P1)
+			(mod N1 P1)
 			(* Start Start)
 			(+ Start Start)
                      )
@@ -62,7 +62,7 @@
 (declare-var P Int)
 
 (constraint( => (and (and (and (>= p 0) (> N 0)) (> P 0)) (< p P)) 
-	    (< (- (ite (< p (f1 p P N)) (f2 p P N) (f4 p P N)) (ite (< p (f1 p P N)) (f3 p P N) (f5 p P N))) (+ (/ N P) 2))))
+	    (< (- (ite (< p (f1 p P N)) (f2 p P N) (f4 p P N)) (ite (< p (f1 p P N)) (f3 p P N) (f5 p P N))) (+ (div N P) 2))))
 
 (constraint( => (and (and (and (>= p 0) (> N 0)) (> P 0)) (< (+ p 1) P))
 	       (= (ite (< p (f1 p P N)) (f2 p P N) (f4 p P N)) (ite (< (+ p 1) (f1 (+ p 1) P N)) (f3 (+ p 1) P N) (f5 (+ p 1) P N)))) )
