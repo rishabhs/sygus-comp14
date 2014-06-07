@@ -3,7 +3,7 @@
 (synth-fun countSketch ((x (BitVec 8))) (BitVec 8)
 	   (
 	     (Start (BitVec 8) ( x
-	     	     	       	 (let ((tmp (BitVec 8) Start) (m (BitVec 8) ConstBV) (n (BitVec 8) ConstBV)) (bvadd (bvand tmp m) (bvand (bvshr tmp n) m)) )
+	     	     	       	 (let ((tmp (BitVec 8) Start) (m (BitVec 8) ConstBV) (n (BitVec 8) ConstBV)) (bvadd (bvand tmp m) (bvand (bvlshr tmp n) m)) )
                 
 		)
 	     )
