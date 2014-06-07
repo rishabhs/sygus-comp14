@@ -31,3 +31,5 @@
 (declare-var x2 Int)
 
 (constraint (= (* (axpb1 x1) (axpb2 x2)) (* (+ x1 x1) (+ x2 5))))
+
+(check-synth)
