@@ -1,5 +1,7 @@
 (set-logic LIA)
 
+;; rec(x,y,z) \equiv (* (+ x x) (- y z))
+
 (synth-fun rec ((x Int) (y Int) (z Int)) Int
 	   (
 	   (Start Int (x
