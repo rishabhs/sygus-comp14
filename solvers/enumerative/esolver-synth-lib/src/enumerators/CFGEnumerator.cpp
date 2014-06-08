@@ -203,7 +203,7 @@ namespace ESolver {
                 auto CPGen = new CrossProductGenerator(Begins, Ends, GetPoolForSize(Arity));
                 
                 for (auto CurArgs = CPGen->GetNext(); CurArgs != nullptr; CurArgs = CPGen->GetNext()) {
-                    // Static cast okay, because this can never be a synth function
+
                     auto CurExp = new (FuncExpPool->malloc()) 
                         GenFuncExpression(static_cast<const InterpretedFuncOperator*>(Op), CurArgs);
 
@@ -289,7 +289,7 @@ namespace ESolver {
                 // Finally, the expression set for the bound expression
                 auto BoundVec = GetVecForGNCost(BoundNode, CurPartition[j]);
                 if (BoundVec == nullptr) {
-                    BoundVec = PopulateExpsOfGNCost(BoundNode, CurPartition[j], true);
+                    BoundVec = PopulateExpsOfGNCost(BoundNode, CurPartition[j], false);
                 }
                 if (BoundVec->Size() == 0) {
                     // cross product is empty not feasible
@@ -498,7 +498,7 @@ namespace ESolver {
         ExpansionTypeIDVec[EnumeratorIndex] = ExpansionTypeID;
 
         if (EnumeratorIndex != NumExpressions - 1) {
-            // We've run out of expressions at the higher levels
+            // We've run out of expressions at the lower levels
             // Enumerate from the next higher level
             Enumerators[EnumeratorIndex + 1]->EnumerateOfCost(CurrentSizes[EnumeratorIndex + 1]);
         } else {
@@ -513,7 +513,8 @@ namespace ESolver {
                                                              ESFixedTypeBase const* const* Type, 
                                                              uint32 const* ExpansionTypeID)
     {
-        return NONE_STATUS;
+        throw InternalError ((string)"ESolverMultiStub::ExpressionCallBack() with multiple " + 
+                             "expressions should never have been called!");
     }
     
     SolutionMap CFGEnumeratorMulti::ESolverMultiStub::Solve(const Expression& Constraint)
