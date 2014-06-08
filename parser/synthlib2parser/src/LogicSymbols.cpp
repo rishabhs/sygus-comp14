@@ -90,7 +90,7 @@ namespace SynthLib2Parser {
         SymTab->BindTheoryFun("bvlshr", BinOpVec, BVS);
         SymTab->BindTheoryFun("bvurem", BinOpVec, BVS);
         SymTab->BindTheoryFun("bvsrem", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvsmod", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvsmod", BinOpVec, BVS);
         SymTab->BindTheoryFun("bvugt", BinOpVec, BS);
         SymTab->BindTheoryFun("bvuge", BinOpVec, BS);
         SymTab->BindTheoryFun("bvsgt", BinOpVec, BS);
