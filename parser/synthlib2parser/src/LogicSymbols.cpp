@@ -107,7 +107,6 @@ namespace SynthLib2Parser {
         //  This causes problems. Disabled for now.
         //SymTab->BindTheoryFun("nat2bv", CloneVector(IntOpVec), new BVSortExpr(Size));
         
-        auto BS = new BoolSortExpr();
         SymTab->BindTheoryFun("ite", ITEOpVec, BVS);
         SymTab->BindTheoryFun("=", BinOpVec, BS);
 
