@@ -69,6 +69,7 @@ namespace SynthLib2Parser {
         ITEOpVec[2] = new BVSortExpr(Size);
         
         auto BVS = new BVSortExpr(Size);
+        auto BS = new BoolSortExpr();
 
         vector<const SortExpr*> IntOpVec(1);
         IntOpVec[0] = new IntSortExpr();
@@ -89,16 +90,16 @@ namespace SynthLib2Parser {
         SymTab->BindTheoryFun("bvlshr", BinOpVec, BVS);
         SymTab->BindTheoryFun("bvurem", BinOpVec, BVS);
         SymTab->BindTheoryFun("bvsrem", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvsmod", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvugt", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvuge", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvsgt", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvsge", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvule", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvult", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvsle", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvslt", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvcomp", BinOpVec, BVS);
+        SymTab->BindTheoryFun("bvsmod", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvugt", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvuge", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvsgt", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvsge", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvule", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvult", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvsle", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvslt", BinOpVec, BS);
+        SymTab->BindTheoryFun("bvcomp", BinOpVec, BS);
         SymTab->BindTheoryFun("bvneg", UnOpVec, BVS);
         SymTab->BindTheoryFun("bvnot", UnOpVec, BVS);
         SymTab->BindTheoryFun("bv2nat", UnOpVec, IntOpVec[0]);
