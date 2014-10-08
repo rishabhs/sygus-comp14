@@ -152,6 +152,9 @@ def _IntLT(a, b):
 def _IntGT(a, b):
     return a > b
 
+def _Identity(a):
+    return a
+
 
 def GetFunctionFromSymbol(funcSymbol):
     try:
@@ -190,7 +193,8 @@ def GetFunctionFromSymbol(funcSymbol):
                '>=':      _IntGE,
                '>':       _IntGT,
                '<':       _IntLT,
-               '=>':      _BoolImplies
+               '=>':      _BoolImplies,
+               '_ID':     _Identity
                }[funcSymbol]
     except:
         raise Exception('Function %s not recognised by theory' % funcSymbol)
