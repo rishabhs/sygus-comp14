@@ -59,8 +59,7 @@ def verifyLen(s,l,t):
 # define punctuation literals
 LPAR, RPAR, LBRK, RBRK, LBRC, RBRC, VBAR = map(Suppress, "()[]{}|")
 
-decimal = Regex(r'0|[0-9]\d*').setParseAction(lambda t: ('Int', int(t[0])))
-
+decimal = Regex(r'-?0|-?[0-9]\d*').setParseAction(lambda t: ('Int', int(t[0])))
 hexadecimal = ("#x" + OneOrMore(Word(hexnums)))\
                 .setParseAction(lambda t: (['BitVec', ('Int', 4*len(t[1]))], int("".join(t[1:]),16)))
 bytes = Word(printables)
@@ -75,7 +74,7 @@ qString = Group(Optional(decimal,default=None)("len") +
 simpleString = base64_ | raw | decimal | token | hexadecimal | qString 
 
 # extended definitions
-decimal = Regex(r'-?0|[0-9]\d*').setParseAction(lambda t: ('Int', int(t[0])))
+
 real = Regex(r"[+-]?\d+\.\d*([eE][+-]?\d+)?").setParseAction(lambda tokens: float(tokens[0]))
 token = Word(alphanums + "-./_:*+=!<>").setParseAction(lambda t: ('Bool', 1) if t[0] == 'true' else \
   ('Bool', 0) if t[0] == 'false' else t)
