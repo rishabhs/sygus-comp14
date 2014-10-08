@@ -103,23 +103,46 @@ def GenerateCircuit(synthFun, K):
                                               production))
 
             elif isinstance(production, str):
-                if not production in [arg[0] for arg in argList]:
-                    raise SynthException('Unknown parameter in production')
-                inputPorts = [
-                    Port(
-                        '%s_LIT%s_i_%s' %
-                        (nonTerm, production, 0), '__CIRCUIT_%s_%s' %
-                        (funcName, production), GetSortFromType(
-                            formalArgTypes[production]))]
-                outputPort = Port('%s_LIT%s_o_%s' % (nonTerm, production, 0),
-                                  '__CIRCUIT_%s_%s' % (funcName, nonTerm),
-                                  GetSortFromType(nonTermType))
-                spec = (outputPort.var == inputPorts[0].var)
+                if production in [arg[0] for arg in argList]:
+                    inputPorts = [
+                        Port(
+                            '%s_LIT%s_i_%s' %
+                            (nonTerm, production, 0), '__CIRCUIT_%s_%s' %
+                            (funcName, production), GetSortFromType(
+                                formalArgTypes[production]))]
+                    outputPort = Port('%s_LIT%s_o_%s' % (nonTerm, production, 0),
+                                      '__CIRCUIT_%s_%s' % (funcName, nonTerm),
+                                      GetSortFromType(nonTermType))
+                    spec = (outputPort.var == inputPorts[0].var)
 
-                componentBag.append(Component(inputPorts, outputPort, spec,
-                                              '%s_LIT%s' % (
-                                                  nonTerm, production),
-                                              production))
+                    componentBag.append(Component(inputPorts, outputPort, spec,
+                                                  '%s_LIT%s' % (
+                                                      nonTerm, production),
+                                                  production))
+                elif production in nonTermTypes:
+                    for copyNum in range(0, K):
+                        op = theory.GetFunctionFromSymbol('_ID')
+                        inputPorts = [
+                            Port(
+                                '%s_ID_%s_i_%d'%
+                                (nonTerm, production, copyNum),
+                                '__CIRCUIT__%s_%s' % (funcName, production),
+                                GetSortFromType(nonTermTypes[production]))
+                        ]
+                        outputPort = Port(
+                            '%s_ID_%s_o_%d' % (nonTerm, production, copyNum),
+                            '__CIRCUIT_%s_%s' % (funcName, nonTerm),
+                            GetSortFromType(nonTermType))
+
+                        spec = (outputPort.var == inputPorts[0].var)
+
+                        componentBag.append(Component(inputPorts, outputPort,
+                                                      spec,
+                                                      '%s_ID_%s' % 
+                                                      (nonTerm, production),
+                                                      production))
+                else:
+                    raise SynthException('Invalid parameter in production')
 
             else:
                 raise SynthException('Unknown kind of production')
