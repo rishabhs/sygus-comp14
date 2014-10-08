@@ -91,7 +91,7 @@ namespace ESolver {
                                                   uint32 EnumeratorIndex = 0) override;
         // For multifunction synthesis
         virtual CallbackStatus ExpressionCallBack(GenExpressionBase const* const* Exp,
-                                                  ESFixedTypeBase const* const* Type, 
+                                                  ESFixedTypeBase const* const* Type,
                                                   uint32 const* ExpansionTypeID) override;
 
         virtual SolutionMap Solve(const Expression& Constraint) override;

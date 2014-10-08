@@ -1,5 +1,7 @@
 (set-logic LIA)
 
+;; rec(x,y,z) \equiv (* (+ x x) (- y z))
+
 (synth-fun rec ((x Int) (y Int) (z Int)) Int
 	   (
 	   (Start Int (x
@@ -15,3 +17,5 @@
 (declare-var x3 Int)
 
 (constraint (= (rec x1 x2 x3) (* (+ x1 x1) (- x2 x3))))
+
+(check-synth)

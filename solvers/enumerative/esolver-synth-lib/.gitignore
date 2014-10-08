@@ -1,0 +1,10 @@
+src/z3-4.3.1/autom4te.cache/requests
+src/z3-4.3.1/config.log
+src/z3-4.3.1/config.status
+src/z3-4.3.1/scripts/mk_exception.pyc
+src/z3-4.3.1/scripts/mk_project.pyc
+src/z3-4.3.1/scripts/mk_util.pyc
+src/z3-4.3.1/src/api/dll/install_tactic.cpp
+src/z3-4.3.1/src/api/staticlib/install_tactic.cpp
+src/z3-4.3.1/src/shell/install_tactic.cpp
+src/z3-4.3.1/src/test/install_tactic.cpp

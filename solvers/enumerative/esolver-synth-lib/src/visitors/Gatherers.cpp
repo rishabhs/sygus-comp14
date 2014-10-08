@@ -55,6 +55,8 @@ namespace ESolver {
 
     void SynthFuncGatherer::VisitUserSynthFuncExpression(const UserSynthFuncExpression* Exp)
     {
+        // Recurse on the children first
+        ExpressionVisitorBase::VisitUserSynthFuncExpression(Exp);
         SynthFuncs.insert(Exp->GetOp());
     }
 

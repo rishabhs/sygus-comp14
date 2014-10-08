@@ -611,7 +611,12 @@ namespace ESolver {
         ostringstream sstr;
         sstr << "(let (";
         for (auto const& VarExpPair : LetBoundVars) {
-            sstr << "(" << VarExpPair.first->ToString() << " " << VarExpPair.second->ToString() << ")";
+            auto BoundVar = VarExpPair.first;
+            auto Binding = VarExpPair.second;
+            auto BoundVarType = BoundVar->GetOp()->GetEvalType();
+            sstr << "(" << BoundVar->ToString() << " "
+                 << BoundVarType->ToString() << " " 
+                 << Binding->ToString() << ")";
         }
         sstr << ")";
         sstr << BoundInExpression->ToString() << ")";
