@@ -1,0 +1,25 @@
+(set-logic LIA)
+(define-sort Z Int)
+(define-sort B Bool)
+(define-sort BV32 (BitVec 32))
+
+(declare-var x Int)
+(declare-var y Int)
+(declare-var z Int)
+
+(define-fun max2 ((x Int) (y Int)) Int
+    (ite (>= x y) x y))
+
+(synth-fun max3 ((x Int) (y Int) (z Int)) Int
+    ((Start Int (0 1 x y z (max2 Start Start)))))
+
+(constraint (>= (max3 x y z) x))
+(constraint (>= (max3 x y z) y))
+(constraint (>= (max3 x y z) z))
+
+(constraint (or (or (= (max3 x y z) x) (= (max3 x y z) y)) (= (max3 x y z) z)))
+
+; (set-options ((random-seed "32")))
+
+(check-synth)
+

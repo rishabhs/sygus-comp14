@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# TODO
+# [__BIG_BV_]
+# Arithmetic vs. System division, remainder
+# Enumerated types + Tuples (?)
+# Parser integration
+
+CXXFLAGS="-std=c++0x -Wall -pedantic";
+OPTFLAGS="-O3";
+LDFLAGS="-lgmpxx -lgmp -lz3 -Wl,-Bstatic -lsynthlib2parser -Wl,-Bdynamic";
+
+INCDIRS="-I./nonstd -I./parser/include";
+LDDIRSDEB="-L./parser/lib/debug";
+LDDIRSOPT="-L./parser/lib/opt";
+
+cd parser && make -j 8 && make eopt -j 8 && cd .. && \
+clang++ $CXXFLAGS $INCDIRS $LDDIRSDEB main.cpp $LDFLAGS && \
+echo "Clang done. Proceeding with GCC build and run." && \
+g++ $CXXFLAGS $OPTFLAGS $INCDIRS $LDDIRSOPT main.cpp $LDFLAGS && \
+echo $SECONDS && \
+./a.out && \
+echo $SECONDS && \
+./a.out > /dev/null && \
+echo $SECONDS
+
