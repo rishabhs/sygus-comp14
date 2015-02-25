@@ -7,12 +7,17 @@ Requirements:
 - Z3py
 - Pyparsing
 
-Let the root directory of the distribution be $DIR. Z3py and Pyparsing are included in this distribution under $DIR/z3 and $DIR/pyparsing.
+Please download and install z3 for your platform from http://z3.codeplex.com. 
+This implementation has been tested for version 4.3.0. Let z3 be located at $Z3_ROOT.
+
+
+Let the root directory of the distribution be $DIR. 
+Pyparsing is included in this distribution under $DIR/pyparsing.
 
 To setup:
 1. Change current directory to $DIR/pyparsing and run 
    $ python setup.py install
-2. Make sure $PYTHONPATH contains $DIR/z3/bin
+2. Make sure $PYTHONPATH contains $Z3_ROOT/bin
 
 Main sources of the synthesizer are within $DIR/src
 
