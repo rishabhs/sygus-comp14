@@ -1,13 +1,13 @@
-// TextUtils.hpp --- 
-// 
+// TextUtils.hpp ---
+//
 // Filename: TextUtils.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:49:42 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -81,7 +81,7 @@ namespace ESolver {
     static inline int64 ParseBoolString(const string& ValueString)
     {
         if(ValueString != "true" && ValueString != "false") {
-            throw ValueException((string)"Value \"" + ValueString + 
+            throw ValueException((string)"Value \"" + ValueString +
                                  "\" is a malformed boolean value");
         }
         return (ValueString == "true" ? 1 : 0);
@@ -90,18 +90,32 @@ namespace ESolver {
     static inline int64 ParseEnumString(const string& ValueString,
                                         const ESFixedTypeBase* Type)
     {
-        if (Type->As<ESException>() == nullptr) {
+        auto TypeAsEnum = Type->As<ESEnumType>();
+        if (TypeAsEnum == nullptr) {
             throw ValueException((string)"Value \"" + ValueString + "\" is not a valid " +
                                  " constructor for type with ID: " + to_string(Type->GetID()));
 
         }
-        // Try querying with just the string first
-        string QueryString = ValueString;
-        if(!Type->As<ESEnumType>()->IsValidEnumConstructor(QueryString)) {
-            throw ValueException((string)"Value \"" + ValueString + "\" is not a valid " +
-                                 " constructor for enumerated type " + Type->As<ESEnumType>()->GetName());
+        // Is this a qualified value?
+        vector<string> SplitConstructors;
+        boost::algorithm::split(SplitConstructors, ValueString,
+                                boost::algorithm::is_any_of(":"),
+                                boost::algorithm::token_compress_on);
+        if (SplitConstructors.size() > 1) {
+            string QueryString = SplitConstructors[1];
+            if (!TypeAsEnum->IsValidEnumConstructor(QueryString)) {
+                throw ValueException((string)"Value \"" + ValueString + "\" is not a valid " +
+                                     " constructor for enumerated type " + TypeAsEnum->GetName());
+            }
+            return TypeAsEnum->GetEnumValueIDForName(QueryString);
         }
-        
+
+        string QueryString = ValueString;
+        if(!TypeAsEnum->IsValidEnumConstructor(QueryString)) {
+            throw ValueException((string)"Value \"" + ValueString + "\" is not a valid " +
+                                 " constructor for enumerated type " + TypeAsEnum->GetName());
+        }
+
         return Type->As<ESEnumType>()->GetEnumValueIDForName(QueryString);
     }
 
@@ -121,20 +135,20 @@ namespace ESolver {
             }
 
             if (ValString.length() != (NumBits / 4) + 2) {
-                throw ValueException((string)"Value \"" + ValString + "\" is not a " + 
+                throw ValueException((string)"Value \"" + ValString + "\" is not a " +
                                      to_string(NumBits) + " bit bitvector value");
             }
 
             istringstream istr(ValString);
 
             istr >> hex >> Retval;
-        } else if(boost::algorithm::istarts_with(ValString, "0b") || 
+        } else if(boost::algorithm::istarts_with(ValString, "0b") ||
                   boost::algorithm::istarts_with(ValString, "#b")) {
             if (ValString.length() != NumBits + 2) {
-                throw ValueException((string)"Value \"" + ValString + "\" is not a " + 
+                throw ValueException((string)"Value \"" + ValString + "\" is not a " +
                                      to_string(NumBits) + " bit bitvector value");
             }
-            
+
             Retval = 0;
             for(uint32 i = 2; i < ValString.length(); ++i) {
                 Retval <<= 1;
@@ -177,7 +191,7 @@ namespace ESolver {
             throw TypeException((string)"Enumerated Type \"" + Parts[0] + "\" not defined");
         }
         if(!Type->As<ESEnumType>()->IsValidEnumConstructor(Parts[1])) {
-            throw TypeException((string)"Constructor \"" + Parts[1] + "\" is not valid for enum type " + 
+            throw TypeException((string)"Constructor \"" + Parts[1] + "\" is not valid for enum type " +
                                 "\"" + Parts[0] + "\"");
         }
         auto Val = Type->As<ESEnumType>()->GetEnumValueIDForName(Parts[1]);
@@ -229,5 +243,5 @@ namespace ESolver {
 #endif /* __ESOLVER_TEXT_UTILS_HPP */
 
 
-// 
+//
 // TextUtils.hpp ends here
