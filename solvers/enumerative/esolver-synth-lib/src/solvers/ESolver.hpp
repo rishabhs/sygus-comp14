@@ -1,13 +1,13 @@
-// ESolver.hpp --- 
-// 
+// ESolver.hpp ---
+//
 // Filename: ESolver.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:50:38 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -66,7 +66,7 @@ namespace ESolver {
         UIDGenerator FPUIDGenerator;
         vector<ESolverLogic*> LoadedLogics;
         BVLogic* LoadedBVLogic;
-        
+
         // Utility methods
         inline void CheckOperatorRedeclaration(const string& OperatorName) const;
         inline void CheckOperatorRedeclaration(const string& OperatorName,
@@ -81,7 +81,7 @@ namespace ESolver {
     protected:
         ESolverOpts Opts;
         TheoremProver* TP;
-        
+
         // Managers
         ValueManager* ValMgr;
         ScopeManager* ScopeMgr;
@@ -95,9 +95,9 @@ namespace ESolver {
         TimeValue SolveEndTime;
         MemStats SolveStartMemStats;
         MemStats SolveEndMemStats;
-        
+
         Logger TheLogger;
-        
+
     public:
         // Constructor
         ESolver(const ESolverOpts* Opts);
@@ -140,13 +140,13 @@ namespace ESolver {
         const ConcreteValueBase* CreateValue(const ESFixedTypeBase* Type, int64 TheValue);
         const ConcreteValueBase* CreateTrueValue();
         const ConcreteValueBase* CreateFalseValue();
-        
+
         // Functions, variables and constant operators
         // Constant creation methods
         const ConstOperator* CreateConstant(const string& ConstantName,
                                             const ESFixedTypeBase* Type,
                                             const string& ConstantString);
-        
+
         const ConstOperator* CreateConstant(const string& ConstantName,
                                             const ConcreteValueBase* ConstantValue);
 
@@ -185,7 +185,7 @@ namespace ESolver {
         // Variable creation methods
         const UQVarOperator* CreateQuantifiedVariable(const string& VarName,
                                                       const ESFixedTypeBase* Type);
-        
+
         // Let bound variable
         // WARNING: EACH call results in a new
         // variable being created, even if the same
@@ -224,10 +224,10 @@ namespace ESolver {
         Expression CreateExpression(const string& OperatorName,
                                     const Expression& Exp1);
         Expression CreateExpression(const string& OperatorName,
-                                    const Expression& Exp1, 
+                                    const Expression& Exp1,
                                     const Expression& Exp2);
         Expression CreateExpression(const string& OperatorName,
-                                    const Expression& Exp1, 
+                                    const Expression& Exp1,
                                     const Expression& Exp2,
                                     const Expression& Exp3);
 
@@ -254,17 +254,21 @@ namespace ESolver {
                                                   const Expression& Consequent);
         Expression CreateIffExpression(const Expression& Exp1, const Expression& Exp2);
 
+        // callback when the enumerator enumerates a subexpression
+        // towards to goal of enumerating the top level expression
+        virtual CallbackStatus SubExpressionCallBack(const GenExpressionBase* Exp,
+                                                     const ESFixedTypeBase* Type,
+                                                     uint32 ExpansionTypeID) = 0;
+
         // Callback for each enumerated expression.
-        // Subclasses will need to implement this
         // special case for single function synthesis
-        virtual CallbackStatus ExpressionCallBack(const GenExpressionBase* Exp, 
-                                                  const ESFixedTypeBase* Type, 
+        virtual CallbackStatus ExpressionCallBack(const GenExpressionBase* Exp,
+                                                  const ESFixedTypeBase* Type,
                                                   uint32 ExpansionTypeID,
-                                                  bool Complete,
                                                   uint32 EnumeratorIndex = 0) = 0;
         // For multifunction synthesis
         virtual CallbackStatus ExpressionCallBack(GenExpressionBase const* const* Exp,
-                                                  ESFixedTypeBase const* const* Type, 
+                                                  ESFixedTypeBase const* const* Type,
                                                   uint32 const* ExpansionTypeID) = 0;
 
         virtual SolutionMap Solve(const Expression& Constraint) = 0;
@@ -272,7 +276,7 @@ namespace ESolver {
         const ESolverOpts& GetOpts() const;
         Logger& GetLogger() const;
 
-        // Clients are responsible for calling this function 
+        // Clients are responsible for calling this function
         // at reasonable interval to check for resource
         // limit expiration
         void CheckResourceLimits();
@@ -290,5 +294,5 @@ namespace ESolver {
 #endif /* __ESOLVER_ESOLVER_HPP */
 
 
-// 
+//
 // ESolver.hpp ends here

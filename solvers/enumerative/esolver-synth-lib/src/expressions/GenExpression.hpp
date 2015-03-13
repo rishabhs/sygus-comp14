@@ -1,13 +1,13 @@
-// GenExpression.hpp --- 
-// 
+// GenExpression.hpp ---
+//
 // Filename: GenExpression.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:51:28 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -72,13 +72,13 @@ namespace ESolver {
         static ConcreteValueBase** EvalStack;
         static uint32 EvalStackTop;
         static uint64 FreshVarID;
-        
+
     public:
         static void Initialize();
         static void Finalize();
 
         static ConcreteValueBase* GetCV();
-        
+
         static void Evaluate(const GenExpressionBase* Exp, VariableMap VarMap,
                              const uint32* ParamMap, ConcreteValueBase* Result);
         static SMTExpr ToSMT(const GenExpressionBase* Exp, TheoremProver* TP, const uint32* ParamMap,
@@ -101,7 +101,7 @@ namespace ESolver {
                               vector<SMTExpr>& Assumptions) const = 0;
 
         virtual const ESFixedTypeBase* GetType() const = 0;
-        virtual Expression ToUserExpression(ESolver* Solver, 
+        virtual Expression ToUserExpression(ESolver* Solver,
                                             const map<uint32, const LetBoundVarOperator*>& BoundOps) const = 0;
     };
 
@@ -118,7 +118,7 @@ namespace ESolver {
 
         virtual void Evaluate(const uint32* ParamMap,
                               VariableMap VarMap) const override;
-        
+
         virtual SMTExpr ToSMT(TheoremProver* TP, const uint32* ParamMap,
                               const vector<SMTExpr>& BaseExprs,
                               vector<SMTExpr>& Assumptions) const override;
@@ -135,7 +135,7 @@ namespace ESolver {
     {
     private:
         const FormalParamOperator* Op;
-        
+
     public:
         GenFPExpression(const FormalParamOperator* Op);
         virtual ~GenFPExpression();
@@ -144,7 +144,7 @@ namespace ESolver {
 
         virtual void Evaluate(const uint32* ParamMap,
                               VariableMap VarMap) const override;
-        
+
         virtual SMTExpr ToSMT(TheoremProver* TP, const uint32* ParamMap,
                               const vector<SMTExpr>& BaseExprs,
                               vector<SMTExpr>& Assumptions) const override;
@@ -158,11 +158,11 @@ namespace ESolver {
     {
     private:
         const ConstOperator* Op;
-        
+
     public:
         GenConstExpression(const ConstOperator* Op);
         virtual ~GenConstExpression();
-        
+
         virtual string ToString() const override;
         virtual void Evaluate(const uint32* ParamMap,
                               VariableMap VarMap) const override;
@@ -195,7 +195,7 @@ namespace ESolver {
         virtual SMTExpr ToSMT(TheoremProver* TP, const uint32* ParamMap,
                               const vector<SMTExpr>& BaseExprs,
                               vector<SMTExpr>& Assumptions) const override;
-        
+
         virtual const ESFixedTypeBase* GetType() const override;
         virtual Expression ToUserExpression(ESolver* Solver,
                                             const map<uint32, const LetBoundVarOperator*>& BoundOps) const override;
@@ -207,7 +207,7 @@ namespace ESolver {
         mutable GenExpressionBase const* const* Bindings;
         GenExpressionBase const* LetBoundExp;
         uint32 NumBindings;
-        
+
     public:
         GenLetExpression(GenExpressionBase const* const* Bindings,
                          GenExpressionBase const* LetBoundExp,
@@ -234,5 +234,5 @@ namespace ESolver {
 #endif /* __ESOLVER_GEN_EXPRESSION_HPP */
 
 
-// 
+//
 // GenExpression.hpp ends here

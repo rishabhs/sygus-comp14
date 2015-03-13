@@ -1,13 +1,13 @@
-// EvalRule.hpp --- 
-// 
+// EvalRule.hpp ---
+//
 // Filename: EvalRule.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:50:16 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -47,7 +47,7 @@
 
 namespace ESolver {
 
-    /* 
+    /*
        An eval rule is a recipe to obtain the value or SMT representation of a derived
        auxiliary variable. It essentially takes a derived aux variable to it's value
        or it's SMT representation.
@@ -81,7 +81,7 @@ namespace ESolver {
         // Copy constructor
         EvalRule(const EvalRule& Other);
         ~EvalRule();
-        
+
         // Assignment operator
         EvalRule& operator = (const EvalRule& Other);
 
@@ -95,7 +95,7 @@ namespace ESolver {
                       ConcreteValueBase* Result) const;
 
         SMTExpr ToSMT(TheoremProver* TP, ExpSubstMap SubstExps,
-                      const vector<SMTExpr>& BaseExprs, 
+                      const vector<SMTExpr>& BaseExprs,
                       vector<SMTExpr>& Assumptions) const;
 
         // Stringification
@@ -109,5 +109,5 @@ namespace ESolver {
 #endif /* __ESOLVER_EVAL_RULE_HPP */
 
 
-// 
+//
 // EvalRule.hpp ends here

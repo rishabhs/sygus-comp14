@@ -1,13 +1,13 @@
-// CFGEnumerator.cpp --- 
-// 
+// CFGEnumerator.cpp ---
+//
 // Filename: CFGEnumerator.cpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:47:42 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -134,24 +134,24 @@ namespace ESolver {
         auto FPVar = GN->As<GrammarFPVar>();
         // The base cases
         if (FPVar != nullptr) {
-            return MakeBaseExpression<GenFPExpression>(Retval, FPVar->GetOp(), Type, 
+            return MakeBaseExpression<GenFPExpression>(Retval, FPVar->GetOp(), Type,
                                                        ExpansionTypeID, Cost, Key, Complete);
         }
 
         auto LetVar = GN->As<GrammarLetVar>();
         if (LetVar != nullptr) {
-            return MakeBaseExpression<GenLetVarExpression>(Retval, LetVar->GetOp(), Type, 
+            return MakeBaseExpression<GenLetVarExpression>(Retval, LetVar->GetOp(), Type,
                                                            ExpansionTypeID, Cost, Key, Complete);
         }
 
         auto Const = GN->As<GrammarConst>();
         if (Const != nullptr) {
-            return MakeBaseExpression<GenConstExpression>(Retval, Const->GetOp(), Type, 
+            return MakeBaseExpression<GenConstExpression>(Retval, Const->GetOp(), Type,
                                                           ExpansionTypeID, Cost, Key, Complete);
         }
 
         auto Func = GN->As<GrammarFunc>();
-        
+
         if (Func != nullptr) {
             auto const& Args = Func->GetChildren();
             auto Op = Func->GetOp();
@@ -186,7 +186,7 @@ namespace ESolver {
                         CurVec = PopulateExpsOfGNCost(Args[j], CurPartition[j], false);
                     }
                     if (CurVec->Size() == 0) {
-                        Feasible = false; 
+                        Feasible = false;
                         break;
                     } else {
                         ArgExpVecs[j] = CurVec;
@@ -201,14 +201,19 @@ namespace ESolver {
 
                 // Iterate over the cross product
                 auto CPGen = new CrossProductGenerator(Begins, Ends, GetPoolForSize(Arity));
-                
-                for (auto CurArgs = CPGen->GetNext(); CurArgs != nullptr; CurArgs = CPGen->GetNext()) {
 
-                    auto CurExp = new (FuncExpPool->malloc()) 
+                for (auto CurArgs = CPGen->GetNext();
+                     CurArgs != nullptr;
+                     CurArgs = CPGen->GetNext()) {
+
+                    auto CurExp = new (FuncExpPool->malloc())
                         GenFuncExpression(static_cast<const InterpretedFuncOperator*>(Op), CurArgs);
 
-                    auto Status = Solver->ExpressionCallBack(CurExp, Type, ExpansionTypeID, Complete, Index);
-                    
+                    auto Status =
+                        (Complete ?
+                         Solver->ExpressionCallBack(CurExp, Type, ExpansionTypeID, Index) :
+                         Solver->SubExpressionCallBack(CurExp, Type, ExpansionTypeID));
+
                     if ((Status & DELETE_EXPRESSION) == 0) {
                         CPGen->RelinquishOwnerShip();
                         Retval->PushBack(CurExp);
@@ -227,7 +232,7 @@ namespace ESolver {
                 }
             }
             delete PG;
-            
+
             Retval->Freeze();
             ExpRepository[Key] = Retval;
             PopExpansion();
@@ -235,7 +240,7 @@ namespace ESolver {
         }
 
         auto Let = GN->As<GrammarLet>();
-        
+
         // We handle this in similar spirit as functions
         if (Let != nullptr) {
             auto const& Bindings = Let->GetBindings();
@@ -243,7 +248,7 @@ namespace ESolver {
             const uint32 Arity = NumBindings + 1;
             auto BoundNode = Let->GetBoundExpression();
             const uint32 NumLetBoundVars = TheGrammar->GetNumLetBoundVars();
-            
+
             if (Cost < Arity + 1) {
                 Retval->Freeze();
                 ExpRepository[Key] = Retval;
@@ -260,7 +265,7 @@ namespace ESolver {
                 auto CurPartition = (*PG)[i];
                 vector<GenExpTLVec::ConstIterator> Begins(Arity);
                 vector<GenExpTLVec::ConstIterator> Ends(Arity);
-                
+
                 uint32 j = 0;
                 uint32* Positions = new uint32[NumBindings];
 
@@ -303,9 +308,9 @@ namespace ESolver {
 
 
                 // Iterate over the cross product of expressions
-                // The bindings object will be of size of the NUMBER 
+                // The bindings object will be of size of the NUMBER
                 // of let bound vars for the whole grammar
-                auto CPGen = new CrossProductGenerator(Begins, Ends, 
+                auto CPGen = new CrossProductGenerator(Begins, Ends,
                                                        GetPoolForSize(Arity));
                 GenExpressionBase const** BindVec = nullptr;
                 auto BindVecPool = GetPoolForSize(NumLetBoundVars);
@@ -322,7 +327,11 @@ namespace ESolver {
 
                     auto CurExp = new (LetExpPool->malloc())
                         GenLetExpression(BindVec, CurArgs[NumBindings], NumLetBoundVars);
-                    auto Status = Solver->ExpressionCallBack(CurExp, Type, ExpansionTypeID, Complete, Index);
+                    auto Status =
+                        (Complete ?
+                         Solver->ExpressionCallBack(CurExp, Type, ExpansionTypeID, Index) :
+                         Solver->SubExpressionCallBack(CurExp, Type, ExpansionTypeID));
+
                     if ((Status & DELETE_EXPRESSION) == 0) {
                         BindVec = nullptr;
                         Retval->PushBack(CurExp);
@@ -370,9 +379,9 @@ namespace ESolver {
             PopExpansion();
             return Retval;
         }
-        
+
         // Should NEVER get here
-        throw InternalError((string)"You probably subclassed GrammarNode and forgot to change " + 
+        throw InternalError((string)"You probably subclassed GrammarNode and forgot to change " +
                             "CFGEnumerator.cpp.\nAt: " + __FILE__ + ":" + to_string(__LINE__));
     }
 
@@ -381,7 +390,7 @@ namespace ESolver {
                                              const Grammar* InputGrammar,
                                              uint32 Index)
         : EnumeratorBase(Solver), TheGrammar(InputGrammar),
-          ExpansionTypeUIDGenerator(1), Index(Index), NumExpsCached((uint64)0)
+          Index(Index), NumExpsCached((uint64)0)
     {
         FuncExpPool = new boost::pool<>(sizeof(GenFuncExpression));
         LetExpPool = new boost::pool<>(sizeof(GenLetExpression));
@@ -416,9 +425,9 @@ namespace ESolver {
             auto const Begin = Vec->Begin();
             auto const End = Vec->End();
             for (auto it = Begin; it != End; ++it) {
-                // If we're being recalled to enumerate, 
+                // If we're being recalled to enumerate,
                 // then there's no need for an expansion type id
-                Solver->ExpressionCallBack(*it, Type, 0, true, Index);
+                Solver->ExpressionCallBack(*it, Type, 0, Index);
             }
         } else {
             PopulateExpsOfGNCost(StartNT, Cost, true);
@@ -437,7 +446,7 @@ namespace ESolver {
             delete KV.second;
         }
         CPPools.clear();
-        
+
         // Clear all the built up state
         for (auto const& KV : ExpRepository) {
             delete KV.second;
@@ -462,7 +471,7 @@ namespace ESolver {
                                                            ESolver* Solver,
                                                            const vector<CFGEnumeratorSingle*>& Enumerators,
                                                            const vector<const ESFixedTypeBase*>& TargetTypes)
-        : ESolver(Opts), Solver(Solver), Enumerators(Enumerators), 
+        : ESolver(Opts), Solver(Solver), Enumerators(Enumerators),
           TargetTypes(TargetTypes), NumExpressions(Enumerators.size())
     {
         ExpVec = (GenExpressionBase const**)calloc(NumExpressions, sizeof(GenExpressionBase const*));
@@ -479,20 +488,14 @@ namespace ESolver {
 
     // Evil mutual recursion trickery.
     // I know I'm going to regret doing this
-    // if I ever have to debug this stuff. 
+    // if I ever have to debug this stuff.
     // But hey, I think I know what I'm doing (TM)
-    CallbackStatus 
-    CFGEnumeratorMulti::ESolverMultiStub::ExpressionCallBack(const GenExpressionBase* Exp, 
-                                                             const ESFixedTypeBase* Type, 
+    CallbackStatus
+    CFGEnumeratorMulti::ESolverMultiStub::ExpressionCallBack(const GenExpressionBase* Exp,
+                                                             const ESFixedTypeBase* Type,
                                                              uint32 ExpansionTypeID,
-                                                             bool Complete,
                                                              uint32 EnumeratorIndex)
     {
-        // Do nothing if the type is not what we expect!
-        if (!Complete) {
-            return NONE_STATUS;
-        }
-
         ExpVec[EnumeratorIndex] = Exp;
         TypeVec[EnumeratorIndex] = Type;
         ExpansionTypeIDVec[EnumeratorIndex] = ExpansionTypeID;
@@ -501,37 +504,46 @@ namespace ESolver {
             // We've run out of expressions at the lower levels
             // Enumerate from the next higher level
             Enumerators[EnumeratorIndex + 1]->EnumerateOfCost(CurrentSizes[EnumeratorIndex + 1]);
+            return NONE_STATUS;
         } else {
             // We have a complete ExpVec
-            Solver->ExpressionCallBack(ExpVec, TypeVec, ExpansionTypeIDVec);
+            return Solver->ExpressionCallBack(ExpVec, TypeVec, ExpansionTypeIDVec);
         }
-        return NONE_STATUS;
     }
-    
-    CallbackStatus 
+
+    CallbackStatus
+    CFGEnumeratorMulti::ESolverMultiStub::SubExpressionCallBack(const GenExpressionBase *Exp,
+                                                                const ESFixedTypeBase *Type,
+                                                                uint32 ExpansionTypeID)
+    {
+        return Solver->SubExpressionCallBack(Exp, Type, ExpansionTypeID);
+    }
+
+
+    CallbackStatus
     CFGEnumeratorMulti::ESolverMultiStub::ExpressionCallBack(GenExpressionBase const* const* Exp,
-                                                             ESFixedTypeBase const* const* Type, 
+                                                             ESFixedTypeBase const* const* Type,
                                                              uint32 const* ExpansionTypeID)
     {
-        throw InternalError ((string)"ESolverMultiStub::ExpressionCallBack() with multiple " + 
+        throw InternalError ((string)"ESolverMultiStub::ExpressionCallBack() with multiple " +
                              "expressions should never have been called!");
     }
-    
+
     SolutionMap CFGEnumeratorMulti::ESolverMultiStub::Solve(const Expression& Constraint)
     {
         return SolutionMap();
     }
-    
+
     void CFGEnumeratorMulti::ESolverMultiStub::EndSolve()
     {
         // Nothing here
     }
-    
+
     void CFGEnumeratorMulti::ESolverMultiStub::EnumerateOfCosts(const vector<uint32>& Sizes)
     {
         memset(ExpVec, 0, sizeof(GenExpressionBase const*) * NumExpressions);
         CurrentSizes = Sizes;
-        // Kick off the chain of dominoes by calling 
+        // Kick off the chain of dominoes by calling
         // Enumerate on the first enumerator
         Enumerators[0]->EnumerateOfCost(Sizes[0]);
     }
@@ -545,7 +557,7 @@ namespace ESolver {
 
     // CFGEnumeratorMulti implementation
     CFGEnumeratorMulti::CFGEnumeratorMulti(ESolver* Solver, const vector<Grammar*>& InputGrammars)
-        : EnumeratorBase(Solver), Enumerators(InputGrammars.size(), nullptr), 
+        : EnumeratorBase(Solver), Enumerators(InputGrammars.size(), nullptr),
           TargetTypes(InputGrammars.size(), nullptr)
     {
         ESolverOpts Opts;
@@ -582,7 +594,7 @@ namespace ESolver {
         }
     }
 
-    void CFGEnumeratorMulti::OnReset() 
+    void CFGEnumeratorMulti::OnReset()
     {
         for (auto const& Enumerator : Enumerators) {
             Enumerator->Reset();
@@ -591,5 +603,5 @@ namespace ESolver {
 
 } /* End namespace */
 
-// 
+//
 // CFGEnumerator.cpp ends here

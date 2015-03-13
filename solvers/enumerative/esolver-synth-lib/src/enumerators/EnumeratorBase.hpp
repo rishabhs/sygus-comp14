@@ -1,13 +1,13 @@
-// EnumeratorBase.hpp --- 
-// 
+// EnumeratorBase.hpp ---
+//
 // Filename: EnumeratorBase.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:51:49 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -42,6 +42,7 @@
 #define __ESOLVER_ENUMERATOR_BASE_HPP
 
 #include "../common/ESolverForwardDecls.hpp"
+#include "../utils/UIDGenerator.hpp"
 
 namespace ESolver {
 
@@ -50,13 +51,14 @@ namespace ESolver {
     {
     protected:
         ESolver* Solver;
+        static UIDGenerator ExpansionTypeUIDGenerator;
 
     public:
         EnumeratorBase(ESolver* Solver);
         virtual ~EnumeratorBase();
         ESolver* GetSolver() const;
         void Reset();
-        
+
         // virtual methods to be implemented by sublasses
         virtual void EnumerateOfCost(uint32 Cost) = 0;
 
@@ -69,5 +71,5 @@ namespace ESolver {
 #endif /* __ESOLVER_ENUMERATOR_BASE_HPP */
 
 
-// 
+//
 // EnumeratorBase.hpp ends here

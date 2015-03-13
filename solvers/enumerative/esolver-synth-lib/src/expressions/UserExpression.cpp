@@ -1,13 +1,13 @@
-// UserExpression.cpp --- 
-// 
+// UserExpression.cpp ---
+//
 // Filename: UserExpression.cpp
 // Author: Abhishek Udupa
 // Created: Thu Jan  2 03:34:55 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -97,7 +97,7 @@ namespace ESolver {
         // Nothing here
     }
 
-    void UserVarExpressionBase::ComputeHashValue() const 
+    void UserVarExpressionBase::ComputeHashValue() const
     {
         HashValue = (uint64)0;
         boost::hash_combine(HashValue, Op->Hash());
@@ -112,10 +112,11 @@ namespace ESolver {
                                          VariableMap VarMap,
                                          ConcreteValueBase* Result) const
     {
-        new (Result) ConcreteValueBase(*(VarMap[static_cast<const VarOperatorBase*>(Op)->GetPosition()]));
+        new (Result)
+            ConcreteValueBase(*(VarMap[static_cast<const VarOperatorBase*>(Op)->GetPosition()]));
     }
 
-    SMTExpr UserVarExpressionBase::ToSMT(TheoremProver* TP, 
+    SMTExpr UserVarExpressionBase::ToSMT(TheoremProver* TP,
                                          ExpSubstMap SubstExps,
                                          const vector<SMTExpr>& BaseExprs,
                                          vector<SMTExpr>& Assumptions) const
@@ -123,7 +124,7 @@ namespace ESolver {
         return BaseExprs[GetOp()->GetPosition()];
     }
 
-    string UserVarExpressionBase::ToString() const 
+    string UserVarExpressionBase::ToString() const
     {
         return (Op->GetName());
     }
@@ -173,7 +174,8 @@ namespace ESolver {
                                              VariableMap VarMap,
                                              ConcreteValueBase* Result) const
     {
-        throw InternalError((string)"LetBoundVarExpression::Evaluate() must never have been called\n" + 
+        throw InternalError((string)"LetBoundVarExpression::Evaluate() must never " +
+                            "have been called\n" +
                             "At " + __FILE__ + ":" + to_string(__LINE__));
     }
 
@@ -182,8 +184,8 @@ namespace ESolver {
                                              const vector<SMTExpr>& BaseExprs,
                                              vector<SMTExpr>& Assumptions) const
     {
-        throw InternalError((string)"LetBoundVarExpression::ToSMT() must never have been called\n" + 
-                            "At " + __FILE__ + ":" + to_string(__LINE__));        
+        throw InternalError((string)"LetBoundVarExpression::ToSMT() must never have been called\n" +
+                            "At " + __FILE__ + ":" + to_string(__LINE__));
     }
 
     bool UserLetBoundVarExpression::Equals(const UserExpressionBase& Other) const
@@ -397,7 +399,7 @@ namespace ESolver {
                                                  ConcreteValueBase* Result) const
     {
         for (uint32 i = 0; i < NumChildren; ++i) {
-            Children[i]->Evaluate(SubstExps, VarMap, 
+            Children[i]->Evaluate(SubstExps, VarMap,
                                   const_cast<ConcreteValueBase*>(ChildEvals[i]));
         }
         auto Functor = static_cast<const InterpretedFuncOperator*>(Op)->GetConcFunctor();
@@ -467,7 +469,7 @@ namespace ESolver {
     {
         free(ParameterMap);
     }
-    
+
     void UserSynthFuncExpression::ComputeHashValue() const
     {
         HashValue = (uint64)0;
@@ -476,7 +478,7 @@ namespace ESolver {
             boost::hash_combine(HashValue, Children[i]->Hash());
         }
     }
-    
+
     void UserSynthFuncExpression::Evaluate(ExpSubstMap SubstExps,
                                            VariableMap VarMap,
                                            ConcreteValueBase* Result) const
@@ -494,14 +496,14 @@ namespace ESolver {
         auto MyID = GetOp()->GetPosition();
         return GenExpressionBase::ToSMT(SubstExps[MyID], TP, ParameterMap, BaseExprs, Assumptions);
     }
-    
+
     bool UserSynthFuncExpression::Equals(const UserExpressionBase& Other) const
     {
         auto OtherPtr = Other.As<UserSynthFuncExpression>();
         if (OtherPtr == nullptr) {
             return false;
         }
-        
+
         if (OtherPtr->GetOp()->GetID() != Op->GetID()) {
             return false;
         }
@@ -529,9 +531,9 @@ namespace ESolver {
     {
         ostringstream sstr;
         const uint32 NumChildren = Children.size();
-        
+
         sstr << "(" << Op->GetName();
-        
+
         for (uint32 i = 0; i < NumChildren; ++i) {
             sstr << " " << Children[i]->ToString();
         }
@@ -551,7 +553,7 @@ namespace ESolver {
 
     UserLetExpression::UserLetExpression(const map<Expression, Expression>& LetBoundVars,
                                          const Expression& BoundInExpression)
-        : UserExpressionBase(NULL), LetBoundVars(LetBoundVars), 
+        : UserExpressionBase(NULL), LetBoundVars(LetBoundVars),
           BoundInExpression(BoundInExpression)
     {
         // Nothing here
@@ -593,16 +595,18 @@ namespace ESolver {
                                      VariableMap VarMap,
                                      ConcreteValueBase* Result) const
     {
-        throw InternalError((string)"Internal Error: UserLetExpression::Evaluate() must never have been called.\n" +
+        throw InternalError((string)"Internal Error: UserLetExpression::Evaluate() " +
+                            "must never have been called.\n" +
                             "At: " + __FILE__ + ":" + to_string(__LINE__));
     }
 
-    SMTExpr UserLetExpression::ToSMT(TheoremProver* TP, 
+    SMTExpr UserLetExpression::ToSMT(TheoremProver* TP,
                                      ExpSubstMap SubstExps,
                                      const vector<SMTExpr>& BaseExprs,
                                      vector<SMTExpr>& Assumptions) const
     {
-        throw InternalError((string)"Internal Error: UserLetExpression::ToSMT() must never have been called.\n" +
+        throw InternalError((string)"Internal Error: UserLetExpression::ToSMT() " +
+                            " must never have been called.\n" +
                             "At: " + __FILE__ + ":" + to_string(__LINE__));
     }
 
@@ -615,7 +619,7 @@ namespace ESolver {
             auto Binding = VarExpPair.second;
             auto BoundVarType = BoundVar->GetOp()->GetEvalType();
             sstr << "(" << BoundVar->ToString() << " "
-                 << BoundVarType->ToString() << " " 
+                 << BoundVarType->ToString() << " "
                  << Binding->ToString() << ")";
         }
         sstr << ")";
@@ -658,5 +662,5 @@ namespace ESolver {
 } /* end namespace */
 
 
-// 
+//
 // UserExpression.cpp ends here

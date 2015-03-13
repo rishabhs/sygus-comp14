@@ -1,13 +1,13 @@
-// CEGSolver.cpp --- 
-// 
+// CEGSolver.cpp ---
+//
 // Filename: CEGSolver.cpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:54:32 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -55,7 +55,7 @@
 
 
 namespace ESolver {
-    
+
     CEGSolver::CEGSolver(const ESolverOpts* Opts)
         : ESolver(Opts), ConcEval(nullptr), ExpEnumerator(nullptr)
     {
@@ -75,27 +75,33 @@ namespace ESolver {
     inline bool CEGSolver::CheckSymbolicValidity(GenExpressionBase const* const* Exps)
     {
         vector<SMTExpr> Assumptions;
-        SMTExpr Antecedent = TP->CreateTrueExpr();
-        for (auto const& Rule : EvalRules) {
-            Antecedent = TP->CreateAndExpr(Antecedent, Rule.ToSMT(TP, Exps, BaseExprs, Assumptions));
-        }
-        Assumptions.push_back(Antecedent);
-        Antecedent = TP->CreateAndExpr(Assumptions);
+        auto FinConstraint = RewrittenConstraint->ToSMT(TP, Exps, BaseExprs, Assumptions);
+        auto Antecedent = TP->CreateAndExpr(Assumptions);
+        FinConstraint = TP->CreateImpliesExpr(Antecedent, FinConstraint);
 
-        auto FinConstraint = TP->CreateImpliesExpr(Antecedent, SMTConstraint);
         if (Opts.StatsLevel >= 3) {
             TheLogger.Log2("Validity Query:").Log2("\n");
             TheLogger.Log2(FinConstraint.ToString()).Log2("\n");
         }
         auto TPRes = TP->CheckValidity(FinConstraint);
-        
+
         switch (TPRes) {
         case SOLVE_VALID:
             return true;
         case SOLVE_INVALID:
+        {
+            if (Opts.StatsLevel >= 4) {
+                TheLogger.Log4("Validity failed\nModel:\n");
+                SMTModel Model;
+                TP->GetConcreteModel(RelevantVars, Model, this);
+                for (auto ValuePair : Model) {
+                    TheLogger.Log4(ValuePair.first).Log4(" : ").Log4(ValuePair.second.ToString()).Log4("\n");
+                }
+            }
             return false;
+        }
         default:
-            throw Z3Exception((string)"Error: Z3 returned an UNKNOWN result.\n" + 
+            throw Z3Exception((string)"Error: Z3 returned an UNKNOWN result.\n" +
                               "Make sure all theories are decidable.");
         }
     }
@@ -107,25 +113,54 @@ namespace ESolver {
         return CheckSymbolicValidity(Arr);
     }
 
+    CallbackStatus CEGSolver::SubExpressionCallBack(const GenExpressionBase *Exp,
+                                                    const ESFixedTypeBase *Type,
+                                                    uint32 ExpansionTypeID)
+    {
+        // Check if the subexpression is distinguishable
+        uint32 StatusRet = 0;
+
+        if (Opts.StatsLevel >= 4) {
+            TheLogger.Log4("Checking Subexpression ").Log4(Exp->ToString()).Log4("... ");
+        }
+
+        CheckResourceLimits();
+
+        auto Distinguishable = ConcEval->CheckSubExpression(const_cast<GenExpressionBase*>(Exp),
+                                                            Type, ExpansionTypeID, StatusRet);
+        if (Distinguishable) {
+            ++NumDistExpressions;
+            if (Opts.StatsLevel >= 4) {
+                if (StatusRet & CONCRETE_EVAL_PART) {
+                    TheLogger.Log4("Dist (Partial).").Log4("\n");
+                } else {
+                    TheLogger.Log4("Dist.").Log4("\n");
+                }
+            }
+            return NONE_STATUS;
+        } else {
+            if (Opts.StatsLevel >= 4) {
+                TheLogger.Log4("Indist.").Log4("\n");
+            }
+            return DELETE_EXPRESSION;
+        }
+    }
+
     // Callbacks
-    CallbackStatus CEGSolver::ExpressionCallBack(const GenExpressionBase* Exp, 
-                                                 const ESFixedTypeBase* Type, 
+    CallbackStatus CEGSolver::ExpressionCallBack(const GenExpressionBase* Exp,
+                                                 const ESFixedTypeBase* Type,
                                                  uint32 ExpansionTypeID,
-                                                 bool Complete,
                                                  uint32 EnumeratorIndex)
     {
-        uint32 StatusRet;
-        if (Complete) {
-            StatusRet = CONCRETE_EVAL_COMP;
-        } else {
-            StatusRet = 0;
-        }
+        uint32 StatusRet = 0;
 
         NumExpressionsTried++;
         if (Opts.StatsLevel >= 4) {
             TheLogger.Log4(Exp->ToString()).Log4("... ");
         }
+
         CheckResourceLimits();
+
         auto ConcValid = ConcEval->CheckConcreteValidity(Exp, Type, ExpansionTypeID, StatusRet);
         if (!ConcValid && (StatusRet & CONCRETE_EVAL_DIST) == 0) {
             if (Opts.StatsLevel >= 4) {
@@ -143,7 +178,7 @@ namespace ESolver {
             }
             return NONE_STATUS;
         }
-        
+
         NumDistExpressions++;
         if (Opts.StatsLevel >= 4) {
             TheLogger.Log4("Valid.").Log4("\n");
@@ -155,8 +190,8 @@ namespace ESolver {
             // We're done
             this->Complete = true;
             Solutions.push_back(vector<pair<const SynthFuncOperator*, Expression>>());
-            Solutions.back().push_back(pair<const SynthFuncOperator*, 
-                                       Expression>(SynthFuncs[0], 
+            Solutions.back().push_back(pair<const SynthFuncOperator*,
+                                       Expression>(SynthFuncs[0],
                                                    GenExpressionBase::ToUserExpression(Exp, this)));
             return STOP_ENUMERATION;
         } else {
@@ -176,7 +211,7 @@ namespace ESolver {
 
     // For multifunction synthesis
     CallbackStatus CEGSolver::ExpressionCallBack(GenExpressionBase const* const* Exps,
-                                                 ESFixedTypeBase const* const* Types, 
+                                                 ESFixedTypeBase const* const* Types,
                                                  uint32 const* ExpansionTypeIDs)
     {
         NumExpressionsTried++;
@@ -190,8 +225,8 @@ namespace ESolver {
             }
             TheLogger.Log4("\n");
         }
-        
-        auto ConcValid = ConcEval->CheckConcreteValidity(Exps);
+
+        auto ConcValid = ConcEval->CheckConcreteValidity(Exps, Types, ExpansionTypeIDs);
         if (!ConcValid) {
             return NONE_STATUS;
         }
@@ -201,7 +236,7 @@ namespace ESolver {
             Solutions.push_back(vector<pair<const SynthFuncOperator*, Expression>>());
             for (uint32 i = 0; i < SynthFuncs.size(); ++i) {
                 Solutions.back().push_back(pair<const SynthFuncOperator*,
-                                           Expression>(SynthFuncs[i], 
+                                           Expression>(SynthFuncs[i],
                                                        GenExpressionBase::ToUserExpression(Exps[i], this)));
             }
             return STOP_ENUMERATION;
@@ -213,7 +248,7 @@ namespace ESolver {
             return NONE_STATUS;
         }
     }
-        
+
     SolutionMap CEGSolver::Solve(const Expression& Constraint)
     {
         NumExpressionsTried = NumDistExpressions = (uint64)0;
@@ -226,40 +261,33 @@ namespace ESolver {
         // Check the spec
         LetBindingChecker::Do(Constraint);
         // Rewrite the spec
-        RewrittenConstraint = SpecRewriter::Do(this, Constraint, EvalRules, BaseAuxVars, DerivedAuxVars);
+        RewrittenConstraint = SpecRewriter::Do(this, Constraint, BaseAuxVars, DerivedAuxVars,
+                                               SynthFunAppMaps);
 
         if (Opts.StatsLevel >= 2) {
-            TheLogger.Log2("Eval Rules:").Log2("\n");
-            for (auto const& Rule : EvalRules) {
-                TheLogger.Log2(Rule).Log2("\n");
-            }
-
             TheLogger.Log2("Rewritten Constraint:").Log2("\n");
             TheLogger.Log2(RewrittenConstraint).Log2("\n");
         }
-        
+
         OrigConstraint = Constraint;
 
         // Set up SMT expressions for  aux vars
         BaseExprs = vector<SMTExpr>(BaseAuxVars.size() + DerivedAuxVars.size());
         for (auto const& Op : BaseAuxVars) {
-            BaseExprs[Op->GetPosition()] = TP->CreateVarExpr(Op->GetName(), Op->GetEvalType()->GetSMTType());
+            BaseExprs[Op->GetPosition()] =
+                TP->CreateVarExpr(Op->GetName(), Op->GetEvalType()->GetSMTType());
         }
 
         for (auto const& Op : DerivedAuxVars) {
-            BaseExprs[Op->GetPosition()] = TP->CreateVarExpr(Op->GetName(), Op->GetEvalType()->GetSMTType());
-        }
-        
-
-        // Set up the SMT expression for the constraint
-        vector<SMTExpr> DummyAssumptions;
-        SMTConstraint = RewrittenConstraint->ToSMT(TP, nullptr, BaseExprs, DummyAssumptions);
-        if (DummyAssumptions.size() != 0) {
-            throw InternalError((string)"Internal Error: Did not expect rewritten spec to generate assumption.\n" + 
-                                "At: " + __FILE__ + ":" + to_string(__LINE__));
+            BaseExprs[Op->GetPosition()] =
+                TP->CreateVarExpr(Op->GetName(), Op->GetEvalType()->GetSMTType());
         }
 
-        // Set up the relevant variables as the base aux var ops
+
+        // Set up the relevant variables as the aux vars
+        // which are essentially universally quantified
+        // as well as any aux vars which are used as an
+        // argument to a synth function
         for (auto const& Op : BaseAuxVars) {
             RelevantVars.insert(Op->GetName());
         }
@@ -277,11 +305,11 @@ namespace ESolver {
             SynthFuncs[i]->SetNumParams(CurGrammar->GetFormalParamVars().size());
             SynthFuncTypes[i] = SynthFuncs[i]->GetEvalType();
         }
-        
+
         // Create the concrete evaluator
         ConcEval = new ConcreteEvaluator(this, RewrittenConstraint, SynthFuncs.size(),
-                                         BaseAuxVars, DerivedAuxVars, EvalRules, SynthFuncTypes, 
-                                         TheLogger);
+                                         BaseAuxVars, DerivedAuxVars, SynthFunAppMaps,
+                                         SynthFuncTypes, TheLogger);
         // Create the enumerator
         if (NumSynthFuncs == 1) {
             ExpEnumerator = new CFGEnumeratorSingle(this, SynthGrammars[0]);
@@ -322,7 +350,7 @@ namespace ESolver {
             TheLogger.Log1("Total Time : ").Log1(Time).Log1(" seconds.\n");
             TheLogger.Log1("Peak Memory: ").Log1(Memory).Log1(" MB.\n");
         }
-        
+
         GenExpressionBase::Finalize();
         delete ConcEval;
         ConcEval = nullptr;
@@ -339,9 +367,9 @@ namespace ESolver {
         delete ExpEnumerator;
         ExpEnumerator = nullptr;
     }
-    
+
 } /* End namespace */
 
 
-// 
+//
 // CEGSolver.cpp ends here

@@ -1,13 +1,13 @@
-// GenExpression.cpp --- 
-// 
+// GenExpression.cpp ---
+//
 // Filename: GenExpression.cpp
 // Author: Abhishek Udupa
 // Created: Fri Jan  3 04:26:56 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -75,7 +75,7 @@ namespace ESolver {
                                                                             ESOLVER_MAX_LET_BOUND_VARS);
         }
         LetBindingValStackTop = 0;
-        memset((void*)(LetBindingValStack[LetBindingValStackTop]), 0, (sizeof(ConcreteValueBase const*) * 
+        memset((void*)(LetBindingValStack[LetBindingValStackTop]), 0, (sizeof(ConcreteValueBase const*) *
                                                                        ESOLVER_MAX_LET_BOUND_VARS));
 
         // Allocate space for the CVPool
@@ -109,14 +109,14 @@ namespace ESolver {
     ConcreteValueBase* GenExpressionBase::GetCV()
     {
         if (CVPoolTop == ESOLVER_CVPOOL_SIZE) {
-            throw InternalError((string)"Internal Error: CVPool exhausted.\n" + 
+            throw InternalError((string)"Internal Error: CVPool exhausted.\n" +
                                 "At " + __FILE__ + ":" + to_string(__LINE__));
         }
         return CVPool[CVPoolTop++];
     }
 
     void GenExpressionBase::Evaluate(const GenExpressionBase* Exp, VariableMap VarMap,
-                                     const uint32* ParamMap, ConcreteValueBase* Result) 
+                                     const uint32* ParamMap, ConcreteValueBase* Result)
     {
         Exp->Evaluate(ParamMap, VarMap);
         if (!PartialExpression) {
@@ -161,7 +161,7 @@ namespace ESolver {
         return "LetVar_" + to_string(Op->GetPosition());
     }
 
-    void GenLetVarExpression::Evaluate(const uint32* ParamMap, 
+    void GenLetVarExpression::Evaluate(const uint32* ParamMap,
                                        VariableMap VarMap) const
 
     {
@@ -170,7 +170,7 @@ namespace ESolver {
             PartialExpression = true;
             return;
         }
-        EvalStack[EvalStackTop++] = 
+        EvalStack[EvalStackTop++] =
             const_cast<ConcreteValueBase*>(LetBindingValStack[LetBindingValStackTop][Op->GetPosition()]);
     }
 
@@ -186,12 +186,13 @@ namespace ESolver {
     {
         auto it = BoundOps.find(Op->GetPosition());
         if (it == BoundOps.end()) {
-            throw InternalError((string)"Internal Error: Unexpected let bound variable encountered!\n" + 
+            throw InternalError((string)"Internal Error: Unexpected let bound " +
+                                "variable encountered!\n" +
                                 "At: " + __FILE__ + ":" + to_string(__LINE__));
         }
         return Solver->CreateExpression(it->second);
     }
-    
+
     const ESFixedTypeBase* GenLetVarExpression::GetType() const
     {
         return LetBindingValStack[LetBindingValStackTop][Op->GetPosition()]->GetType();
@@ -205,7 +206,7 @@ namespace ESolver {
     void GenLetVarExpression::SetVarID(const uint32 NewVarID) const
     {
         Op->SetPosition(NewVarID);
-    }    
+    }
 
     GenFPExpression::GenFPExpression(const FormalParamOperator* Op)
         : GenExpressionBase(), Op(Op)
@@ -227,7 +228,8 @@ namespace ESolver {
                                    VariableMap VarMap) const
     {
         if (!PartialExpression) {
-            EvalStack[EvalStackTop++] = const_cast<ConcreteValueBase*>(VarMap[ParamMap[Op->GetPosition()]]);
+            EvalStack[EvalStackTop++] =
+                const_cast<ConcreteValueBase*>(VarMap[ParamMap[Op->GetPosition()]]);
         }
     }
 
@@ -374,7 +376,7 @@ namespace ESolver {
                                        GenExpressionBase const* LetBoundExp,
                                        uint32 NumBindings)
         : Bindings(Bindings), LetBoundExp(LetBoundExp), NumBindings(NumBindings)
-        
+
     {
         // Nothing here
     }
@@ -419,7 +421,7 @@ namespace ESolver {
                     return;
                 }
 
-                (const_cast<ConcreteValueBase const**>(LetBindingValStack[LetBindingValStackTop]))[i] = 
+                (const_cast<ConcreteValueBase const**>(LetBindingValStack[LetBindingValStackTop]))[i] =
                     EvalStack[EvalStackTop - 1];
 
                 EvalStackTop--;
@@ -439,7 +441,7 @@ namespace ESolver {
                                     vector<SMTExpr>& Assumptions) const
     {
         // Create new bindings, but push them AFTER the current vars have
-        // been bound. These bindings should not be visible WHILE 
+        // been bound. These bindings should not be visible WHILE
         // the current bindings are being computed
         map<uint32, SMTExpr> NewBindingSMT(LetBindingSMTStack.back());
         vector<SMTExpr> NewAssumptions;
@@ -451,7 +453,7 @@ namespace ESolver {
                 auto CurVar = TP->CreateVarExpr((string)"LetVar_" + to_string(i) + "_" +
                                                 to_string(FreshVarID++),
                                                 BindingAsSMT.GetSort());
-                
+
                 auto CurAssumption = TP->CreateEQExpr(CurVar, BindingAsSMT);
                 NewAssumptions.push_back(CurAssumption);
                 NewBindingSMT[i] = CurVar;
@@ -466,8 +468,8 @@ namespace ESolver {
         return Retval;
     }
 
-    Expression GenLetExpression::ToUserExpression(ESolver* Solver, 
-                                                  const map<uint32, const LetBoundVarOperator*>& BoundOps) const 
+    Expression GenLetExpression::ToUserExpression(ESolver* Solver,
+                                                  const map<uint32, const LetBoundVarOperator*>& BoundOps) const
     {
         auto NewMap = BoundOps;
 
@@ -475,10 +477,10 @@ namespace ESolver {
         for (uint32 i = 0; i < NumBindings; ++i) {
             if (Bindings[i] != nullptr) {
                 // Create new let bound var operators
-                NewMap[i] = Solver->CreateLetBoundVariable((string)"LetVar_" + to_string(i), 
+                NewMap[i] = Solver->CreateLetBoundVariable((string)"LetVar_" + to_string(i),
                                                            Bindings[i]->GetType());
                 // Recurse on the binding
-                UserBindings[Solver->CreateExpression(NewMap[i])] = 
+                UserBindings[Solver->CreateExpression(NewMap[i])] =
                     Bindings[i]->ToUserExpression(Solver, BoundOps);
             }
         }
@@ -495,5 +497,5 @@ namespace ESolver {
 
 } /* end namespace */
 
-// 
+//
 // GenExpression.cpp ends here
