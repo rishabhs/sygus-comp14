@@ -116,6 +116,11 @@ namespace ESolver {
                                 const ESFixedTypeBase* Type,
                                 uint32 EvalTypeID, uint32& Status);
 
+        bool CheckSubExpressions(GenExpressionBase const* const* Exps,
+                                 ESFixedTypeBase const* const* Types,
+                                 uint32 const* EvalTypeIDs,
+                                 uint32& Status);
+
         uint32 GetSize() const;
     };
 

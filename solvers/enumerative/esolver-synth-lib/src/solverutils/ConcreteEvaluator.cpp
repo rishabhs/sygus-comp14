@@ -82,7 +82,6 @@ namespace ESolver {
                                                      SynthFunAppMaps[i].end());
             NumSynthFunApps += SynthFunAppMaps[i].size();
         }
-
     }
 
     ConcreteEvaluator::~ConcreteEvaluator()
@@ -174,28 +173,27 @@ namespace ESolver {
         ++NumPoints;
     }
 
-    // returns if subexpression is distinguishable or not
-    bool ConcreteEvaluator::CheckSubExpression(GenExpressionBase* Exp,
-                                               const ESFixedTypeBase* Type,
-                                               uint32 EvalTypeID, uint32& Status)
+    bool ConcreteEvaluator::CheckSubExpressions(GenExpressionBase const* const* Exps,
+                                                ESFixedTypeBase const* const* Types,
+                                                uint32 const* EvalTypeIDs,
+                                                uint32& Status)
     {
-        // return true;
         Status |= CONCRETE_EVAL_DIST;
         if (NumPoints == 0) {
-            return true;
-        }
-        if (NoDist) {
             return true;
         }
 
         for (uint32 i = 0; i < NumPoints; ++i) {
             auto const& CurPoint = Points[i];
             uint32 j = 0;
-            for (uint32 k = 0; j < NumSynthFuncs; ++k) {
-                for (auto const& AppMapTargetPos : SynthFunAppMaps[k]) {
+            for (uint32 SynthFunIndex = 0; SynthFunIndex < NumSynthFuncs; ++SynthFunIndex) {
+                for (auto const& AppMapTargetPos : SynthFunAppMaps[SynthFunIndex]) {
                     auto const& AppMap = AppMapTargetPos.first;
-                    GenExpressionBase::Evaluate(Exp, CurPoint.data(), AppMap.data(),
-                                                const_cast<ConcreteValueBase*>(SubExpEvalPoints[i][j]));
+                    GenExpressionBase::Evaluate(const_cast<GenExpressionBase*>(Exps[SynthFunIndex]),
+                                                CurPoint.data(), AppMap.data(),
+                                                const_cast<ConcreteValueBase*>
+                                                (SubExpEvalPoints[i][j]));
+
                     if (PartialExpression || ConcreteException) {
                         if (PartialExpression) {
                             Status |= CONCRETE_EVAL_PART;
@@ -205,6 +203,40 @@ namespace ESolver {
                     }
                     ++j;
                 }
+            }
+        }
+        return true;
+    }
+
+    // returns if subexpression is distinguishable or not
+    bool ConcreteEvaluator::CheckSubExpression(GenExpressionBase* Exp,
+                                               const ESFixedTypeBase* Type,
+                                               uint32 EvalTypeID, uint32& Status)
+    {
+        // expects NumSynthFuncs = 1
+        // return true;
+        Status |= CONCRETE_EVAL_DIST;
+        if (NumPoints == 0) {
+            return true;
+        }
+
+        for (uint32 i = 0; i < NumPoints; ++i) {
+            auto const& CurPoint = Points[i];
+            uint32 j = 0;
+            for (auto const& AppMapTargetPos : SynthFunAppMaps[0]) {
+                auto const& AppMap = AppMapTargetPos.first;
+                GenExpressionBase::Evaluate(Exp, CurPoint.data(), AppMap.data(),
+                                            const_cast<ConcreteValueBase*>
+                                            (SubExpEvalPoints[i][j]));
+
+                if (PartialExpression || ConcreteException) {
+                    if (PartialExpression) {
+                        Status |= CONCRETE_EVAL_PART;
+                    }
+                    PartialExpression = ConcreteException = false;
+                    return false;
+                }
+                ++j;
             }
         }
 
@@ -245,11 +277,8 @@ namespace ESolver {
             return true;
         }
 
-        for (uint32 i = 0; i < NumSynthFuncs; ++i) {
-            uint32 Status;
-            CheckSubExpression(const_cast<GenExpressionBase*>(Exps[i]),
-                               SynthFuncTypes[i], ExpansionTypeIDs[i], Status);
-        }
+        uint32 Status = 0;
+        CheckSubExpressions(Exps, Types, ExpansionTypeIDs, Status);
 
         // Check the spec now that the derived aux vars are all created
         for (uint32 i = 0; i < NumPoints; ++i) {
