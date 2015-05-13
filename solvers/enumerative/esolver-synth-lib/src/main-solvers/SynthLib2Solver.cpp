@@ -448,6 +448,12 @@ namespace ESolver {
         // Pop the stacks
         LetVarExpressionStack.pop_back();
         LetVarBindingStack.pop_back();
+
+        // Push a let expression onto the stack
+        auto BoundExpression = ProcessedTermStack.back();
+        ProcessedTermStack.pop_back();
+        auto ProcessedLetTerm = Solver->CreateLetExpression(NewLetVarBindingMap, BoundExpression);
+        ProcessedTermStack.push_back(ProcessedLetTerm);
     }
 
     void SynthLib2ESolver::VisitFunTerm(const FunTerm* TheTerm)
