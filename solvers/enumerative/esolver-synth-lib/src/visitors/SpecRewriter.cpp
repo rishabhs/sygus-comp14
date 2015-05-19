@@ -188,6 +188,7 @@ SpecRewriter::SpecRewriter(ESolver* Solver, uint32 NumSynthFuncs)
             auto Op = Solver->CreateAuxVariable(AuxIDCounter++, RewrittenBinding->GetType());
             auto AuxExp = Solver->CreateExpression(Op);
             AllAuxVarOps.push_back(Op);
+            BaseAuxVarOps.insert(Op);
             ExpMap[Binding.first] = AuxExp;
             EvalRules.push_back(EvalRule(Op, RewrittenBinding));
         }
