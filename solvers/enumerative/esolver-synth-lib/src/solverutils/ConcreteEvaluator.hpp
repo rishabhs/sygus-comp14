@@ -1,13 +1,13 @@
-// ConcreteEvaluator.hpp --- 
-// 
+// ConcreteEvaluator.hpp ---
+//
 // Filename: ConcreteEvaluator.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:49:55 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -59,43 +59,43 @@ namespace ESolver {
 
     class ConcreteEvaluator
     {
-        // Signature needs access to the SigVecPool
-        friend class Signature;
-
     private:
         ESolver* Solver;
         Expression RewrittenSpec;
         // Points consist only of base aux vars
-        vector<ConcreteValueBase const* const*> Points;
+        vector<vector<const ConcreteValueBase*>> Points;
         // Buffers for evaluation, also contain space for derived aux vars
-        ConcreteValueBase const*** EvalPoints;
+        vector<vector<const ConcreteValueBase*>> EvalPoints;
+        // Buffers for evaluation of subexpressions
+        vector<vector<const ConcreteValueBase*>> SubExpEvalPoints;
+
         vector<const AuxVarOperator*> BaseAuxVars;
         vector<const AuxVarOperator*> DerivedAuxVars;
+        vector<vector<pair<vector<uint32>, uint32> > > SynthFunAppMaps;
         vector<const ESFixedTypeBase*> SynthFuncTypes;
-        vector<EvalRule> EvalRules;
+        uint32 NumSynthFunApps;
         const uint32 NumBaseAuxVars;
         const uint32 NumDerivedAuxVars;
         const uint32 NumTotalAuxVars;
         const uint32 NumSynthFuncs;
-        const uint32 NumEvalRules;
         const bool NoDist;
         Logger& TheLogger;
         uint32 NumPoints;
         SigSetType SigSet;
-        
+
         // Pool for the signature objects
         boost::pool<>* SigPool;
 
-        // The pool
+        // The pool for signatures
         static boost::pool<>* SigVecPool;
 
     public:
-        ConcreteEvaluator(ESolver* Solver, 
+        ConcreteEvaluator(ESolver* Solver,
                           const Expression& RewrittenSpec,
                           uint32 NumSynthFuncs,
                           const vector<const AuxVarOperator*>& BaseAuxVars,
                           const vector<const AuxVarOperator*>& DerivedAuxVars,
-                          const vector<EvalRule>& EvalRules,
+                          const vector<map<vector<uint32>, uint32>>& SynthFunAppMaps,
                           const vector<const ESFixedTypeBase*>& SynthFuncTypes,
                           Logger& TheLogger);
 
@@ -105,12 +105,22 @@ namespace ESolver {
         void AddPoint(const SMTConcreteValueModel& Model);
 
         // For multiple function synthesis
-        bool CheckConcreteValidity(GenExpressionBase const* const* Exps);
+        bool CheckConcreteValidity(GenExpressionBase const* const* Exps,
+                                   ESFixedTypeBase const* const* Types,
+                                   const uint32* ExpansionTypeIDs);
         // For single function synthesis
         bool CheckConcreteValidity(GenExpressionBase const* Exp,
                                    const ESFixedTypeBase* Type,
                                    uint32 EvalTypeID, uint32& Status);
-                                   
+        bool CheckSubExpression(GenExpressionBase* Exp,
+                                const ESFixedTypeBase* Type,
+                                uint32 EvalTypeID, uint32& Status);
+
+        bool CheckSubExpressions(GenExpressionBase const* const* Exps,
+                                 ESFixedTypeBase const* const* Types,
+                                 uint32 const* EvalTypeIDs,
+                                 uint32& Status);
+
         uint32 GetSize() const;
     };
 
@@ -118,6 +128,5 @@ namespace ESolver {
 
 #endif /* __ESOLVER_CONCRETE_EVALUATOR_HPP */
 
-
-// 
+//
 // ConcreteEvaluator.hpp ends here

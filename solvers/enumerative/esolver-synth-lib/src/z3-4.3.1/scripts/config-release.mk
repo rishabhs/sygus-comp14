@@ -1,4 +1,4 @@
-CC=gcc
+CC=g++
 PREFIX=/usr
 CXX=g++
 CXXFLAGS= -D_MP_INTERNAL -D_AMD64_ -D_USE_THREAD_LOCAL  -fopenmp -mfpmath=sse -fno-strict-aliasing -fPIC -c -O3 -D _EXTERNAL_RELEASE -fomit-frame-pointer -msse -msse2 

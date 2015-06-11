@@ -1,13 +1,13 @@
-// UserExpression.hpp --- 
-// 
+// UserExpression.hpp ---
+//
 // Filename: UserExpression.hpp
 // Author: Abhishek Udupa
 // Created: Thu Jan  2 00:47:41 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -51,11 +51,11 @@ namespace ESolver {
     protected:
         static const vector<Expression> EmptyChildVec;
         virtual void ComputeHashValue() const = 0;
-   
+
         const OperatorBase* Op;
         mutable uint64 HashValue;
         mutable bool HashValid;
-     
+
     public:
         UserExpressionBase(const OperatorBase* Op);
         virtual ~UserExpressionBase();
@@ -70,7 +70,7 @@ namespace ESolver {
                               ExpSubstMap SubstExps,
                               const vector<SMTExpr>& BaseExprs,
                               vector<SMTExpr>& Assumptions) const = 0;
-        
+
         virtual string ToString() const = 0;
         virtual const ESFixedTypeBase* GetType() const;
         virtual bool Equals(const UserExpressionBase& Other) const = 0;
@@ -92,7 +92,7 @@ namespace ESolver {
         }
 
         const OperatorBase* GetOp() const;
-        
+
         uint64 Hash() const;
     };
 
@@ -135,12 +135,12 @@ namespace ESolver {
     public:
         UserLetBoundVarExpression(const LetBoundVarOperator* Op);
         virtual ~UserLetBoundVarExpression();
-        
+
         virtual void Evaluate(ExpSubstMap SubstExps,
                               VariableMap VarMap,
                               ConcreteValueBase* Result) const override;
 
-        virtual SMTExpr ToSMT(TheoremProver* TP, 
+        virtual SMTExpr ToSMT(TheoremProver* TP,
                               ExpSubstMap SubstExps,
                               const vector<SMTExpr>& BaseExprs,
                               vector<SMTExpr>& Assumptions) const override;
@@ -156,12 +156,12 @@ namespace ESolver {
     public:
         UserFormalParamExpression(const FormalParamOperator* Op);
         virtual ~UserFormalParamExpression();
-        
+
         virtual void Evaluate(ExpSubstMap SubstExps,
                               VariableMap VarMap,
                               ConcreteValueBase* Result) const override;
 
-        virtual SMTExpr ToSMT(TheoremProver* TP, 
+        virtual SMTExpr ToSMT(TheoremProver* TP,
                               ExpSubstMap SubstExps,
                               const vector<SMTExpr>& BaseExprs,
                               vector<SMTExpr>& Assumptions) const override;
@@ -176,7 +176,7 @@ namespace ESolver {
     public:
         UserAuxVarExpression(const AuxVarOperator* Op);
         virtual ~UserAuxVarExpression();
-        
+
         const AuxVarOperator* GetOp() const;
         virtual bool Equals(const UserExpressionBase& Other) const override;
         virtual void Accept(ExpressionVisitorBase* Visitor) const override;
@@ -187,7 +187,7 @@ namespace ESolver {
     public:
         UserFuncExpressionBase(const FuncOperatorBase* Op);
         virtual ~UserFuncExpressionBase();
-        
+
         const FuncOperatorBase* GetOp() const;
     };
 
@@ -204,7 +204,7 @@ namespace ESolver {
                               VariableMap VarMap,
                               ConcreteValueBase* Result) const override;
 
-        virtual SMTExpr ToSMT(TheoremProver* TP, 
+        virtual SMTExpr ToSMT(TheoremProver* TP,
                               ExpSubstMap SubstExps,
                               const vector<SMTExpr>& BaseExprs,
                               vector<SMTExpr>& Assumptions) const override;
@@ -230,14 +230,14 @@ namespace ESolver {
                                       const vector<Expression> Children);
         virtual ~UserInterpretedFuncExpression();
 
-        
+
         virtual const vector<Expression>& GetChildren() const override;
 
         virtual void Evaluate(ExpSubstMap SubstExps,
                               VariableMap VarMap,
                               ConcreteValueBase* Result) const override;
 
-        virtual SMTExpr ToSMT(TheoremProver* TP, 
+        virtual SMTExpr ToSMT(TheoremProver* TP,
                               ExpSubstMap SubstExps,
                               const vector<SMTExpr>& BaseExprs,
                               vector<SMTExpr>& Assumptions) const override;
@@ -261,10 +261,10 @@ namespace ESolver {
         virtual void ComputeHashValue() const override;
 
     public:
-        UserSynthFuncExpression(const SynthFuncOperator* Op, 
+        UserSynthFuncExpression(const SynthFuncOperator* Op,
                                 const vector<Expression>& Children);
         virtual ~UserSynthFuncExpression();
-        
+
         virtual const vector<Expression>& GetChildren() const override;
         virtual void Evaluate(ExpSubstMap SubstExps,
                               VariableMap VarMap,
@@ -296,7 +296,7 @@ namespace ESolver {
         UserLetExpression(const map<Expression, Expression>& LetBoundVars,
                           const Expression& BoundInExpression);
         ~UserLetExpression();
-        
+
         virtual void Evaluate(ExpSubstMap SubstExps,
                               VariableMap VarMap,
                               ConcreteValueBase* Result) const override;
@@ -310,7 +310,7 @@ namespace ESolver {
         virtual bool Equals(const UserExpressionBase& Other) const override;
         virtual void Accept(ExpressionVisitorBase* Visitor) const override;
         virtual const ESFixedTypeBase* GetType() const override;
-        
+
         const Expression& GetBoundInExpression() const;
         const map<Expression, Expression>& GetLetBoundVars() const;
     };
@@ -324,5 +324,5 @@ namespace ESolver {
 #endif /* __ESOLVER_USER_EXPRESSION_HPP */
 
 
-// 
+//
 // UserExpression.hpp ends here

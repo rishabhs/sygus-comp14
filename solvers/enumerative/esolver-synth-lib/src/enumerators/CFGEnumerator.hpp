@@ -1,12 +1,12 @@
-// CFGEnumerator.hpp --- // 
+// CFGEnumerator.hpp --- //
 // Filename: CFGEnumerator.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:47:52 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -20,7 +20,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -31,8 +31,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -62,7 +62,6 @@ namespace ESolver {
         ExpsOfGNCost ExpRepository;
         vector<string> ExpansionStack;
         unordered_map<string, uint32> ExpansionToTypeID;
-        UIDGenerator ExpansionTypeUIDGenerator;
         vector<const GenExpressionBase*> ExpsToDelete;
         // To recursively propagate a STOP_ENUMERATION signal
         bool Done;
@@ -79,8 +78,12 @@ namespace ESolver {
         inline boost::pool<>* GetPoolForSize(uint32 Size);
 
         template<typename T, typename O>
-        inline GenExpTLVec* MakeBaseExpression(GenExpTLVec* ExpVec, const O* Op, const ESFixedTypeBase* Type,
-                                               uint32 ExpansionTypeID, uint32 Cost, const GNCostPair& Key, 
+        inline GenExpTLVec* MakeBaseExpression(GenExpTLVec* ExpVec,
+                                               const O* Op,
+                                               const ESFixedTypeBase* Type,
+                                               uint32 ExpansionTypeID,
+                                               uint32 Cost,
+                                               const GNCostPair& Key,
                                                bool Complete)
         {
             if (Cost != 1) {
@@ -88,7 +91,11 @@ namespace ESolver {
                 return ExpVec;
             }
             auto Exp = new T(Op);
-            auto Status = Solver->ExpressionCallBack(Exp, Type, ExpansionTypeID, Complete, Index);
+            auto Status =
+                (Complete ?
+                 Solver->ExpressionCallBack(Exp, Type, ExpansionTypeID, Index) :
+                 Solver->SubExpressionCallBack(Exp, Type, ExpansionTypeID));
+
             if ((Status & DELETE_EXPRESSION) != 0) {
                 delete Exp;
             } else {
@@ -98,13 +105,14 @@ namespace ESolver {
             if ((Status & STOP_ENUMERATION) != 0) {
                 Done = true;
             }
+
             ExpVec->Freeze();
             ExpRepository[Key] = ExpVec;
             PopExpansion();
             return ExpVec;
         }
 
-        inline GenExpTLVec* 
+        inline GenExpTLVec*
         GetVecForGNCost(const GrammarNode* GN, uint32 Cost);
         inline GenExpTLVec*
         MakeVecForGNCost(const GrammarNode* GN, uint32 Cost);
@@ -114,7 +122,7 @@ namespace ESolver {
 
         GenExpTLVec*
         PopulateExpsOfGNCost(const GrammarNode* GN, uint32 Cost, bool Complete);
-        
+
     public:
         CFGEnumeratorSingle(ESolver* Solver, const Grammar* TheGrammar, uint32 Index = 0);
         virtual ~CFGEnumeratorSingle();
@@ -142,24 +150,28 @@ namespace ESolver {
             vector<uint32> CurrentSizes;
 
         public:
-            ESolverMultiStub(ESolverOpts* Opts, ESolver* Solver, 
+            ESolverMultiStub(ESolverOpts* Opts, ESolver* Solver,
                              const vector<CFGEnumeratorSingle*>& Enumerators,
                              const vector<const ESFixedTypeBase*>& TargetTypes);
             virtual ~ESolverMultiStub();
-            virtual CallbackStatus ExpressionCallBack(const GenExpressionBase* Exp, 
-                                                      const ESFixedTypeBase* Type, 
+
+            virtual CallbackStatus SubExpressionCallBack(const GenExpressionBase* Exp,
+                                                         const ESFixedTypeBase* Type,
+                                                         uint32 ExpansionTypeID) override;
+
+            virtual CallbackStatus ExpressionCallBack(const GenExpressionBase* Exp,
+                                                      const ESFixedTypeBase* Type,
                                                       uint32 ExpansionTypeID,
-                                                      bool Complete,
                                                       uint32 EnumeratorIndex) override;
 
             virtual CallbackStatus ExpressionCallBack(GenExpressionBase const* const* Exp,
-                                                      ESFixedTypeBase const* const* Type, 
+                                                      ESFixedTypeBase const* const* Type,
                                                       uint32 const* ExpansionTypeID) override;
 
             virtual SolutionMap Solve(const Expression& Constraint) override;
 
             virtual void EndSolve() override;
-            
+
             void SetEnumerator (uint32 Index, CFGEnumeratorSingle* Enumerator);
             void EnumerateOfCosts(const vector<uint32>& Sizes);
         };
@@ -171,7 +183,7 @@ namespace ESolver {
     public:
         CFGEnumeratorMulti(ESolver* Solver, const vector<Grammar*>& InputGrammars);
         virtual ~CFGEnumeratorMulti();
-        
+
         virtual void EnumerateOfCost(uint32 Size) override;
         virtual void OnReset() override;
     };
@@ -181,5 +193,5 @@ namespace ESolver {
 #endif /* __ESOLVER_CFG_ENUMERATOR_HPP */
 
 
-// 
+//
 // CFGEnumerator.hpp ends here

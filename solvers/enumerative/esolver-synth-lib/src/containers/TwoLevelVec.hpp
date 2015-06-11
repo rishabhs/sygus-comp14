@@ -1,13 +1,13 @@
-// TwoLevelVec.hpp --- 
-// 
+// TwoLevelVec.hpp ---
+//
 // Filename: TwoLevelVec.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:52:34 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -52,7 +52,7 @@ namespace ESolver {
     template<typename T> class TLVecConstIterator;
     template<typename T> class TLVec;
 
-    
+
     /*
        A two level managed vector class
     */
@@ -61,7 +61,7 @@ namespace ESolver {
     class TLVec
     {
     private:
-        template<typename U> 
+        template<typename U>
         class TLVecConstIterator
         {
         private:
@@ -70,9 +70,9 @@ namespace ESolver {
             int64 L1;
             int64 L2;
             bool Done;
-            
+
         public:
-            TLVecConstIterator()        
+            TLVecConstIterator()
                 : Container(nullptr), L1(-1), L2(-1), Done(false) {}
 
             TLVecConstIterator(const TLVecConstIterator<U>& Other)
@@ -86,7 +86,7 @@ namespace ESolver {
                 L1 = L2 = -1;
                 Done = false;
             }
-            
+
             // assignment
             inline TLVecConstIterator<U>& operator = (const TLVecConstIterator<U>& Other)
             {
@@ -101,12 +101,12 @@ namespace ESolver {
                 }
             }
 
-            
+
             // Equality
             inline bool operator == (const TLVecConstIterator<U>& Other) const
             {
-                return (Container != nullptr && Other.Container != nullptr && 
-                        Container == Other.Container && L1 == Other.L1 && 
+                return (Container != nullptr && Other.Container != nullptr &&
+                        Container == Other.Container && L1 == Other.L1 &&
                         L2 == Other.L2 && Done == Other.Done);
             }
 
@@ -114,7 +114,7 @@ namespace ESolver {
             {
                 return (!(*this == Other));
             }
-            
+
             // Increment
             inline TLVecConstIterator<U> operator ++ (int Dummy)
             {
@@ -122,8 +122,8 @@ namespace ESolver {
                     return *this;
                 }
                 auto Retval = *this;
-                if(UNLIKELY(++L2 == Container->TheTLVec[L1]->size())) {
-                    if(UNLIKELY(++L1 == Container->TheTLVec.size())) {
+                if(UNLIKELY(++L2 == (int64)Container->TheTLVec[L1]->size())) {
+                    if(UNLIKELY(++L1 == (int64)Container->TheTLVec.size())) {
                         Done = true;
                         return Retval;
                     } else {
@@ -140,8 +140,8 @@ namespace ESolver {
                 if(Done) {
                     return *this;
                 }
-                if(UNLIKELY(++L2 == Container->TheTLVec[L1]->size())) {
-                    if(UNLIKELY(++L1 == Container->TheTLVec.size())) {
+                if(UNLIKELY(++L2 == (int64)Container->TheTLVec[L1]->size())) {
+                    if(UNLIKELY(++L1 == (int64)Container->TheTLVec.size())) {
                         Done = true;
                         return *this;
                     } else {
@@ -152,7 +152,7 @@ namespace ESolver {
                     return *this;
                 }
             }
-            
+
             // Deref
             inline const U* operator * () const
             {
@@ -169,21 +169,21 @@ namespace ESolver {
         public:
             RefCountedVector() { VecPtr = new vector<U>(); }
             virtual ~RefCountedVector() { delete VecPtr; }
-            
+
             inline size_t size() const { return VecPtr->size(); }
             U& at(size_t Index) { return VecPtr->at(Index); }
             const U& at(size_t Index) const { return VecPtr->at(Index); }
             void shrink_to_fit() { VecPtr->shrink_to_fit(); }
             void push_back(const U& Elem) { VecPtr->push_back(Elem); }
         };
-        
+
         vector<ESSmartPtr<RefCountedVector<T*>>> TheTLVec;
         uint64 NumElems;
 
     public:
         // typedefs
         typedef TLVecConstIterator<T> ConstIterator;
-        
+
         // Default constructor
         TLVec();
         // Copy constructor
@@ -323,11 +323,11 @@ namespace ESolver {
             return typename TLVec<T>::ConstIterator(this, TheTLVec.size(), TheTLVec.back()->size(), true);
         }
     }
- 
+
 } /* End namespace */
 
 #endif /* __ESOLVER_TWO_LEVEL_VEC_HPP */
 
 
-// 
+//
 // TwoLevelVec.hpp ends here

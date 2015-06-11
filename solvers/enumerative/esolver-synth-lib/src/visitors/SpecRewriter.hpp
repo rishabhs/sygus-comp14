@@ -1,13 +1,13 @@
-// SpecRewriter.hpp --- 
-// 
+// SpecRewriter.hpp ---
+//
 // Filename: SpecRewriter.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:48:35 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -65,19 +65,27 @@ namespace ESolver {
     private:
         map<Expression, Expression> ExpMap;
         vector<EvalRule> EvalRules;
-        vector<const AuxVarOperator*> BaseAuxVarOps;
+        // Anything that flows into a function to be synthesized
+        // is a base aux variable, and is universally quantified
+        // In addition, all user specified universally quantified
+        // variables are also translated into base aux variables.
+        set<const AuxVarOperator*> BaseAuxVarOps;
+        // A derived aux variable is something that is NOT a base
+        // aux variable
         vector<const AuxVarOperator*> DerivedAuxVarOps;
+        // all aux variables created during this process
+        vector<const AuxVarOperator*> AllAuxVarOps;
+        // The set of argument tuples for each occurence
+        // of a synth function
+        vector<map<vector<const AuxVarOperator*>, const AuxVarOperator*>> SynthFunArgOps;
         ESolver* Solver;
         uint64 AuxIDCounter;
         vector<Expression> RewriteStack;
 
-        // Helper functions
-        inline bool IsPure(const Expression& Exp) const;
-
     public:
-        SpecRewriter(ESolver* Solver);
+        SpecRewriter(ESolver* Solver, uint32 NumSynthFuncs);
         virtual ~SpecRewriter();
-        
+
         virtual void VisitUserSynthFuncExpression(const UserSynthFuncExpression* Exp) override;
         virtual void VisitUserUQVarExpression(const UserUQVarExpression* Exp) override;
         virtual void VisitUserInterpretedFuncExpression(const UserInterpretedFuncExpression* Exp) override;
@@ -87,18 +95,18 @@ namespace ESolver {
         virtual void VisitUserConstExpression(const UserConstExpression* Exp) override;
         virtual void VisitUserFormalParamExpression(const UserFormalParamExpression* Exp) override;
         virtual void VisitUserAuxVarExpression(const UserAuxVarExpression* Exp) override;
-        
+
 
         static Expression Do(ESolver* Solver, const Expression& Exp,
-                             vector<EvalRule>& EvalRules,
                              vector<const AuxVarOperator*>& BaseAuxVarsOps,
-                             vector<const AuxVarOperator*>& DerivedAuxVarOps);
+                             vector<const AuxVarOperator*>& DerivedAuxVarOps,
+                             vector<map<vector<uint32>, uint32>>& SynthFunAppMaps);
     };
-    
+
 } /* End namespace */
 
 #endif /* __ESOLVER_SPEC_REWRITER_HPP */
 
 
-// 
+//
 // SpecRewriter.hpp ends here

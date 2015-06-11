@@ -1,13 +1,13 @@
-// CEGSolver.hpp --- 
-// 
+// CEGSolver.hpp ---
+//
 // Filename: CEGSolver.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:50:33 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -61,13 +61,11 @@ namespace ESolver {
         Expression RewrittenConstraint;
         vector<const AuxVarOperator*> BaseAuxVars;
         vector<const AuxVarOperator*> DerivedAuxVars;
+        vector<map<vector<uint32>, uint32>> SynthFunAppMaps;
         set<string> RelevantVars;
-        vector<EvalRule> EvalRules;
         vector<const SynthFuncOperator*> SynthFuncs;
         // SMT expressions for the aux vars
         vector<SMTExpr> BaseExprs;
-        // The rewritten constraint as an SMT constraint
-        SMTExpr SMTConstraint;
         bool Complete;
         SolutionMap Solutions;
         bool Restart;
@@ -83,11 +81,14 @@ namespace ESolver {
     public:
         CEGSolver(const ESolverOpts* Opts);
         virtual ~CEGSolver();
-        
-        virtual CallbackStatus ExpressionCallBack(const GenExpressionBase* Exp, 
-                                                  const ESFixedTypeBase* Type, 
+
+        virtual CallbackStatus SubExpressionCallBack(const GenExpressionBase* Exp,
+                                                     const ESFixedTypeBase* Type,
+                                                     uint32 ExpansionTypeID) override;
+
+        virtual CallbackStatus ExpressionCallBack(const GenExpressionBase* Exp,
+                                                  const ESFixedTypeBase* Type,
                                                   uint32 ExpansionTypeID,
-                                                  bool Complete,
                                                   uint32 EnumeratorIndex = 0) override;
         // For multifunction synthesis
         virtual CallbackStatus ExpressionCallBack(GenExpressionBase const* const* Exp,
@@ -104,5 +105,5 @@ namespace ESolver {
 #endif /* __ESOLVER_CEG_SOLVER_HPP */
 
 
-// 
+//
 // CEGSolver.hpp ends here

@@ -1,13 +1,13 @@
-// Signature.cpp --- 
-// 
+// Signature.cpp ---
+//
 // Filename: Signature.cpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:53:29 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -45,14 +45,14 @@
 #include "../solverutils/ConcreteEvaluator.hpp"
 
 namespace ESolver {
-    
-    Signature::Signature(uint32 Size, uint32 ExpTypeID)
+
+    Signature::Signature(uint32 Size, uint32 ExpTypeID, boost::pool<>* ValVecPool)
         : HashValue(UNDEFINED_HASH_VALUE), Size(Size), ExpTypeID(ExpTypeID)
     {
         if(Size == 0) {
             ValVec = NULL;
         } else {
-            ValVec = (ConcreteValueBase const**)ConcreteEvaluator::SigVecPool->malloc();
+            ValVec = (const ConcreteValueBase**) ValVecPool->malloc();
         }
     }
 
@@ -66,6 +66,7 @@ namespace ESolver {
     {
         HashValue = 0;
         boost::hash_combine(HashValue, ExpTypeID);
+        boost::hash_combine(HashValue, Size);
         for(uint32 i = 0; i < Size; ++i) {
             boost::hash_combine(HashValue, ValVec[i]->Hash());
         }
@@ -80,14 +81,17 @@ namespace ESolver {
     {
         return ValVec[Index];
     }
-    
+
     bool Signature::Equals(const Signature& Other) const
     {
         if(Hash() != Other.Hash()) {
             return false;
         }
+        if (Size != Other.Size) {
+            return false;
+        }
 
-        return (ExpTypeID == Other.ExpTypeID && 
+        return (ExpTypeID == Other.ExpTypeID &&
                 memcmp(ValVec, Other.ValVec, sizeof(ConcreteValueBase*) * Size) == 0);
     }
 
@@ -97,6 +101,9 @@ namespace ESolver {
             return false;
         }
         if (ExpTypeID != Other.ExpTypeID) {
+            return false;
+        }
+        if (Size != Other.Size) {
             return false;
         }
         for (uint32 i = 0; i < Size; ++i) {
@@ -144,9 +151,9 @@ namespace ESolver {
         str << VVec.ToString();
         return str;
     }
-    
+
 } /* End namespace */
 
 
-// 
+//
 // Signature.cpp ends here

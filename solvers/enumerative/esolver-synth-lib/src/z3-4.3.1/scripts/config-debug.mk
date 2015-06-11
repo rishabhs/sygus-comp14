@@ -1,4 +1,4 @@
-CC=gcc
+CC=g++
 PREFIX=/usr
 CXX=g++
 CXXFLAGS= -D_MP_INTERNAL -D_AMD64_ -D_USE_THREAD_LOCAL  -fopenmp -mfpmath=sse -fno-strict-aliasing -fPIC -DZ3DEBUG -D_TRACE -c -g -Wall -msse -msse2 

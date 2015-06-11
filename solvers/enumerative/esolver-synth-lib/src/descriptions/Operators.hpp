@@ -1,13 +1,13 @@
-// Operators.hpp --- 
-// 
+// Operators.hpp ---
+//
 // Filename: Operators.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan  1 17:08:56 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -50,7 +50,7 @@ namespace ESolver {
     // We define some operator classes which
     // encapsulate operators/variables/constants
     // At it's most basic level an operator is a function
-    // We specialize the base class based on the 
+    // We specialize the base class based on the
     // kind of the function (constant/variable/etc)
 
     extern UIDGenerator OpUIDGenerator;
@@ -97,7 +97,7 @@ namespace ESolver {
         {
             return dynamic_cast<const T*>(this);
         }
-        
+
         uint32 GetCost() const;
     };
 
@@ -105,16 +105,16 @@ namespace ESolver {
     {
     protected:
         mutable uint64 Position;
-        
+
     public:
         VarOperatorBase(const string& Name, const ESFixedTypeBase* Type, uint32 Cost = 1);
         VarOperatorBase(const string& Name, const string& MangledName,
                         const ESFixedTypeBase* Type, uint32 Cost = 1);
 
         virtual ~VarOperatorBase();
-        
+
         virtual uint32 GetArity() const override;
-        
+
         uint64 GetPosition() const;
         void SetPosition(uint64 NewPosition) const;
     };
@@ -180,7 +180,7 @@ namespace ESolver {
     private:
         bool Anon;
         const ConcreteValueBase* ConstantValue;
-        
+
     public:
         ConstOperator(const string& Name, const ESFunctionType* FuncType,
                       const ConcreteValueBase* ConstantValue, uint32 Cost = 1);
@@ -197,7 +197,7 @@ namespace ESolver {
         ConcFunctorBase* ConcFunctor;
         SymbFunctorBase* SymbFunctor;
         bool Symmetric;
-        
+
     public:
         InterpretedFuncOperator(const string& Name, const ESFunctionType* FuncType,
                                 ConcFunctorBase* ConcFunctor,
@@ -245,7 +245,7 @@ namespace ESolver {
                           const vector<string>& ParamNames, const Grammar* SynthGrammar);
 
         virtual ~SynthFuncOperator();
-        
+
         uint32 GetPosition() const;
         void SetPosition(uint32 NewPosition) const;
 
@@ -258,11 +258,11 @@ namespace ESolver {
         const Grammar* GetSynthGrammar() const;
         const vector<string>& GetParamNames() const;
     };
-    
+
 
 } /* end namespace */
 
 #endif /* __ESOLVER_OPERATORS_HPP */
 
-// 
+//
 // Operators.hpp ends here

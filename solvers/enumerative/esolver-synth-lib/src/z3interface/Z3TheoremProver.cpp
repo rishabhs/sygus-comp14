@@ -1,13 +1,13 @@
-// Z3TheoremProver.cpp --- 
-// 
+// Z3TheoremProver.cpp ---
+//
 // Filename: Z3TheoremProver.cpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:52:58 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -139,7 +139,7 @@ namespace ESolver {
         Z3_sort EnumSortRaw = Z3_mk_enumeration_sort(TheContext, TypeNameSymbol,
                                                      NumConstructors, EnumConstSymbols,
                                                      EnumConsFuncDecls, EnumTestFuncDecls);
-        
+
         // Increment the ref counts of the func decls immediately
         for (uint32 i = 0; i < NumConstructors; ++i) {
             Z3_inc_ref(TheContext, Z3_func_decl_to_ast(TheContext, EnumConsFuncDecls[i]));
@@ -157,7 +157,7 @@ namespace ESolver {
         free(EnumConsFuncDecls);
         free(EnumTestFuncDecls);
         free(EnumConstSymbols);
-        
+
         return Retval;
     }
 
@@ -234,7 +234,7 @@ namespace ESolver {
             } else if(BVValue[i] == '1') {
                 NumValue |= 1;
             } else {
-                throw ValueException((string)"Error: The value \"" + BVValue + 
+                throw ValueException((string)"Error: The value \"" + BVValue +
                                      "\" is not a valid bitvector");
             }
         }
@@ -367,7 +367,7 @@ namespace ESolver {
         }
         Args[0] = Exp1.AST;
         Args[1] = Exp2.AST;
-        
+
         Retval = Z3Expr(TheContext, Z3_mk_add(TheContext, 2, Args));
         free(Args);
         return Retval;
@@ -383,7 +383,7 @@ namespace ESolver {
         }
         Args[0] = Exp1.AST;
         Args[1] = Exp2.AST;
-        
+
         Retval = Z3Expr(TheContext, Z3_mk_sub(TheContext, 2, Args));
         free(Args);
         return Retval;
@@ -424,7 +424,7 @@ namespace ESolver {
                                         const SMTExpr& IfExp,
                                         const SMTExpr& ElseExp)
     {
-        return Z3Expr(TheContext, Z3_mk_ite(TheContext, Pred.AST, 
+        return Z3Expr(TheContext, Z3_mk_ite(TheContext, Pred.AST,
                                             IfExp.AST, ElseExp.AST));
     }
 
@@ -631,7 +631,7 @@ namespace ESolver {
         return Z3Expr(TheContext, Z3_mk_concat(TheContext, Exp1.AST, Exp2.AST));
     }
 
-    SMTExpr Z3TheoremProver::CreateEmptySetExpr(const SMTType& ElementType) 
+    SMTExpr Z3TheoremProver::CreateEmptySetExpr(const SMTType& ElementType)
     {
         return Z3Expr(TheContext, Z3_mk_empty_set(TheContext, ElementType.Sort));
     }
@@ -681,7 +681,7 @@ namespace ESolver {
     {
         return Z3Expr(TheContext, Z3_mk_set_member(TheContext, SetExpr.AST, ElemExpr.AST));
     }
-    
+
     SMTExpr Z3TheoremProver::CreateSetIsSubsetExpr(const SMTExpr& SetExpr1, const SMTExpr& SetExpr2)
     {
         return Z3Expr(TheContext, Z3_mk_set_subset(TheContext, SetExpr1.AST, SetExpr2.AST));
@@ -753,7 +753,7 @@ namespace ESolver {
         }
     }
 
-    void Z3TheoremProver::GetConcreteModel(const set<string>& RelevantVars, 
+    void Z3TheoremProver::GetConcreteModel(const set<string>& RelevantVars,
                                            SMTModel& Model,
                                            ESolver* Solver)
     {
@@ -762,23 +762,26 @@ namespace ESolver {
         }
 
         set<string>::const_iterator RelevantVarsEnd = RelevantVars.end();
-        
+
         for(set<string>::const_iterator it = RelevantVars.begin(); it != RelevantVarsEnd; ++it) {
             const OperatorBase* OpInfo = Solver->LookupOperator(*it);
             const VarOperatorBase* VarOp = OpInfo->As<VarOperatorBase>();
             auto AuxVarOp = OpInfo->As<AuxVarOperator>();
             if(VarOp == NULL && AuxVarOp == NULL) {
-                throw ModelGenException((string)"Error: Expected operator \"" + *it + "\" to be a variable");
+                throw ModelGenException((string)"Error: Expected operator \"" + *it +
+                                        "\" to be a variable");
             }
 
             const ESFixedTypeBase* Type = OpInfo->GetEvalType();
 
             Z3_symbol CurrentVarSymbol = Z3_mk_string_symbol(TheContext, OpInfo->GetName().c_str());
-            Z3_ast CurrentVarExpr = Z3_mk_const(TheContext, CurrentVarSymbol, 
+            Z3_ast CurrentVarExpr = Z3_mk_const(TheContext, CurrentVarSymbol,
                                                 Type->GetSMTType().Sort);
             Z3_inc_ref(TheContext, CurrentVarExpr);
             Z3_ast CurrentVarEval = CurrentVarExpr;
-            if(!Z3_model_eval(TheContext, TheModel.Model, CurrentVarExpr, Z3_TRUE, &CurrentVarEval)) {
+            if(!Z3_model_eval(TheContext, TheModel.Model,
+                              CurrentVarExpr, Z3_TRUE,
+                              &CurrentVarEval)) {
                 throw ModelGenException((string)"Error: Could not find a valuation for \"" +
                                         OpInfo->GetName() + "\" in the concrete model");
             }
@@ -797,7 +800,7 @@ namespace ESolver {
         string NumBitsString;
         string WorkString = BVString.substr(2, BVString.length() - 2);
         ostringstream sstr;
-        
+
         uint32 i = 0;
 
         while(WorkString[i] != '[') {
@@ -829,7 +832,7 @@ namespace ESolver {
         // Parse the concrete model into ConcreteValues
         SMTModel::iterator ModelEnd = Model.end();
         for(SMTModel::iterator it = Model.begin(); it != ModelEnd; ++it) {
-            
+
             string ValueString;
             const OperatorBase* CurOp = Solver->LookupOperator(it->first);
             auto VarOp = CurOp->As<VarOperatorBase>();
@@ -846,9 +849,9 @@ namespace ESolver {
             case BaseTypeBool:
                 ValueString = Z3_ast_to_string(TheContext, (it->second).AST);
                 if(ValueString == "true") {
-                    ConcModel[CurVarName] = Solver->CreateValue(Type, (int64)1); 
+                    ConcModel[CurVarName] = Solver->CreateValue(Type, (int64)1);
                 } else {
-                    ConcModel[CurVarName] = Solver->CreateValue(Type, (int64)0); 
+                    ConcModel[CurVarName] = Solver->CreateValue(Type, (int64)0);
                 }
                 break;
 
@@ -856,7 +859,7 @@ namespace ESolver {
                 ValueString = Z3_ast_to_string(TheContext, (it->second).AST);
                 ConcModel[CurVarName] = Solver->CreateValue(Type, ValueString);
                 break;
-                
+
             case BaseTypeEnum:
                 ValueString = Z3_ast_to_string(TheContext, (it->second).AST);
                 ConcModel[CurVarName] = Solver->CreateValue(Type, ValueString);
@@ -874,7 +877,7 @@ namespace ESolver {
                 break;
 
             default:
-                throw InternalError((string)"Unhandled type in GetConcreteValue.\n" + 
+                throw InternalError((string)"Unhandled type in GetConcreteValue.\n" +
                                     "At: " + __FILE__ + ":" + to_string(__LINE__));
             }
         }
@@ -915,5 +918,5 @@ namespace ESolver {
 } /* End namespace */
 
 
-// 
+//
 // Z3TheoremProver.cpp ends here

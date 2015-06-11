@@ -1,13 +1,13 @@
-// ConcreteEvaluator.cpp --- 
-// 
+// ConcreteEvaluator.cpp ---
+//
 // Filename: ConcreteEvaluator.cpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:54:03 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -45,6 +45,7 @@
 #include "../solvers/ESolver.hpp"
 #include "../values/ConcreteValueBase.hpp"
 #include "../solverutils/EvalRule.hpp"
+#include "../expressions/GenExpression.hpp"
 
 namespace ESolver {
 
@@ -57,133 +58,232 @@ namespace ESolver {
     boost::pool<>* ConcreteEvaluator::SigVecPool = nullptr;
 
     ConcreteEvaluator::ConcreteEvaluator(ESolver* Solver, const Expression& RewrittenSpec,
-                                         uint32 NumSynthFuncs, const vector<const AuxVarOperator*>& BaseAuxVars,
+                                         uint32 NumSynthFuncs,
+                                         const vector<const AuxVarOperator*>& BaseAuxVars,
                                          const vector<const AuxVarOperator*>& DerivedAuxVars,
-                                         const vector<EvalRule>& EvalRules,
-                                         const vector<const ESFixedTypeBase*>& SynthFuncTypes, Logger& TheLogger)
-        : Solver(Solver), 
-          RewrittenSpec(RewrittenSpec), 
-          EvalPoints(nullptr),
-          BaseAuxVars(BaseAuxVars), DerivedAuxVars(DerivedAuxVars), 
-          SynthFuncTypes(SynthFuncTypes), EvalRules(EvalRules),
+                                         const vector<map<vector<uint32>, uint32>>& SynthFunAppMaps,
+                                         const vector<const ESFixedTypeBase*>& SynthFuncTypes,
+                                         Logger& TheLogger)
+        : Solver(Solver),
+          RewrittenSpec(RewrittenSpec),
+          BaseAuxVars(BaseAuxVars), DerivedAuxVars(DerivedAuxVars),
+          SynthFunAppMaps(SynthFunAppMaps.size()),
+          SynthFuncTypes(SynthFuncTypes),
+          NumSynthFunApps(0),
           NumBaseAuxVars(BaseAuxVars.size()), NumDerivedAuxVars(DerivedAuxVars.size()),
           NumTotalAuxVars(BaseAuxVars.size() + DerivedAuxVars.size()),
-          NumSynthFuncs(NumSynthFuncs), NumEvalRules(EvalRules.size()), 
+          NumSynthFuncs(NumSynthFuncs),
           NoDist(Solver->GetOpts().NoDist), TheLogger(TheLogger),
           NumPoints(0), SigPool(nullptr)
     {
-        // Set the empty key for sigset
-        // SigSet.set_empty_key(nullptr);
+        for (uint32 i = 0, last = SynthFunAppMaps.size(); i < last; ++i) {
+            this->SynthFunAppMaps[i] =
+                vector<pair<vector<uint32>, uint32>>(SynthFunAppMaps[i].begin(),
+                                                     SynthFunAppMaps[i].end());
+            NumSynthFunApps += SynthFunAppMaps[i].size();
+        }
     }
 
     ConcreteEvaluator::~ConcreteEvaluator()
     {
-        for (auto const& Point : Points) {
-            free(const_cast<void*>(static_cast<const void*>(Point)));
-        }
-        Points.clear();
-        for (uint32 i = 0; i < NumPoints; ++i) {
-            for (uint32 j = NumBaseAuxVars; j < NumTotalAuxVars; ++j) {
-                delete EvalPoints[i][j];
-            }
-            free(EvalPoints[i]);
-        }
-        free(EvalPoints);
-        
         if (SigVecPool != nullptr) {
             delete SigVecPool;
         }
         if (SigPool != nullptr) {
             delete SigPool;
         }
+
+        for (uint32 i = 0; i < NumPoints; ++i) {
+            for (uint32 j = 0; j < NumSynthFunApps; ++j) {
+                delete SubExpEvalPoints[i][j];
+            }
+        }
     }
 
     void ConcreteEvaluator::AddPoint(const SMTConcreteValueModel& Model)
     {
-        ConcreteValueBase const** NewPoint = 
-            (ConcreteValueBase const**)malloc(sizeof(ConcreteValueBase const*) * NumBaseAuxVars);
-        
-        // Resize the eval points, i.e, add another row and allocate pointers into it
-        EvalPoints = (ConcreteValueBase const***)realloc(EvalPoints, 
-                                                         sizeof(ConcreteValueBase const**) * (NumPoints + 1));
-
-        EvalPoints[NumPoints] = (ConcreteValueBase const**)malloc(sizeof(ConcreteValueBase const*) * 
-                                                                  NumTotalAuxVars);
-        // Allocate value buffers for each var in this new row
-        for (uint32 i = NumBaseAuxVars; i < NumTotalAuxVars; ++i) {
-            EvalPoints[NumPoints][i] = new ConcreteValueBase();
-        }
+        // Add another point
+        Points.push_back(vector<const ConcreteValueBase*>((size_t)NumBaseAuxVars, nullptr));
+        // Add another row to EvalPoints
+        EvalPoints.push_back(vector<const ConcreteValueBase*>((size_t)NumTotalAuxVars, nullptr));
+        // Add another row to SubExpEvalPoints
+        SubExpEvalPoints.push_back(vector<const ConcreteValueBase*>((size_t)NumSynthFunApps,
+                                                                    nullptr));
 
         // Recreate the pool for the new size
         if (SigVecPool != nullptr) {
             delete SigVecPool;
+            SigVecPool = nullptr;
         }
-        SigVecPool = new boost::pool<>(sizeof(ConcreteValueBase const*) * NumDerivedAuxVars * (NumPoints + 1));
+
+        SigVecPool =
+            new boost::pool<>(sizeof(ConcreteValueBase const*) *
+                              NumSynthFunApps * (NumPoints + 1));
 
         // Clear all the accumulated signatures
         SigSet.clear();
         if (SigPool != nullptr) {
             delete SigPool;
         }
+
         SigPool = new boost::pool<>(sizeof(Signature));
-        
+
         for(uint32 i = 0; i < NumBaseAuxVars; ++i) {
             auto it = Model.find(BaseAuxVars[i]->GetName());
             if (it == Model.end()) {
-                throw InternalError((string)"Internal Error: Could not find model for variable \"" + 
-                                    BaseAuxVars[i]->GetName() + "\".\nAt: " + __FILE__ + 
-                                    ":" + to_string(__LINE__));
+                throw InternalError((string)"Internal Error: Could not find model for " +
+                                    "variable \"" + BaseAuxVars[i]->GetName() +
+                                    "\".\nAt: " + __FILE__ + ":" + to_string(__LINE__));
             }
 
             EvalPoints[NumPoints][BaseAuxVars[i]->GetPosition()] = it->second;
-            NewPoint[BaseAuxVars[i]->GetPosition()] = it->second;
+            Points[NumPoints][BaseAuxVars[i]->GetPosition()] = it->second;
+        }
+
+        uint32 k = 0;
+        for (uint32 i = 0; i < NumSynthFuncs; ++i) {
+            for (uint32 j = 0; j < SynthFunAppMaps[i].size(); ++j) {
+                EvalPoints[NumPoints][SynthFunAppMaps[i][j].second] =
+                    SubExpEvalPoints[NumPoints][k] = new ConcreteValueBase();
+                ++k;
+            }
         }
 
         if (Solver->GetOpts().StatsLevel >= 3) {
             TheLogger.Log3("Adding point: <");
             for(uint32 i = 0; i < NumBaseAuxVars; ++i) {
-                TheLogger.Log2(NewPoint[i]->ToSimpleString());
+                TheLogger.Log2(Points.back()[i]->ToSimpleString());
                 if(i != NumBaseAuxVars - 1) {
                     TheLogger.Log3(", ");
                 }
             }
             TheLogger.Log3(">\n");
         }
-        
+
         // Check for duplicates
         for(uint32 i = 0; i < NumPoints; ++i) {
-            if(memcmp(NewPoint, Points[i], sizeof(ConcreteValueBase const*) * NumBaseAuxVars) == 0) {
-                throw InternalError((string)"Error: Tried to add a duplicate point to the " + 
-                                    "Concrete Evaluator!\nAt: " + __FILE__ + ":" + to_string(__LINE__));
+            if(memcmp(Points[NumPoints].data(), Points[i].data(),
+                      sizeof(ConcreteValueBase const*) * NumBaseAuxVars) == 0) {
+                throw InternalError((string)"Error: Tried to add a duplicate point to the " +
+                                    "Concrete Evaluator!\nAt: " + __FILE__ + ":" +
+                                    to_string(__LINE__));
             }
         }
 
-        Points.push_back(NewPoint);
-        NumPoints++;
+        ++NumPoints;
     }
 
-    bool ConcreteEvaluator::CheckConcreteValidity(GenExpressionBase const* const* Exps)
+    bool ConcreteEvaluator::CheckSubExpressions(GenExpressionBase const* const* Exps,
+                                                ESFixedTypeBase const* const* Types,
+                                                uint32 const* EvalTypeIDs,
+                                                uint32& Status)
+    {
+        Status |= CONCRETE_EVAL_DIST;
+        if (NumPoints == 0) {
+            return true;
+        }
+
+        for (uint32 i = 0; i < NumPoints; ++i) {
+            auto const& CurPoint = Points[i];
+            uint32 j = 0;
+            for (uint32 SynthFunIndex = 0; SynthFunIndex < NumSynthFuncs; ++SynthFunIndex) {
+                for (auto const& AppMapTargetPos : SynthFunAppMaps[SynthFunIndex]) {
+                    auto const& AppMap = AppMapTargetPos.first;
+                    GenExpressionBase::Evaluate(const_cast<GenExpressionBase*>(Exps[SynthFunIndex]),
+                                                CurPoint.data(), AppMap.data(),
+                                                const_cast<ConcreteValueBase*>
+                                                (SubExpEvalPoints[i][j]));
+
+                    if (PartialExpression || ConcreteException) {
+                        if (PartialExpression) {
+                            Status |= CONCRETE_EVAL_PART;
+                        }
+                        PartialExpression = ConcreteException = false;
+                        return false;
+                    }
+                    ++j;
+                }
+            }
+        }
+        return true;
+    }
+
+    // returns if subexpression is distinguishable or not
+    bool ConcreteEvaluator::CheckSubExpression(GenExpressionBase* Exp,
+                                               const ESFixedTypeBase* Type,
+                                               uint32 EvalTypeID, uint32& Status)
+    {
+        // expects NumSynthFuncs = 1
+        // return true;
+        Status |= CONCRETE_EVAL_DIST;
+        if (NumPoints == 0) {
+            return true;
+        }
+
+        for (uint32 i = 0; i < NumPoints; ++i) {
+            auto const& CurPoint = Points[i];
+            uint32 j = 0;
+            for (auto const& AppMapTargetPos : SynthFunAppMaps[0]) {
+                auto const& AppMap = AppMapTargetPos.first;
+                GenExpressionBase::Evaluate(Exp, CurPoint.data(), AppMap.data(),
+                                            const_cast<ConcreteValueBase*>
+                                            (SubExpEvalPoints[i][j]));
+
+                if (PartialExpression || ConcreteException) {
+                    if (PartialExpression) {
+                        Status |= CONCRETE_EVAL_PART;
+                    }
+                    PartialExpression = ConcreteException = false;
+                    return false;
+                }
+                ++j;
+            }
+        }
+
+        // Check if we have encountered this signature before
+        auto Sig =
+            new (SigPool->malloc()) Signature(NumPoints * NumSynthFunApps,
+                                              EvalTypeID, SigVecPool);
+
+        for (uint32 i = 0; i < NumPoints; ++i) {
+            const uint32 Offset = i * NumSynthFunApps;
+            for (uint32 j = 0; j < NumSynthFunApps; ++j) {
+                (*Sig)[Offset + j] = SubExpEvalPoints[i][j];
+            }
+        }
+
+        // Have we see this signature before?
+        if (SigSet.find(Sig) != SigSet.end()) {
+            SigVecPool->free(Sig->ValVec);
+            SigPool->free(Sig);
+            Status &= ~(CONCRETE_EVAL_DIST);
+            return false;
+        } else {
+            // Canonicalize and insert
+            for (uint32 i = 0; i < NumPoints * NumSynthFunApps; ++i) {
+                auto CurVal = (*Sig)[i];
+                (*Sig)[i] = Solver->CreateValue(CurVal->GetType(), CurVal->GetValue());
+            }
+            SigSet.insert(Sig);
+            return true;
+        }
+    }
+
+    bool ConcreteEvaluator::CheckConcreteValidity(GenExpressionBase const* const* Exps,
+                                                  ESFixedTypeBase const* const* Types,
+                                                  uint32 const* ExpansionTypeIDs)
     {
         if (NumPoints == 0) {
             return true;
         }
-        for (uint32 i = 0; i < NumEvalRules; ++i) {
-            auto const CurEvalRule = EvalRules[i];
-            auto DVIndex = CurEvalRule.GetLHS()->GetPosition();
-            for (uint32 j = 0; j < NumPoints; ++j) {
-                EvalRules[i].Evaluate(Exps, EvalPoints[j], 
-                                      const_cast<ConcreteValueBase*>(EvalPoints[j][DVIndex]));
-                if (ConcreteException || PartialExpression) {
-                    ConcreteException = PartialExpression = false;
-                    return false;
-                }
-            }
-        }
+
+        uint32 Status = 0;
+        CheckSubExpressions(Exps, Types, ExpansionTypeIDs, Status);
 
         // Check the spec now that the derived aux vars are all created
         for (uint32 i = 0; i < NumPoints; ++i) {
             ConcreteValueBase Result;
-            RewrittenSpec->Evaluate(Exps, EvalPoints[i], &Result);
+            RewrittenSpec->Evaluate(Exps, EvalPoints[i].data(), &Result);
             if (ConcreteException) {
                 ConcreteException = false;
                 return false;
@@ -200,70 +300,27 @@ namespace ESolver {
                                                   const ESFixedTypeBase* Type,
                                                   uint32 EvalTypeID, uint32& Status)
     {
-        Status |= CONCRETE_EVAL_DIST;
-        if (NumPoints == 0 && (Status & CONCRETE_EVAL_COMP) != 0) {
+        if (NumPoints == 0) {
             return true;
-        } else if (NumPoints == 0) {
-            return false;
-        }
-        // for substexps
-        GenExpressionBase const* Arr[1];
-        Arr[0] = Exp;
-        for (uint32 i = 0; i < NumEvalRules; ++i) {
-            auto const CurEvalRule = EvalRules[i];
-            auto DVIndex = CurEvalRule.GetLHS()->GetPosition();
-            for (uint32 j = 0; j < NumPoints; ++j) {
-                EvalRules[i].Evaluate(Arr, EvalPoints[j], 
-                                      const_cast<ConcreteValueBase*>(EvalPoints[j][DVIndex]));
-                if (ConcreteException || PartialExpression) {
-                    if (PartialExpression) {
-                        Status |= CONCRETE_EVAL_PART;
-                    }
-                    ConcreteException = PartialExpression = false;
-                    return false;
-                }
-            }
         }
 
-        if (!NoDist) {
-            
-            auto Sig = new (SigPool->malloc()) Signature(NumDerivedAuxVars * NumPoints, EvalTypeID);
-            
-            for (uint32 i = 0; i < NumPoints; ++i) {
-                const uint32 Offset = i * NumDerivedAuxVars;
-                for (uint32 j = 0; j < NumTotalAuxVars - NumBaseAuxVars; ++j) {
-                    auto CurValue = EvalPoints[i][NumBaseAuxVars + j];
-                    (*Sig)[Offset + j] = CurValue;
-                }
-            }
-            
-            // Check if we have encountered this signature before
-            if (SigSet.find(Sig) != SigSet.end()) {
-                SigVecPool->free(Sig->ValVec);
-                SigPool->free(Sig);
-                Status &= ~(CONCRETE_EVAL_DIST);
-                return false;
-            } else {
-                
-                // Canonicalize and insert
-                for (uint32 i = 0; i < NumPoints * NumDerivedAuxVars; ++i) {
-                    auto CurValue = (*Sig)[i];
-                    (*Sig)[i] = Solver->CreateValue(CurValue->GetType(), CurValue->GetValue());
-                }
-                
-                SigSet.insert(Sig);
-            }
-        }
+        GenExpressionBase* Arr[1];
+        Arr[0] = const_cast<GenExpressionBase*>(Exp);
 
-        // Is this expression of the type we expect?
-        if ((Status & CONCRETE_EVAL_COMP) == 0) {
+        bool Distinguishable = true;
+        Distinguishable = CheckSubExpression(const_cast<GenExpressionBase*>(Exp),
+                                             Type, EvalTypeID, Status);
+        if (!Distinguishable && !NoDist) {
+            Status &= ~(CONCRETE_EVAL_DIST);
             return false;
         }
 
         // Proceed now to evaluate the spec
+        // The EvalPoints are already initialized
+        // as a side effect of checking subexpression
         for (uint32 i = 0; i < NumPoints; ++i) {
             ConcreteValueBase Result;
-            RewrittenSpec->Evaluate(Arr, EvalPoints[i], &Result);
+            RewrittenSpec->Evaluate(Arr, EvalPoints[i].data(), &Result);
             if (ConcreteException) {
                 ConcreteException = false;
                 return false;
@@ -279,9 +336,9 @@ namespace ESolver {
     {
         return Points.size();
     }
-    
+
 } /* End namespace */
 
 
-// 
+//
 // ConcreteEvaluator.cpp ends here

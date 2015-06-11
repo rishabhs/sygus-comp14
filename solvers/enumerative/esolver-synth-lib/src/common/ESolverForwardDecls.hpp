@@ -1,13 +1,13 @@
-// ESolverForwardDecls.hpp --- 
-// 
+// ESolverForwardDecls.hpp ---
+//
 // Filename: ESolverForwardDecls.hpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:52:43 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -76,7 +76,7 @@ namespace ESolver {
 
     class ConcreteValueBasePtrHasher;
     class ConcreteValueBasePtrEquals;
-    
+
     class SignaturePtrEquals;
     class SignaturePtrDeepEquals;
     class SignaturePtrHasher;
@@ -204,18 +204,14 @@ namespace ESolver {
 
 
     template<typename T> class TLVec;
-    
+
     // Typedefs for smart ptrs, etc.
     typedef unordered_set<Expression, ExpressionHasher, ExpressionEquals> ExpressionSet;
-
-    // typedef google::dense_hash_set<const ConcreteValueBase*, ConcreteValueBasePtrHasher,
-    //                                ConcreteValueBasePtrEquals> ConcreteValueSet;
 
     typedef unordered_set<const ConcreteValueBase*, ConcreteValueBasePtrHasher,
                           ConcreteValueBasePtrEquals> ConcreteValueSet;
 
     typedef TLVec<const GenExpressionBase> GenExpTLVec;
-    // typedef google::dense_hash_set<Signature*, SignaturePtrHasher, SignaturePtrDeepEquals> SigSetType;
 
     typedef unordered_set<Signature*, SignaturePtrHasher, SignaturePtrDeepEquals> SigSetType;
 
@@ -235,7 +231,7 @@ namespace ESolver {
 
     // Pairs and tuples
     class GNCostPair;
-    
+
     // Typedefs for IDs
     typedef uint64 EnumValueID;
     typedef uint64 TypeID;
@@ -254,7 +250,7 @@ namespace ESolver {
     // Solutions
     typedef vector<vector<pair<const SynthFuncOperator*, Expression>>> SolutionMap;
 
-    // Indicates that an exception occurred during 
+    // Indicates that an exception occurred during
     // concrete evaluation
     extern bool ConcreteException;
     // Indicates that an expression was partial
@@ -271,7 +267,7 @@ namespace ESolver {
     // Logger
     extern Logger TheLogger;
 
-    /* 
+    /*
        This is the  the status returned by the
        Solver to the enumerator on each callback to the solver
        by the enumerator, i.e., for each expression enumerated by
@@ -292,5 +288,5 @@ namespace ESolver {
 #endif /* __ESOLVER_FORWARD_DECLS_HPP */
 
 
-// 
+//
 // ESolverForwardDecls.hpp ends here

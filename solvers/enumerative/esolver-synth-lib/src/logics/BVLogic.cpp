@@ -1,13 +1,13 @@
-// BVLogic.cpp --- 
-// 
+// BVLogic.cpp ---
+//
 // Filename: BVLogic.cpp
 // Author: Abhishek Udupa
 // Created: Wed Jan 15 14:55:11 2014 (-0500)
-// 
-// 
+//
+//
 // Copyright (c) 2013, Abhishek Udupa, University of Pennsylvania
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 // 1. Redistributions of source code must retain the above copyright
@@ -21,7 +21,7 @@
 // 4. Neither the name of the University of Pennsylvania nor the
 //    names of its contributors may be used to endorse or promote products
 //    derived from this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER ''AS IS'' AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -32,8 +32,8 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
-// 
+//
+//
 
 // Code:
 
@@ -51,8 +51,8 @@ using namespace std;
 
 namespace ESolver {
 
-    set<string> BVLogic::ReservedNames = { "bvnot", 
-                                           "bvand", 
+    set<string> BVLogic::ReservedNames = { "bvnot",
+                                           "bvand",
                                            "bvor",
                                            "bvneg",
                                            "bvadd",
@@ -104,8 +104,8 @@ namespace ESolverBVLogic {
         }
     }
 
-    BVConcreteFunctor::BVConcreteFunctor(const ESFixedTypeBase* Type, 
-                                         const ESFixedTypeBase* BoolType, 
+    BVConcreteFunctor::BVConcreteFunctor(const ESFixedTypeBase* Type,
+                                         const ESFixedTypeBase* BoolType,
                                          uint64 ID)
         : ConcFunctorBase(ID), Type(Type), BoolType(BoolType)
     {
@@ -131,7 +131,7 @@ namespace ESolverBVLogic {
         // Nothing here
     }
 
-    BVSymbolicFunctor::BVSymbolicFunctor(const ESFixedTypeBase* Type, 
+    BVSymbolicFunctor::BVSymbolicFunctor(const ESFixedTypeBase* Type,
                                          const ESFixedTypeBase* BoolType,
                                          uint64 ID)
         : SymbFunctorBase(ID), Type(Type), BoolType(BoolType)
@@ -218,7 +218,7 @@ namespace ESolverBVLogic {
             Arg1 = (Arg1 << Shift) >> Shift;
             Arg2 = (Arg2 << Shift) >> Shift;
         }
-        
+
         // Do the sub
         int64 ResultVal = Arg1 - Arg2;
         // Mask off the higher bits
@@ -501,7 +501,7 @@ namespace ESolverBVLogic {
     {
         // Nothing here
     }
-    
+
     void BVXorConcreteFunctor::operator () (EvalMap Args,
                                             ConcreteValueBase* Result)
     {
@@ -549,7 +549,7 @@ namespace ESolverBVLogic {
     {
         // Nothing here
     }
-    
+
     void BVXNorConcreteFunctor::operator () (EvalMap Args,
                                              ConcreteValueBase* Result)
     {
@@ -637,12 +637,12 @@ namespace ESolverBVLogic {
     {
         return TP->CreateBVShLExpr(Args[0], Args[1]);
     }
-    
+
     SymbFunctorBase* BVShlSymbolicFunctor::Clone() const
     {
         return new BVShlSymbolicFunctor(Type, BoolType, GetID());
     }
-    
+
     string BVShlSymbolicFunctor::ToString() const
     {
         return "BVShlSymbolicFunctor";
@@ -665,7 +665,7 @@ namespace ESolverBVLogic {
         if (Shift != 0) {
             Arg1 = (Arg1 << Shift) >> Shift;
         }
-        
+
         int64 ResultBits;
         if(Arg2 == 0) {
             ResultBits = Arg1;
@@ -784,7 +784,7 @@ namespace ESolverBVLogic {
         if (Shift != 0) {
             Arg = (Arg << Shift) >> Shift;
         }
-        
+
         // Negate
         int64 ResultBits = -Arg;
         // Mask
@@ -848,7 +848,7 @@ namespace ESolverBVLogic {
     {
         return "BVUSLEConcreteFunctor";
     }
-    
+
     BVUSLESymbolicFunctor::~BVUSLESymbolicFunctor()
     {
         // Nothing here
@@ -985,7 +985,7 @@ namespace ESolverBVLogic {
         int64 Arg1 = (uint64)Args[0]->GetValue();
         int64 Arg2 = (uint64)Args[1]->GetValue();
         int64 ResultVal;
-        const uint32 Shift = 64 - Type->As<ESBVType>()->GetSize(); 
+        const uint32 Shift = 64 - Type->As<ESBVType>()->GetSize();
 
         if (Shift != 0) {
             Arg1 = (Arg1 << Shift) >> Shift;
@@ -1319,8 +1319,8 @@ namespace ESolverBVLogic {
         : SymbFunctorBase(), BVType(BVType), IntType(IntType)
     {
         // Nothing here
-    }    
-    
+    }
+
     BVToSIntSymbolicFunctor::~BVToSIntSymbolicFunctor()
     {
         // Nothing here
@@ -1391,11 +1391,11 @@ namespace ESolverBVLogic {
     {
         // Nothing here
     }
-    
+
     void BVUSLTConcreteFunctor::operator () (EvalMap Args,
                                              ConcreteValueBase* Result)
     {
-        uint64 Arg1 = (uint64)Args[1]->GetValue();
+        uint64 Arg1 = (uint64)Args[0]->GetValue();
         uint64 Arg2 = (uint64)Args[1]->GetValue();
         int64 Bits = Arg1 < Arg2 ? 1 : 0;
         new (Result) ConcreteValueBase(BoolType, Bits);
@@ -1441,7 +1441,7 @@ namespace ESolverBVLogic {
     void BVUSGEConcreteFunctor::operator () (EvalMap Args,
                                              ConcreteValueBase* Result)
     {
-        uint64 Arg1 = (uint64)Args[1]->GetValue();
+        uint64 Arg1 = (uint64)Args[0]->GetValue();
         uint64 Arg2 = (uint64)Args[1]->GetValue();
         int64 Bits = Arg1 >= Arg2 ? 1 : 0;
         new (Result) ConcreteValueBase(BoolType, Bits);
@@ -1456,7 +1456,7 @@ namespace ESolverBVLogic {
     {
         return "BVUSGEConcreteFunctor";
     }
-    
+
     BVUSGESymbolicFunctor::~BVUSGESymbolicFunctor()
     {
         // Nothing here
@@ -1487,7 +1487,7 @@ namespace ESolverBVLogic {
     void BVSLEConcreteFunctor::operator () (EvalMap Args,
                                             ConcreteValueBase* Result)
     {
-        uint64 Arg1 = (int64)Args[1]->GetValue();
+        uint64 Arg1 = (int64)Args[0]->GetValue();
         uint64 Arg2 = (int64)Args[1]->GetValue();
         int64 Bits = Arg1 <= Arg2 ? 1 : 0;
         new (Result) ConcreteValueBase(BoolType, Bits);
@@ -1497,7 +1497,7 @@ namespace ESolverBVLogic {
     {
         return new BVSLEConcreteFunctor(Type, BoolType, GetID());
     }
-    
+
     string BVSLEConcreteFunctor::ToString() const
     {
         return "BVSLEConcreteFunctor";
@@ -1533,7 +1533,7 @@ namespace ESolverBVLogic {
     void BVSLTConcreteFunctor::operator () (EvalMap Args,
                                             ConcreteValueBase* Result)
     {
-        uint64 Arg1 = (int64)Args[1]->GetValue();
+        uint64 Arg1 = (int64)Args[0]->GetValue();
         uint64 Arg2 = (int64)Args[1]->GetValue();
         int64 Bits = Arg1 < Arg2 ? 1 : 0;
         new (Result) ConcreteValueBase(BoolType, Bits);
@@ -1543,7 +1543,7 @@ namespace ESolverBVLogic {
     {
         return new BVSLTConcreteFunctor(Type, BoolType, GetID());
     }
-    
+
     string BVSLTConcreteFunctor::ToString() const
     {
         return "BVSLTConcreteFunctor";
@@ -1579,7 +1579,7 @@ namespace ESolverBVLogic {
     void BVSGEConcreteFunctor::operator () (EvalMap Args,
                                             ConcreteValueBase* Result)
     {
-        uint64 Arg1 = (int64)Args[1]->GetValue();
+        uint64 Arg1 = (int64)Args[0]->GetValue();
         uint64 Arg2 = (int64)Args[1]->GetValue();
         int64 Bits = Arg1 >= Arg2 ? 1 : 0;
         new (Result) ConcreteValueBase(BoolType, Bits);
@@ -1589,7 +1589,7 @@ namespace ESolverBVLogic {
     {
         return new BVSGEConcreteFunctor(Type, BoolType, GetID());
     }
-    
+
     string BVSGEConcreteFunctor::ToString() const
     {
         return "BVSGEConcreteFunctor";
@@ -1625,7 +1625,7 @@ namespace ESolverBVLogic {
     void BVSGTConcreteFunctor::operator () (EvalMap Args,
                                             ConcreteValueBase* Result)
     {
-        uint64 Arg1 = (int64)Args[1]->GetValue();
+        uint64 Arg1 = (int64)Args[0]->GetValue();
         uint64 Arg2 = (int64)Args[1]->GetValue();
         int64 Bits = Arg1 > Arg2 ? 1 : 0;
         new (Result) ConcreteValueBase(BoolType, Bits);
@@ -1635,11 +1635,11 @@ namespace ESolverBVLogic {
     {
         return new BVSGTConcreteFunctor(Type, BoolType, GetID());
     }
-    
+
     string BVSGTConcreteFunctor::ToString() const
     {
         return "BVSGTConcreteFunctor";
-    }    
+    }
 
     BVSGTSymbolicFunctor::~BVSGTSymbolicFunctor()
     {
@@ -1720,7 +1720,7 @@ namespace ESolverBVLogic {
         int64 Retval = ((Arg & Mask) == Mask) ? 1 : 0;
         new (Result) ConcreteValueBase(BoolType, Retval);
     }
-    
+
     ConcFunctorBase* BVRedAndConcreteFunctor::Clone() const
     {
         return new BVRedAndConcreteFunctor(Type, BoolType, GetID());
@@ -1809,7 +1809,7 @@ namespace ESolverBVLogic {
         uint64 Arg1 = (uint64)Args[0]->GetValue() & Arg1Mask;
         uint64 Arg2 = (uint64)Args[1]->GetValue() & Arg2Mask;
         // Mask the args for good measure
-        
+
         uint64 ResultBits = (Arg1 << Arg1Type->As<ESBVType>()->GetSize() | Arg2) & RetMask;
         new (Result) ConcreteValueBase(RetType, ResultBits);
     }
@@ -1848,7 +1848,7 @@ namespace ESolverBVLogic {
 
     SMTExpr BVConcatSymbolicFunctor::operator () (TheoremProver* TP,
                                                   const vector<SMTExpr>& Args,
-                                                  vector<SMTExpr>& Assumptions) 
+                                                  vector<SMTExpr>& Assumptions)
     {
         return TP->CreateBVConcatExpr(Args[0], Args[1]);
     }
@@ -1870,7 +1870,7 @@ namespace ESolverBVLogic {
         : ConcFunctorBase(UID), ArgType(ArgType), RetType(RetType),
           Low(Low), High(High)
     {
-        
+
         if (Low == 0 && High == 63) {
             ExtractMask = (uint64)0xFFFFFFFFFFFFFFFF;
             ResultMask = (uint64)0xFFFFFFFFFFFFFFFF;
@@ -2001,12 +2001,12 @@ namespace ESolver {
         return (ReservedNames.find(Name) != ReservedNames.end());
     }
 
-    static inline void CheckType(const vector<const ESFixedTypeBase*>& DomainTypes) 
+    static inline void CheckType(const vector<const ESFixedTypeBase*>& DomainTypes)
     {
         if (DomainTypes.size() == 1 && DomainTypes[0]->As<ESBVType>() == nullptr) {
             throw TypeException((string)"Could not find appropriate types to instantiate BV Op with");
         }
-        if (DomainTypes.size() == 2 && 
+        if (DomainTypes.size() == 2 &&
             (DomainTypes[0]->As<ESBVType>() == nullptr ||
              DomainTypes[1]->As<ESBVType>() == nullptr ||
              DomainTypes[0] != DomainTypes[1])) {
@@ -2032,124 +2032,124 @@ namespace ESolver {
         }
 
         const ESFixedTypeBase* Type = DomainTypes[0];
-        
+
         if (Name == "bvnot") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvnot", UnOpArgs, Type, 
+            Solver->CreateFunction("bvnot", UnOpArgs, Type,
                                    new BVNotSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVNotConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVNotConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvand") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvand", BinOpArgs, Type, 
+            Solver->CreateFunction("bvand", BinOpArgs, Type,
                                    new BVAndSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVAndConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVAndConcreteFunctor(Type, Solver->CreateBoolType()),
                                    true, true);
             return true;
         }
         if (Name == "bvor") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvor", BinOpArgs, Type, 
+            Solver->CreateFunction("bvor", BinOpArgs, Type,
                                    new BVOrSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVOrConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVOrConcreteFunctor(Type, Solver->CreateBoolType()),
                                    true, true);
             return true;
         }
         if (Name == "bvneg") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvneg", UnOpArgs, Type, 
+            Solver->CreateFunction("bvneg", UnOpArgs, Type,
                                    new BVNegSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVNegConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVNegConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvadd") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvadd", BinOpArgs, Type, 
+            Solver->CreateFunction("bvadd", BinOpArgs, Type,
                                    new BVAddSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVAddConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVAddConcreteFunctor(Type, Solver->CreateBoolType()),
                                    true, true);
             return true;
         }
         if (Name == "bvmul") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvmul", BinOpArgs, Type, 
+            Solver->CreateFunction("bvmul", BinOpArgs, Type,
                                    new BVMulSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVMulConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVMulConcreteFunctor(Type, Solver->CreateBoolType()),
                                    true, true);
             return true;
         }
         if (Name == "bvudiv") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvudiv", BinOpArgs, Type, 
+            Solver->CreateFunction("bvudiv", BinOpArgs, Type,
                                    new BVUSDivSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVUSDivConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVUSDivConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvurem") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvurem", BinOpArgs, Type, 
+            Solver->CreateFunction("bvurem", BinOpArgs, Type,
                                    new BVUSRemSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVUSRemConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVUSRemConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvshl") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvshl", BinOpArgs, Type, 
+            Solver->CreateFunction("bvshl", BinOpArgs, Type,
                                    new BVShlSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVShlConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVShlConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvlshr") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvlshr", BinOpArgs, Type, 
+            Solver->CreateFunction("bvlshr", BinOpArgs, Type,
                                    new BVLShrSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVLShrConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVLShrConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvult") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvult", BinOpArgs, Solver->CreateBoolType(), 
+            Solver->CreateFunction("bvult", BinOpArgs, Solver->CreateBoolType(),
                                    new BVUSLTSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVUSLTConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVUSLTConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvnand") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvnand", BinOpArgs, Type, 
+            Solver->CreateFunction("bvnand", BinOpArgs, Type,
                                    new BVNandSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVNandConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVNandConcreteFunctor(Type, Solver->CreateBoolType()),
                                    true, true);
             return true;
         }
         if (Name == "bvnor") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvnor", BinOpArgs, Type, 
+            Solver->CreateFunction("bvnor", BinOpArgs, Type,
                                    new BVNorSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVNorConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVNorConcreteFunctor(Type, Solver->CreateBoolType()),
                                    true, true);
             return true;
         }
         if (Name == "bvxor") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvxor", BinOpArgs, Type, 
+            Solver->CreateFunction("bvxor", BinOpArgs, Type,
                                    new BVXorSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVXorConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVXorConcreteFunctor(Type, Solver->CreateBoolType()),
                                    true, true);
             return true;
         }
         if (Name == "bvxnor") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvxnor", BinOpArgs, Type, 
+            Solver->CreateFunction("bvxnor", BinOpArgs, Type,
                                    new BVXNorSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVXNorConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVXNorConcreteFunctor(Type, Solver->CreateBoolType()),
                                    true, true);
             return true;
         }
@@ -2161,25 +2161,25 @@ namespace ESolver {
         }
         if (Name == "bvsub") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvsub", BinOpArgs, Type, 
+            Solver->CreateFunction("bvsub", BinOpArgs, Type,
                                    new BVSubSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVSubConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVSubConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvsdiv") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvsdiv", BinOpArgs, Type, 
+            Solver->CreateFunction("bvsdiv", BinOpArgs, Type,
                                    new BVSDivSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVSDivConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVSDivConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvsrem") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvsrem", BinOpArgs, Type, 
+            Solver->CreateFunction("bvsrem", BinOpArgs, Type,
                                    new BVSRemSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVSRemConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVSRemConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
@@ -2190,89 +2190,89 @@ namespace ESolver {
 
         if (Name == "bvashr") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvashr", BinOpArgs, Type, 
+            Solver->CreateFunction("bvashr", BinOpArgs, Type,
                                    new BVAShrSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVAShrConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVAShrConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvule") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvule", BinOpArgs, Solver->CreateBoolType(), 
+            Solver->CreateFunction("bvule", BinOpArgs, Solver->CreateBoolType(),
                                    new BVUSLESymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVUSLEConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVUSLEConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvugt") {
             CheckType(DomainTypes);
-            Solver->CreateFunction("bvugt", BinOpArgs, Solver->CreateBoolType(), 
+            Solver->CreateFunction("bvugt", BinOpArgs, Solver->CreateBoolType(),
                                    new BVUSGTSymbolicFunctor(Type, Solver->CreateBoolType()),
-                                   new BVUSGTConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVUSGTConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvuge") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvuge", BinOpArgs, Solver->CreateBoolType(),
-                                   new BVUSGESymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVUSGEConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVUSGESymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVUSGEConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvslt") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvslt", BinOpArgs, Solver->CreateBoolType(),
-                                   new BVSLTSymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVSLTConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVSLTSymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVSLTConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvsle") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvsle", BinOpArgs, Solver->CreateBoolType(),
-                                   new BVSLESymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVSLEConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVSLESymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVSLEConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvsge") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvsge", BinOpArgs, Solver->CreateBoolType(),
-                                   new BVSGESymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVSGEConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVSGESymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVSGEConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvsgt") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvsgt", BinOpArgs, Solver->CreateBoolType(),
-                                   new BVSGTSymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVSGTConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVSGTSymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVSGTConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvtouint") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvtouint", UnOpArgs, Solver->CreateBoolType(),
-                                   new BVToUSIntSymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVToUSIntConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVToUSIntSymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVToUSIntConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvtosint") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvtosint", UnOpArgs, Solver->CreateIntType(),
-                                   new BVToSIntSymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVToSIntConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVToSIntSymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVToSIntConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvtobool") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvtobool", UnOpArgs, Solver->CreateBoolType(),
-                                   new BVToBoolSymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVToBoolConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVToBoolSymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVToBoolConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
@@ -2281,16 +2281,16 @@ namespace ESolver {
         if (Name == "bvredor") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvredor", UnOpArgs, Solver->CreateBoolType(),
-                                   new BVRedOrSymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVRedOrConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVRedOrSymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVRedOrConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
         if (Name == "bvredand") {
             CheckType(DomainTypes);
             Solver->CreateFunction("bvredand", UnOpArgs, Solver->CreateBoolType(),
-                                   new BVRedAndSymbolicFunctor(Type, Solver->CreateBoolType()), 
-                                   new BVRedAndConcreteFunctor(Type, Solver->CreateBoolType()), 
+                                   new BVRedAndSymbolicFunctor(Type, Solver->CreateBoolType()),
+                                   new BVRedAndConcreteFunctor(Type, Solver->CreateBoolType()),
                                    false, true);
             return true;
         }
@@ -2298,7 +2298,7 @@ namespace ESolver {
             if (DomainTypes.size() != 2) {
                 throw TypeException((string)"bvconcat could not be instantiated");
             }
-            auto RetType = Solver->CreateBitVectorType(DomainTypes[0]->As<ESBVType>()->GetSize() + 
+            auto RetType = Solver->CreateBitVectorType(DomainTypes[0]->As<ESBVType>()->GetSize() +
                                                        DomainTypes[1]->As<ESBVType>()->GetSize());
             Solver->CreateFunction("bvconcat", BinOpArgs, RetType,
                                    new BVConcatSymbolicFunctor(DomainTypes[0], DomainTypes[1], RetType),
@@ -2333,11 +2333,11 @@ namespace ESolver {
 
     string BVLogic::GetExtractOpName(const ESFixedTypeBase* BVType, uint64 Low, uint64 High)
     {
-        return (string)"bvextract@@@" + to_string(Low) + "@@@" + to_string(High) + "@@@_@" + 
+        return (string)"bvextract@@@" + to_string(Low) + "@@@" + to_string(High) + "@@@_@" +
             to_string(BVType->GetID()) ;
     }
 
 } /* End namespace */
 
-// 
+//
 // BVLogic.cpp ends here
