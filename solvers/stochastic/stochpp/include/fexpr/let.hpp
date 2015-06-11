@@ -99,7 +99,7 @@ struct flet : public fexpr <U>
             std::get <2> (valp)[bvvar.first] = bvvar.second -> eval(subst, val, memo);
         }
 
-        U ans = fe -> eval(subst, val, memo);
+        U ans = fe -> eval(subst, valp, memo);
 
         /* if (cs_elim_index) {
             U_memo[*cs_elim_index] = ans;
@@ -295,4 +295,3 @@ struct flet : public fexpr <U>
 } // namespace stoch
 
 #endif // __FEXPR_ITE_HPP_
-

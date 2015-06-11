@@ -5,9 +5,9 @@ OPTFLAGS="-O3";
 # OPTFLAGS="-g";
 LDFLAGS="-lboost_regex -lgmpxx -lgmp -lz3";
 
-PARSERINCDIRS="-I../../../parser/synthlib2parser/src/include/";
-PARSERLIBDEB="../../../parser/synthlib2parser/lib/debug/*.a";
-PARSERLIBOPT="../../../parser/synthlib2parser/lib/opt/*.a";
+PARSERINCDIRS="-Iparser/src/include/";
+PARSERLIBDEB="parser/lib/debug/*.a";
+PARSERLIBOPT="parser/lib/opt/*.a";
 
 INCDIRS="-Iinclude/ -I/home1/r/rmukund/include/";
 LDDIRSDEB="-L/home1/r/rmukund/lib/";

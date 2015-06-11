@@ -1,0 +1,36 @@
+src/SynthLib2Lexer.cpp
+src/SynthLib2Parser.output
+src/SynthLib2Parser.tab.cpp
+src/SynthLib2Parser.tab.h
+obj/
+bin/
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+*.d
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
