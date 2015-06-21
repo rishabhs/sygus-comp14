@@ -136,6 +136,8 @@ map <tuple <vector <sort>, string>, dyn_expr> define_bv(size_t len)
     macros[make_tuple(vv, string("bvugt"))] = dyn_expr(sort_bool, bexpr_p(new bv_ugt(bvv0, bvv1)));
     macros[make_tuple(vv, string("bvsgt"))] = dyn_expr(sort_bool, bexpr_p(new bv_sgt(bvv0, bvv1)));
 
+    macros[make_tuple(vv, string("="))] = dyn_expr(sort_bool, bvv0 == bvv1);
+
     macros[make_tuple(v, string("bvneg"))] = dyn_expr(sort_bv, -bvv0);
     macros[make_tuple(v, string("bvnot"))] = dyn_expr(sort_bv, ~bvv0);
 

@@ -44,7 +44,8 @@ grammar unroll(const grammar& g, const var_set& scope)
     }
     for (auto& bvgsymb : nonstd::cart(bvnt, pset)) {
         auto symb = bvgsymb_t(bvntp.size(), std::get <0> (bvgsymb).len);
-        bvntp[bvgsymb] = symb;
+        bvntp.insert(pair <tuple <bvgsymb_t, var_set>, bvgsymb_t> (bvgsymb, symb));
+        // bvntp[bvgsymb] = symb;
     }
 
     for (auto& agsymb : nonstd::cart(ant, pset)) {
