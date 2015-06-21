@@ -54,7 +54,7 @@ void visitor_t::VisitCheckSynthCmd(const CheckSynthCmd* cmd)
                         nbargs++;
                         break;
                     } case sort::type_t::BV: {
-                        sout << "(v" << nbargs << " " << fun_args[i].get_string() << ") ";
+                        sout << "(v" << nbvargs << " " << fun_args[i].get_string() << ") ";
                         nbvargs++;
                         break;
                     }

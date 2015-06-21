@@ -95,7 +95,7 @@ template <typename T, typename U> struct equal_to : public std::binary_function 
 };
 
 template <typename T, typename U>
-const string equal_to <T, U>::op = "==";
+const string equal_to <T, U>::op = "=";
 
 template <typename T, typename U> struct not_equal_to : public std::binary_function <T, T, U>
 {
@@ -173,7 +173,7 @@ template <typename T, typename U> struct logical_and : public std::binary_functi
 };
 
 template <typename T, typename U>
-const string logical_and <T, U>::op = "&&";
+const string logical_and <T, U>::op = "and";
 
 template <typename T, typename U> struct logical_or : public std::binary_function <T, T, U>
 {
@@ -186,7 +186,7 @@ template <typename T, typename U> struct logical_or : public std::binary_functio
 };
 
 template <typename T, typename U>
-const string logical_or <T, U>::op = "||";
+const string logical_or <T, U>::op = "or";
 
 template <typename T, typename U> struct logical_eq : public std::binary_function <T, T, U>
 {
@@ -199,7 +199,7 @@ template <typename T, typename U> struct logical_eq : public std::binary_functio
 };
 
 template <typename T, typename U>
-const string logical_eq <T, U>::op = "==";
+const string logical_eq <T, U>::op = "=";
 
 template <typename T, typename U> struct logical_xor : public std::binary_function <T, T, U>
 {
@@ -225,7 +225,7 @@ template <typename T, typename U> struct logical_not : public std::unary_functio
 };
 
 template <typename T, typename U>
-const string logical_not <T, U>::op = "!";
+const string logical_not <T, U>::op = "not";
 
 } // namespace nonstd
 } // namespace stoch

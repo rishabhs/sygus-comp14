@@ -158,8 +158,9 @@ void visitor_t::VisitSynthFunCmd(const SynthFunCmd* Cmd)
             bfuns[f] = make_tuple(dg.g, boost::get <bgsymb_t> (dg.g.start));
             break;
         } case sort::type_t::BV: {
-            bvfuns.insert(pair <id, tuple <grammar, bvgsymb_t>> (f, make_tuple(dg.g, boost::get <bvgsymb_t> (dg.g.start))));
             // bvfuns[f] = make_tuple(dg.g, boost::get <bvgsymb_t> (dg.g.start));
+            bvfuns.insert(pair <id, tuple <grammar, bvgsymb_t>> (f,
+                make_tuple(dg.g, boost::get <bvgsymb_t> (dg.g.start))));
             break;
         } default: {
             assert (false);

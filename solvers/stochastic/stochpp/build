@@ -3,7 +3,7 @@
 CXXFLAGS="-std=c++0x -Wall -pedantic";
 OPTFLAGS="-O3";
 # OPTFLAGS="-g";
-LDFLAGS="-lboost_regex -lgmpxx -lgmp -lz3";
+LDFLAGS="-lboost_program_options -lboost_regex -lgmpxx -lgmp -lz3";
 
 PARSERINCDIRS="-Iparser/src/include/";
 PARSERLIBDEB="parser/lib/debug/*.a";

@@ -36,8 +36,8 @@ struct bv_ult <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_ult <small_bv, bool>::op = "u<";
-const string bv_ult <z3::expr, z3::expr>::op = "u<";
+const string bv_ult <small_bv, bool>::op = "bvult";
+const string bv_ult <z3::expr, z3::expr>::op = "bvult";
 
 template <typename T, typename U> struct bv_slt;
 
@@ -64,8 +64,8 @@ struct bv_slt <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_slt <small_bv, bool>::op = "s<";
-const string bv_slt <z3::expr, z3::expr>::op = "s<";
+const string bv_slt <small_bv, bool>::op = "bvslt";
+const string bv_slt <z3::expr, z3::expr>::op = "bvslt";
 
 template <typename T, typename U> struct bv_ule;
 
@@ -93,8 +93,8 @@ struct bv_ule <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_ule <small_bv, bool>::op = "u<=";
-const string bv_ule <z3::expr, z3::expr>::op = "u<=";
+const string bv_ule <small_bv, bool>::op = "bvule";
+const string bv_ule <z3::expr, z3::expr>::op = "bvule";
 
 template <typename T, typename U> struct bv_sle;
 
@@ -121,8 +121,8 @@ struct bv_sle <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_sle <small_bv, bool>::op = "s<=";
-const string bv_sle <z3::expr, z3::expr>::op = "s<=";
+const string bv_sle <small_bv, bool>::op = "bvsle";
+const string bv_sle <z3::expr, z3::expr>::op = "bvsle";
 
 template <typename T, typename U> struct bv_eq;
 
@@ -150,8 +150,8 @@ struct bv_eq <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z3
     static const string op;
 };
 
-const string bv_eq <small_bv, bool>::op = "==";
-const string bv_eq <z3::expr, z3::expr>::op = "==";
+const string bv_eq <small_bv, bool>::op = "bveq";
+const string bv_eq <z3::expr, z3::expr>::op = "bveq";
 
 template <typename T, typename U> struct bv_uge;
 
@@ -179,8 +179,8 @@ struct bv_uge <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_uge <small_bv, bool>::op = "u>=";
-const string bv_uge <z3::expr, z3::expr>::op = "u>=";
+const string bv_uge <small_bv, bool>::op = "bvuge";
+const string bv_uge <z3::expr, z3::expr>::op = "bvuge";
 
 template <typename T, typename U> struct bv_sge;
 
@@ -206,8 +206,8 @@ struct bv_sge <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_sge <small_bv, bool>::op = "s>=";
-const string bv_sge <z3::expr, z3::expr>::op = "s>=";
+const string bv_sge <small_bv, bool>::op = "bvsge";
+const string bv_sge <z3::expr, z3::expr>::op = "bvsge";
 
 template <typename T, typename U> struct bv_ugt;
 
@@ -235,8 +235,8 @@ struct bv_ugt <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_ugt <small_bv, bool>::op = "u>";
-const string bv_ugt <z3::expr, z3::expr>::op = "u>";
+const string bv_ugt <small_bv, bool>::op = "bvugt";
+const string bv_ugt <z3::expr, z3::expr>::op = "bvugt";
 
 template <typename T, typename U> struct bv_sgt;
 
@@ -262,8 +262,8 @@ struct bv_sgt <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_sgt <small_bv, bool>::op = "s>";
-const string bv_sgt <z3::expr, z3::expr>::op = "s>";
+const string bv_sgt <small_bv, bool>::op = "bvsgt";
+const string bv_sgt <z3::expr, z3::expr>::op = "bvsgt";
 
 /**
  *  Bitwise logic
@@ -293,8 +293,8 @@ struct bv_not <z3::expr, z3::expr> : std::unary_function <z3::expr, z3::expr>
     static const string op;
 };
 
-const string bv_not <small_bv, small_bv>::op = "~";
-const string bv_not <z3::expr, z3::expr>::op = "~";
+const string bv_not <small_bv, small_bv>::op = "bvnot";
+const string bv_not <z3::expr, z3::expr>::op = "bvnot";
 
 template <typename T, typename U> struct bv_and;
 
@@ -320,8 +320,8 @@ struct bv_and <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_and <small_bv, small_bv>::op = "&";
-const string bv_and <z3::expr, z3::expr>::op = "&";
+const string bv_and <small_bv, small_bv>::op = "bvand";
+const string bv_and <z3::expr, z3::expr>::op = "bvand";
 
 template <typename T, typename U> struct bv_or;
 
@@ -347,8 +347,8 @@ struct bv_or <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z3
     static const string op;
 };
 
-const string bv_or <small_bv, small_bv>::op = "|";
-const string bv_or <z3::expr, z3::expr>::op = "|";
+const string bv_or <small_bv, small_bv>::op = "bvor";
+const string bv_or <z3::expr, z3::expr>::op = "bvor";
 
 template <typename T, typename U> struct bv_xor;
 
@@ -374,8 +374,8 @@ struct bv_xor <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_xor <small_bv, small_bv>::op = "^";
-const string bv_xor <z3::expr, z3::expr>::op = "^";
+const string bv_xor <small_bv, small_bv>::op = "bvxor";
+const string bv_xor <z3::expr, z3::expr>::op = "bvxor";
 
 /**
  *  Arithmetic
@@ -406,8 +406,8 @@ struct bv_add <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_add <small_bv, small_bv>::op = "+";
-const string bv_add <z3::expr, z3::expr>::op = "+";
+const string bv_add <small_bv, small_bv>::op = "bvadd";
+const string bv_add <z3::expr, z3::expr>::op = "bvadd";
 
 template <typename T, typename U> struct bv_sub;
 
@@ -433,8 +433,8 @@ struct bv_sub <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_sub <small_bv, small_bv>::op = "-";
-const string bv_sub <z3::expr, z3::expr>::op = "-";
+const string bv_sub <small_bv, small_bv>::op = "bvsub";
+const string bv_sub <z3::expr, z3::expr>::op = "bvsub";
 
 template <typename T, typename U> struct bv_neg;
 
@@ -460,8 +460,8 @@ struct bv_neg <z3::expr, z3::expr> : std::unary_function <z3::expr, z3::expr>
     static const string op;
 };
 
-const string bv_neg <small_bv, small_bv>::op = "-";
-const string bv_neg <z3::expr, z3::expr>::op = "-";
+const string bv_neg <small_bv, small_bv>::op = "bvneg";
+const string bv_neg <z3::expr, z3::expr>::op = "bvneg";
 
 template <typename T, typename U> struct bv_mul;
 
@@ -487,8 +487,8 @@ struct bv_mul <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_mul <small_bv, small_bv>::op = "*";
-const string bv_mul <z3::expr, z3::expr>::op = "*";
+const string bv_mul <small_bv, small_bv>::op = "bvmul";
+const string bv_mul <z3::expr, z3::expr>::op = "bvmul";
 
 template <typename T, typename U> struct bv_udiv;
 
@@ -520,8 +520,8 @@ struct bv_udiv <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, 
     static const string op;
 };
 
-const string bv_udiv <small_bv, small_bv>::op = "u/";
-const string bv_udiv <z3::expr, z3::expr>::op = "u/";
+const string bv_udiv <small_bv, small_bv>::op = "bvudiv";
+const string bv_udiv <z3::expr, z3::expr>::op = "bvudiv";
 
 template <typename T, typename U> struct bv_urem;
 
@@ -553,8 +553,8 @@ struct bv_urem <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, 
     static const string op;
 };
 
-const string bv_urem <small_bv, small_bv>::op = "u%";
-const string bv_urem <z3::expr, z3::expr>::op = "u%";
+const string bv_urem <small_bv, small_bv>::op = "bvurem";
+const string bv_urem <z3::expr, z3::expr>::op = "bvurem";
 
 template <typename T, typename U> struct bv_sdiv;
 
@@ -599,8 +599,8 @@ struct bv_sdiv <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, 
     static const string op;
 };
 
-const string bv_sdiv <small_bv, small_bv>::op = "s/";
-const string bv_sdiv <z3::expr, z3::expr>::op = "s/";
+const string bv_sdiv <small_bv, small_bv>::op = "bvsdiv";
+const string bv_sdiv <z3::expr, z3::expr>::op = "bvsdiv";
 
 template <typename T, typename U> struct bv_srem;
 
@@ -645,8 +645,8 @@ struct bv_srem <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, 
     static const string op;
 };
 
-const string bv_srem <small_bv, small_bv>::op = "s%";
-const string bv_srem <z3::expr, z3::expr>::op = "s%";
+const string bv_srem <small_bv, small_bv>::op = "bvsrem";
+const string bv_srem <z3::expr, z3::expr>::op = "bvsrem";
 
 /**
  *  Shifts
@@ -680,8 +680,8 @@ struct bv_shl <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, z
     static const string op;
 };
 
-const string bv_shl <small_bv, small_bv>::op = "<<";
-const string bv_shl <z3::expr, z3::expr>::op = "<<";
+const string bv_shl <small_bv, small_bv>::op = "bvshl";
+const string bv_shl <z3::expr, z3::expr>::op = "bvshl";
 
 template <typename T, typename U> struct bv_lshr;
 
@@ -712,8 +712,8 @@ struct bv_lshr <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, 
     static const string op;
 };
 
-const string bv_lshr <small_bv, small_bv>::op = "l>>";
-const string bv_lshr <z3::expr, z3::expr>::op = "l>>";
+const string bv_lshr <small_bv, small_bv>::op = "bvlshr";
+const string bv_lshr <z3::expr, z3::expr>::op = "bvlshr";
 
 template <typename T, typename U> struct bv_ashr;
 
@@ -761,8 +761,8 @@ struct bv_ashr <z3::expr, z3::expr> : std::binary_function <z3::expr, z3::expr, 
     static const string op;
 };
 
-const string bv_ashr <small_bv, small_bv>::op = "a>>";
-const string bv_ashr <z3::expr, z3::expr>::op = "a>>";
+const string bv_ashr <small_bv, small_bv>::op = "bvashr";
+const string bv_ashr <z3::expr, z3::expr>::op = "bvashr";
 
 } // namespace nonstd
 } // namespace stoch
