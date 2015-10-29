@@ -1,3 +1,39 @@
+/*
+Copyright (c) 2013,
+Abhishek Udupa,
+Mukund Raghothaman,
+The University of Pennsylvania
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 %{
     #include <SynthLib2ParserIFace.hpp>
     #include <SymbolTable.hpp>
@@ -5,7 +41,7 @@
     #include <string.h>
     #include <boost/lexical_cast.hpp>
     #include <LogicSymbols.hpp>
-    
+
     using namespace std;
     using namespace SynthLib2Parser;
 
@@ -21,7 +57,7 @@
     int yyerror(char* s)
     {
         cerr << "Parse error: Last token read was: " << yytext
-             << " at line: " << yylinenum << ", column: " 
+             << " at line: " << yylinenum << ", column: "
              << yycolnum - strlen(yytext) << endl;
         cerr.flush();
         exit(1);
@@ -64,7 +100,7 @@
 %token TK_CHECK_SYNTH TK_SYNTH_FUN TK_DECLARE_VAR
 %token TK_LPAREN TK_RPAREN TK_SET_LOGIC TK_BV
 %token TK_INT TK_BOOL TK_ENUM TK_CONSTRAINT
-%token TK_CONSTANT TK_VARIABLE TK_LOCAL_VARIABLE TK_INPUT_VARIABLE 
+%token TK_CONSTANT TK_VARIABLE TK_LOCAL_VARIABLE TK_INPUT_VARIABLE
 %token TK_ERROR TK_DOUBLECOLON
 %token TK_LET TK_ARRAY TK_REAL
 
@@ -110,13 +146,13 @@
 start : Prog
       { SynthLib2Bison::TheProgram = $1; }
       | /* epsilon */
-      {   
+      {
           vector<ASTCmd*> Dummy;
           SynthLib2Bison::TheProgram = new Program(Dummy);
       }
 
 Prog : SetLogicCmd CmdPlus
-     { 
+     {
          vector<ASTCmd*> AllCmds;
          AllCmds.push_back($1);
          AllCmds.insert(AllCmds.end(), $2->begin(), $2->end());
@@ -165,7 +201,7 @@ Cmd : FunDefCmd
 
 VarDeclCmd : TK_LPAREN TK_DECLARE_VAR Symbol SortExpr TK_RPAREN
            {
-               $$ = new VarDeclCmd(GetCurrentLocation(), 
+               $$ = new VarDeclCmd(GetCurrentLocation(),
                                    *$3, $4);
                delete $3;
            }
@@ -332,7 +368,7 @@ SymbolSortPairStar : SymbolSortPairStar SymbolSortPair
                    {
                        $$ = new vector<ArgSortPair*>();
                    }
-                   
+
 
 SymbolSortPair : TK_LPAREN Symbol SortExpr TK_RPAREN
                {
@@ -384,7 +420,7 @@ LetBindingTerm : TK_LPAREN Symbol SortExpr Term TK_RPAREN
                    delete $2;
                }
 
-TermStar : TermStar Term 
+TermStar : TermStar Term
          {
              $$ = $1;
              $$->push_back($2);
@@ -430,7 +466,7 @@ Literal : IntConst
             $$ = new Literal(GetCurrentLocation(), *$1, new RealSortExpr(SourceLocation::None));
             delete $1;
         }
-        
+
 NTDefPlus : NTDefPlus NTDef
           {
               $$ = $1;
@@ -471,7 +507,7 @@ ConstraintCmd : TK_LPAREN TK_CONSTRAINT Term TK_RPAREN
                   $$ = new ConstraintCmd(GetCurrentLocation(), $3);
               }
 
-SynthFunCmd : TK_LPAREN TK_SYNTH_FUN Symbol ArgList SortExpr 
+SynthFunCmd : TK_LPAREN TK_SYNTH_FUN Symbol ArgList SortExpr
               TK_LPAREN NTDefPlus TK_RPAREN TK_RPAREN
             {
                 $$ = new SynthFunCmd(GetCurrentLocation(), *$3,
@@ -552,4 +588,3 @@ GTermStar : GTermStar GTerm
           {
               $$ = new vector<GTerm*>();
           }
-

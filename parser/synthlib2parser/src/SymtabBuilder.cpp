@@ -1,3 +1,39 @@
+/*
+Copyright (c) 2013,
+Abhishek Udupa,
+Mukund Raghothaman,
+The University of Pennsylvania
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include <LogicSymbols.hpp>
 #include <SymtabBuilder.hpp>
 
@@ -30,36 +66,36 @@ namespace SynthLib2Parser {
         vector<const SortExpr*> ArgSorts;
         for(auto const& ASPair : Cmd->GetArgs()) {
             ASPair->Accept(this);
-            TheSymbolTable->BindFormal(ASPair->GetName(), 
+            TheSymbolTable->BindFormal(ASPair->GetName(),
                                        static_cast<const SortExpr*>(ASPair->GetSort()->Clone()));
             ArgSorts.push_back(ASPair->GetSort());
         }
 
         // Check that the type of the term is the same as the one declared
 
-        // Push the builder through the term to ensure that let-bound terms are 
+        // Push the builder through the term to ensure that let-bound terms are
         // appropriately bound
         Cmd->GetTerm()->Accept(this);
 
         auto TermSort = Cmd->GetTerm()->GetTermSort(TheSymbolTable);
         auto ExpTermSort = Cmd->GetSort();
         if(!TheSymbolTable->ResolveSort(TermSort)->Equals(*(TheSymbolTable->ResolveSort(ExpTermSort)))) {
-            throw SynthLib2ParserException((string)"Definition of function symbol \"" + 
-                                           Cmd->GetFunName() + "\" does not match expected sort\n" + 
+            throw SynthLib2ParserException((string)"Definition of function symbol \"" +
+                                           Cmd->GetFunName() + "\" does not match expected sort\n" +
                                            Cmd->GetLocation().ToString());
         }
 
         Cmd->SetScope(TheSymbolTable->Pop());
 
-        // Finally, we check that a function of the same name 
+        // Finally, we check that a function of the same name
         // is not already defined
-        
+
         if (TheSymbolTable->LookupFun(Cmd->GetFunName(), ArgSorts) != NULL) {
-            throw SynthLib2ParserException((string)"Function with name \"" + 
-                                           Cmd->GetFunName() + "\" has already been defined/declared.\n" + 
+            throw SynthLib2ParserException((string)"Function with name \"" +
+                                           Cmd->GetFunName() + "\" has already been defined/declared.\n" +
                                            Cmd->GetLocation().ToString());
         }
-        
+
         // All seems good.
         // Bind the def
         TheSymbolTable->BindUserFun(static_cast<FunDefCmd*>(Cmd->Clone()));
@@ -73,8 +109,8 @@ namespace SynthLib2Parser {
         // Ensure that no other function symbol exists
         if (TheSymbolTable->LookupFun(Cmd->GetFunName(),
                                       Cmd->GetArgSorts()) != NULL) {
-            throw SynthLib2ParserException((string)"Function with name \"" + 
-                                           Cmd->GetFunName() + "\" has already been defined/declared.\n" + 
+            throw SynthLib2ParserException((string)"Function with name \"" +
+                                           Cmd->GetFunName() + "\" has already been defined/declared.\n" +
                                            Cmd->GetLocation().ToString());
         }
 
@@ -103,11 +139,11 @@ namespace SynthLib2Parser {
         // Check that no function exists of the same name
         if (TheSymbolTable->LookupFun(Cmd->GetFunName(),
                                       ArgSorts) != NULL) {
-            throw SynthLib2ParserException((string)"Function with name \"" + 
-                                           Cmd->GetFunName() + "\" has already been defined/declared.\n" + 
+            throw SynthLib2ParserException((string)"Function with name \"" +
+                                           Cmd->GetFunName() + "\" has already been defined/declared.\n" +
                                            Cmd->GetLocation().ToString());
         }
-        
+
         // Bind
         TheSymbolTable->BindSynthFun(Cmd->GetFunName(),
                                      CloneVector(ArgSorts),
@@ -122,9 +158,9 @@ namespace SynthLib2Parser {
         if (TheSymbolTable->LookupSort(Cmd->GetName()) != NULL ||
             TheSymbolTable->LookupVariable(Cmd->GetName()) != NULL ||
             TheSymbolTable->LookupFun(Cmd->GetName(), ArgSortDummy) != NULL) {
-            
-            throw SynthLib2ParserException((string)"Identifier \"" + Cmd->GetName() + "\" has " + 
-                                           "already been declared/defined as a sort/variable/constant.\n" + 
+
+            throw SynthLib2ParserException((string)"Identifier \"" + Cmd->GetName() + "\" has " +
+                                           "already been declared/defined as a sort/variable/constant.\n" +
                                            Cmd->GetLocation().ToString());
         }
         // Bind
@@ -140,18 +176,18 @@ namespace SynthLib2Parser {
     {
         // Ensure that the sort is okay
         ASTVisitorBase::VisitVarDeclCmd(Cmd);
-        
+
         // Check for redeclarations
         vector<const SortExpr*> ArgSortDummy;
         if (TheSymbolTable->LookupSort(Cmd->GetName()) != NULL ||
             TheSymbolTable->LookupVariable(Cmd->GetName()) != NULL ||
             TheSymbolTable->LookupFun(Cmd->GetName(), ArgSortDummy) != NULL) {
 
-            throw SynthLib2ParserException((string)"Identifier \"" + Cmd->GetName() + "\" has " + 
-                                           "already been declared/defined as a sort/variable/constant.\n" + 
-                                           Cmd->GetLocation().ToString());            
+            throw SynthLib2ParserException((string)"Identifier \"" + Cmd->GetName() + "\" has " +
+                                           "already been declared/defined as a sort/variable/constant.\n" +
+                                           Cmd->GetLocation().ToString());
         }
-        
+
         // Bind
         TheSymbolTable->BindVariable(Cmd->GetName(), static_cast<SortExpr*>(Cmd->GetSort()->Clone()));
     }
@@ -161,7 +197,7 @@ namespace SynthLib2Parser {
         // Check that the type of the term is okay
         auto Sort = Cmd->GetTerm()->GetTermSort(TheSymbolTable);
         if (TheSymbolTable->ResolveSort(Sort)->GetKind() != SORTKIND_BOOL) {
-            throw SynthLib2ParserException((string)"Constraint terms must be boolean typed.\n" + 
+            throw SynthLib2ParserException((string)"Constraint terms must be boolean typed.\n" +
                                            Cmd->GetLocation().ToString());
         }
 
@@ -201,14 +237,14 @@ namespace SynthLib2Parser {
         // Check that the named sort actually resolves to something
         auto STE = TheSymbolTable->LookupSort(Sort->GetName());
         if(STE == NULL || STE->GetKind() != STENTRY_SORT) {
-            throw SynthLib2ParserException((string)"Sort name \"" + Sort->GetName() + "\" could not " + 
-                                           "be resolved to anything meaningful.\n" + 
-                                           Sort->GetLocation().ToString());            
+            throw SynthLib2ParserException((string)"Sort name \"" + Sort->GetName() + "\" could not " +
+                                           "be resolved to anything meaningful.\n" +
+                                           Sort->GetLocation().ToString());
         }
         auto SortE = STE->GetSort();
         if (TheSymbolTable->ResolveSort(SortE) == NULL) {
-            throw SynthLib2ParserException((string)"Sort name \"" + Sort->GetName() + "\" could not " + 
-                                           "be resolved to anything meaningful.\n" + 
+            throw SynthLib2ParserException((string)"Sort name \"" + Sort->GetName() + "\" could not " +
+                                           "be resolved to anything meaningful.\n" +
                                            Sort->GetLocation().ToString());
         }
         // Do nothing otherwise
@@ -246,21 +282,21 @@ namespace SynthLib2Parser {
     {
         // Check the sorts
         ASTVisitorBase::VisitLetBindingTerm(Binding);
-        
+
         // Check that the sort of the term is what is expected
         auto TermSort = Binding->GetBoundToTerm()->GetTermSort(TheSymbolTable);
         auto ExpectedSort = Binding->GetVarSort();
         if (!TheSymbolTable->ResolveSort(TermSort)->Equals(*(TheSymbolTable->ResolveSort(ExpectedSort)))) {
-            throw SynthLib2ParserException((string)"Let bound term \"" + Binding->GetVarName() + 
-                                           "\" does not match the expected sort.\n" + 
+            throw SynthLib2ParserException((string)"Let bound term \"" + Binding->GetVarName() +
+                                           "\" does not match the expected sort.\n" +
                                            Binding->GetLocation().ToString());
         }
         // let bound terms can shadow anything
-        TheSymbolTable->BindLetVariable(Binding->GetVarName(), 
+        TheSymbolTable->BindLetVariable(Binding->GetVarName(),
                                         static_cast<Term*>(Binding->GetBoundToTerm()->Clone()));
         return;
     }
-        
+
     void SymtabBuilder::VisitFunTerm(const FunTerm* TheTerm)
     {
         ASTVisitorBase::VisitFunTerm(TheTerm);
@@ -290,7 +326,7 @@ namespace SynthLib2Parser {
 
     void SymtabBuilder::VisitLetBindingGTerm(const LetBindingGTerm* Binding)
     {
-        // We don't handle this here. 
+        // We don't handle this here.
         // except for checking the sort exprs
         ASTVisitorBase::VisitLetBindingGTerm(Binding);
     }
@@ -342,4 +378,3 @@ namespace SynthLib2Parser {
     }
 
 } /* end namespace */
-

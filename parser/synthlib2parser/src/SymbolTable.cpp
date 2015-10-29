@@ -1,3 +1,39 @@
+/*
+Copyright (c) 2013,
+Abhishek Udupa,
+Mukund Raghothaman,
+The University of Pennsylvania
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include <SymbolTable.hpp>
 
 namespace SynthLib2Parser {
@@ -19,8 +55,8 @@ namespace SynthLib2Parser {
         for(auto const& ASPair : Args) {
             ArgSorts.push_back(static_cast<const SortExpr*>(ASPair->GetSort()->Clone()));
         }
-        
-        STESort = new FunSortExpr(SourceLocation::None, ArgSorts, 
+
+        STESort = new FunSortExpr(SourceLocation::None, ArgSorts,
                                   static_cast<const SortExpr*>(FunDef->GetSort()->Clone()));
     }
 
@@ -52,15 +88,15 @@ namespace SynthLib2Parser {
         return STEKind;
     }
 
-    const SortExpr* SymbolTableEntry::GetSort() const 
+    const SortExpr* SymbolTableEntry::GetSort() const
     {
         return STESort;
     }
-    
+
     FunDefCmd* SymbolTableEntry::GetFunDef() const
     {
         if(GetKind() != STENTRY_USER_FUNCTION) {
-            throw SymbolTableException((string)"INTERNAL: Called SymbolTableEntry::GetFunDef() " + 
+            throw SymbolTableException((string)"INTERNAL: Called SymbolTableEntry::GetFunDef() " +
                                        "on non function STE");
         }
         return FunDef;
@@ -69,8 +105,8 @@ namespace SynthLib2Parser {
     Term* SymbolTableEntry::GetLetBoundTerm() const
     {
         if(GetKind() != STENTRY_BVARIABLE) {
-            throw SymbolTableException((string)"INTERNAL: Called " + 
-                                       "SymbolTableEntry::GetLetBoundTerm() " + 
+            throw SymbolTableException((string)"INTERNAL: Called " +
+                                       "SymbolTableEntry::GetLetBoundTerm() " +
                                        "on non bound var STE");
         }
         return LetBoundTerm;
@@ -131,7 +167,7 @@ namespace SynthLib2Parser {
     void SymbolTableScope::CheckedBind(const string& Identifier, SymbolTableEntry* STE)
     {
         if (Lookup(Identifier) != NULL) {
-            throw SymbolTableException((string)"Error: Redeclaration of identifier \"" + 
+            throw SymbolTableException((string)"Error: Redeclaration of identifier \"" +
                                        Identifier + "\"");
         }
         Bindings[Identifier] = STE;
@@ -161,7 +197,7 @@ namespace SynthLib2Parser {
     }
 
     // Utility function for name mangling
-    inline string SymbolTable::MangleName(const string& Name, 
+    inline string SymbolTable::MangleName(const string& Name,
                                           const vector<const SortExpr*>& ArgSorts) const
     {
         string Retval = Name;
@@ -181,8 +217,8 @@ namespace SynthLib2Parser {
     const SortExpr* SymbolTable::ResolveSort(const SortExpr* TheSort) const
     {
         if(TheSort == NULL) {
-            // throw SymbolTableException((string)"Interal: SymbolTable::ResolveSort() " + 
-            //                            "was called with a NULL argument"); 
+            // throw SymbolTableException((string)"Interal: SymbolTable::ResolveSort() " +
+            //                            "was called with a NULL argument");
             return NULL;
         }
         if(TheSort->GetKind() != SORTKIND_NAMED) {
@@ -217,7 +253,7 @@ namespace SynthLib2Parser {
     {
         SymbolTableEntry* Retval = NULL;
         const u32 NumScopes = Scopes.size();
-        
+
         for(u32 i = NumScopes; i > 0; --i) {
             if((Retval = Scopes[i-1]->Lookup(Identifier)) != NULL) {
                 return Retval;
@@ -250,7 +286,7 @@ namespace SynthLib2Parser {
     const SymbolTableEntry* SymbolTable::LookupVariable(const string& VarName) const
     {
         auto Retval = Lookup(VarName);
-        if(Retval != NULL && (Retval->GetKind() == STENTRY_QVARIABLE || 
+        if(Retval != NULL && (Retval->GetKind() == STENTRY_QVARIABLE ||
                               Retval->GetKind() == STENTRY_BVARIABLE ||
                               Retval->GetKind() == STENTRY_ARG)) {
             return Retval;
@@ -258,7 +294,7 @@ namespace SynthLib2Parser {
         return NULL;
     }
 
-    const SymbolTableEntry* SymbolTable::LookupFun(const string& Name, 
+    const SymbolTableEntry* SymbolTable::LookupFun(const string& Name,
                                                    const vector<const SortExpr*>& ArgSorts) const
     {
         auto MangledName = MangleName(Name, ArgSorts);
@@ -291,18 +327,18 @@ namespace SynthLib2Parser {
     void SymbolTable::BindLetVariable(const string& Name, Term* LetBoundTerm)
     {
         Scopes.back()->
-            CheckedBind(Name, 
-                        new 
+            CheckedBind(Name,
+                        new
                         SymbolTableEntry(static_cast<Term*>(LetBoundTerm->Clone()),
                                          static_cast<SortExpr*>
                                          (LetBoundTerm->GetTermSort(this)->Clone())));
     }
 
-    void SymbolTable::BindTheoryFun(const string& Name, 
-                                    const vector<const SortExpr*>& ArgSorts, 
+    void SymbolTable::BindTheoryFun(const string& Name,
+                                    const vector<const SortExpr*>& ArgSorts,
                                     const SortExpr* RetSort)
     {
-        auto FunSort = new FunSortExpr(SourceLocation::None, CloneVector(ArgSorts), 
+        auto FunSort = new FunSortExpr(SourceLocation::None, CloneVector(ArgSorts),
                                        static_cast<const SortExpr*>(RetSort->Clone()));
         auto MangledName = MangleName(Name, ArgSorts);
 
@@ -320,14 +356,14 @@ namespace SynthLib2Parser {
         Scopes.back()->CheckedBind(MangledName, new SymbolTableEntry(FunDef));
     }
 
-    void SymbolTable::BindSynthFun(const string& Name, 
-                                   const vector<const SortExpr*>& ArgSorts, 
+    void SymbolTable::BindSynthFun(const string& Name,
+                                   const vector<const SortExpr*>& ArgSorts,
                                    const SortExpr* RetSort)
     {
         auto FunSort = new FunSortExpr(SourceLocation::None, CloneVector(ArgSorts),
                                        static_cast<const SortExpr*>(RetSort->Clone()));
         auto MangledName = MangleName(Name, ArgSorts);
-        Scopes.back()->CheckedBind(MangledName, 
+        Scopes.back()->CheckedBind(MangledName,
                                    new SymbolTableEntry(STENTRY_SYNTH_FUNCTION, FunSort));
     }
 
@@ -339,9 +375,8 @@ namespace SynthLib2Parser {
                                        CloneVector(ArgSorts),
                                        static_cast<const SortExpr*>(RetSort->Clone()));
         auto MangledName = MangleName(Name, ArgSorts);
-        Scopes.back()->CheckedBind(MangledName, new SymbolTableEntry(STENTRY_UNINTERP_FUNCTION, 
+        Scopes.back()->CheckedBind(MangledName, new SymbolTableEntry(STENTRY_UNINTERP_FUNCTION,
                                                                      FunSort));
     }
 
 } /* end namespace */
-

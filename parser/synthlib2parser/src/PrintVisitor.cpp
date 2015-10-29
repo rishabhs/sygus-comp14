@@ -1,3 +1,39 @@
+/*
+Copyright (c) 2013,
+Abhishek Udupa,
+Mukund Raghothaman,
+The University of Pennsylvania
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include <PrintVisitor.hpp>
 
 namespace SynthLib2Parser {
@@ -55,7 +91,7 @@ namespace SynthLib2Parser {
         Out << ")" << endl << endl;
     }
 
-    void PrintVisitor::VisitSynthFunCmd(const SynthFunCmd* Cmd) 
+    void PrintVisitor::VisitSynthFunCmd(const SynthFunCmd* Cmd)
     {
         Out << GetIndent() << "(synth-fun " << Cmd->GetFunName() << " (";
         for(auto const& ASPair : Cmd->GetArgs()) {
@@ -67,7 +103,7 @@ namespace SynthLib2Parser {
         IndentLevel++;
         Out << GetIndent() << "(";
         IndentLevel++;
-        
+
         for(auto const& Rule : Cmd->GetGrammarRules()) {
             Rule->Accept(this);
             Out << endl;
@@ -105,7 +141,7 @@ namespace SynthLib2Parser {
     }
 
 
-    void PrintVisitor::VisitConstraintCmd(const ConstraintCmd* Cmd) 
+    void PrintVisitor::VisitConstraintCmd(const ConstraintCmd* Cmd)
     {
         Out << "(constraint " << endl;
         IndentLevel++;
@@ -124,13 +160,13 @@ namespace SynthLib2Parser {
         Out << GetIndent() << "(check-synth)" << endl << endl;
     }
 
-    void PrintVisitor::VisitArgSortPair(const ArgSortPair* ASPair) 
+    void PrintVisitor::VisitArgSortPair(const ArgSortPair* ASPair)
     {
         Out << "(" << ASPair->GetName() << " ";
         ASPair->GetSort()->Accept(this);
         Out << ")";
     }
-    
+
     void PrintVisitor::VisitIntSortExpr(const IntSortExpr* Sort)
     {
         Out << "Int";
@@ -146,7 +182,7 @@ namespace SynthLib2Parser {
         Out << Sort->GetName();
     }
 
-    void PrintVisitor::VisitArraySortExpr(const ArraySortExpr* Sort) 
+    void PrintVisitor::VisitArraySortExpr(const ArraySortExpr* Sort)
     {
         Out << "(Array ";
         Sort->GetDomainSort()->Accept(this);
@@ -178,7 +214,7 @@ namespace SynthLib2Parser {
         }
         Out << "))";
     }
-    
+
     void PrintVisitor::VisitLetBindingTerm(const LetBindingTerm* Binding)
     {
         Out << "(" << Binding->GetVarName() << " ";
@@ -187,7 +223,7 @@ namespace SynthLib2Parser {
         Binding->GetBoundToTerm()->Accept(this);
         Out << ")";
     }
-    
+
     void PrintVisitor::VisitFunTerm(const FunTerm* TheTerm)
     {
         Out << "(" << TheTerm->GetFunName();
@@ -203,7 +239,7 @@ namespace SynthLib2Parser {
         TheTerm->GetLiteral()->Accept(this);
     }
 
-    void PrintVisitor::VisitSymbolTerm(const SymbolTerm* TheTerm) 
+    void PrintVisitor::VisitSymbolTerm(const SymbolTerm* TheTerm)
     {
         Out << TheTerm->GetSymbol();
     }
@@ -221,8 +257,8 @@ namespace SynthLib2Parser {
         IndentLevel--;
         Out << endl << GetIndent() << ")";
     }
-    
-    void PrintVisitor::VisitLetBindingGTerm(const LetBindingGTerm* Binding) 
+
+    void PrintVisitor::VisitLetBindingGTerm(const LetBindingGTerm* Binding)
     {
         Out << "(" << Binding->GetVarName() << " ";
         Binding->GetVarSort()->Accept(this);
@@ -230,8 +266,8 @@ namespace SynthLib2Parser {
         Binding->GetBoundToTerm()->Accept(this);
         Out << ")";
     }
-    
-    void PrintVisitor::VisitFunGTerm(const FunGTerm* TheTerm) 
+
+    void PrintVisitor::VisitFunGTerm(const FunGTerm* TheTerm)
     {
         Out << "(" << TheTerm->GetName();
         for(auto const& Arg : TheTerm->GetArgs()) {
@@ -241,17 +277,17 @@ namespace SynthLib2Parser {
         Out << ")" << endl;
     }
 
-    void PrintVisitor::VisitLiteralGTerm(const LiteralGTerm* TheTerm) 
+    void PrintVisitor::VisitLiteralGTerm(const LiteralGTerm* TheTerm)
     {
         TheTerm->GetLiteral()->Accept(this);
     }
 
-    void PrintVisitor::VisitSymbolGTerm(const SymbolGTerm* TheTerm) 
+    void PrintVisitor::VisitSymbolGTerm(const SymbolGTerm* TheTerm)
     {
         Out << TheTerm->GetSymbol();
     }
 
-    void PrintVisitor::VisitLetGTerm(const LetGTerm* TheTerm) 
+    void PrintVisitor::VisitLetGTerm(const LetGTerm* TheTerm)
     {
         Out << "(let (" << endl;
         IndentLevel++;
@@ -262,17 +298,17 @@ namespace SynthLib2Parser {
         Out << GetIndent();
         TheTerm->GetBoundInTerm()->Accept(this);
         IndentLevel--;
-        Out << endl << GetIndent() << ")";        
+        Out << endl << GetIndent() << ")";
     }
 
-    void PrintVisitor::VisitConstantGTerm(const ConstantGTerm* TheTerm) 
+    void PrintVisitor::VisitConstantGTerm(const ConstantGTerm* TheTerm)
     {
         Out << "(Constant ";
         TheTerm->GetSort()->Accept(this);
         Out << ")";
     }
 
-    void PrintVisitor::VisitVariableGTerm(const VariableGTerm* TheTerm) 
+    void PrintVisitor::VisitVariableGTerm(const VariableGTerm* TheTerm)
     {
         switch (TheTerm->GetKind()) {
         case VARKIND_LOCAL:
@@ -289,8 +325,8 @@ namespace SynthLib2Parser {
         TheTerm->GetSort()->Accept(this);
         Out << ")";
     }
-    
-    void PrintVisitor::VisitNTDef(const NTDef* Def) 
+
+    void PrintVisitor::VisitNTDef(const NTDef* Def)
     {
         Out << "(" << Def->GetName() << " ";
         Def->GetSort()->Accept(this);
@@ -305,7 +341,7 @@ namespace SynthLib2Parser {
         Out << endl << GetIndent();
     }
 
-    void PrintVisitor::VisitLiteral(const Literal* TheLiteral) 
+    void PrintVisitor::VisitLiteral(const Literal* TheLiteral)
     {
         Out << TheLiteral->GetLiteralString();
     }
@@ -326,4 +362,3 @@ namespace SynthLib2Parser {
     }
 
 } /* end namespace */
-
