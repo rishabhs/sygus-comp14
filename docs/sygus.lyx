@@ -2127,7 +2127,7 @@ name "sub:Spec:SynthFun"
 \begin{alignat*}{1}
  & \begin{array}{rcl}
 \synthfuncmd & ::= & \paren{\synthfunkwd\mbox{ }\symbol\mbox{ }\paren{\kstar{\paren{\symbol\mbox{ }\sortexpr}}}\mbox{ }\sortexpr\mbox{ }\paren{\kplus{\ntdef}}}\\
-\ntdef & ::= & \paren{\symbol\mbox{ }\sortexpr\mbox{ }\kplus{\gterm}}
+\ntdef & ::= & \paren{\symbol\mbox{ }\sortexpr\mbox{ }\paren{\kplus{\gterm}}}
 \end{array}
 \end{alignat*}
 
