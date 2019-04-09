@@ -37,22 +37,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 %{
     #include <utility>
     #include <vector>
-    #include <SynthLib2ParserIFace.hpp>
-    #define MAX_STRING_LEN 131072
+    #include "include/Sygus2ParserIFace.hpp"
     using namespace std;
-    using namespace SynthLib2Parser;
+    using namespace Sygus2Parser;
 
-    #include "SynthLib2Parser.tab.h"
+    #include "Sygus2Parser.tab.h"
     /* C includes, etc */
     extern long yylinenum;
     extern long yycolnum;
-    char string_buffer[MAX_STRING_LEN];
-    int string_buffer_index = 0;
 %}
 
 %option noyywrap
 
-%s                      INITIAL
+%x                      linecomment
 WS                      [ \t\f]
 LETTER                  [a-zA-Z_]
 UNDERSCORE              "_"
@@ -61,7 +58,7 @@ NONZERO                 [1-9]
 DIGIT                   [0-9]
 HEXDIGIT                {DIGIT}|[a-f]|[A-F]
 BIT                     "0"|"1"
-NUMERAL                 {ZERO} | {NONZERO}{DIGIT}+
+NUMERAL                 {ZERO}|{NONZERO}{DIGIT}+
 DECIMAL                 {NUMERAL}"."{ZERO}*{NUMERAL}
 HEXCONST                "#x"{HEXDIGIT}+
 BINCONST                "#b"{BIT}+
@@ -72,17 +69,13 @@ STRINGCONST             "\""({SYMBOLCC}|{WS}|{DIGIT}|","|"("|")")*"\""
 %%
 
 {WS}                    { yycolnum++; }
-{UNDERSCORE}            { yycolnum++; }
 [\n]                    { yylinenum++; yycolnum = 0; }
 ";"                     { BEGIN linecomment; yycolnum += 1; }
 <linecomment>\n         { BEGIN INITIAL; yylinenum++; yycolnum = 0; }
 <linecomment>.          { yycolnum++; }
-"declare-datatype"      { yycolnum += strlen(yytext); return TK_DECLARE_DATATYPE;}
-"declare-datatypes"     { yycolnum += strlen(yytext); return TK_DECLARE_DATATYPES; }
 "define-sort"           { yycolnum += strlen(yytext); return TK_DEFINE_SORT; }
 "declare-sort"          { yycolnum += strlen(yytext); return TK_DECLARE_SORT; }
 "define-fun"            { yycolnum += strlen(yytext); return TK_DEFINE_FUN; }
-"declare-fun"           { yycolnum += strlen(yytext); return TK_DECLARE_FUN; }
 "set-option"            { yycolnum += strlen(yytext); return TK_SET_OPTION;}
 "set-feature"           { yycolnum += strlen(yytext); return TK_SET_FEATURE;}
 "check-synth"           { yycolnum += strlen(yytext); return TK_CHECK_SYNTH; }
@@ -94,68 +87,56 @@ STRINGCONST             "\""({SYMBOLCC}|{WS}|{DIGIT}|","|"("|")")*"\""
 "inv-constraint"        { yycolnum += strlen(yytext); return TK_INV_CONSTRAINT; }
 "("                     { yycolnum += strlen(yytext); return TK_LPAREN; }
 ")"                     { yycolnum += strlen(yytext); return TK_RPAREN; }
-"BitVec"                { yycolnum += strlen(yytext); return TK_BV; }
-"Array"                 { yycolnum += strlen(yytext); return TK_ARRAY; }
-"Int"                   { yycolnum += strlen(yytext); return TK_INT; }
-"Bool"                  { yycolnum += strlen(yytext); return TK_BOOL; }
-"Real"                  { yycolnum += strlen(yytext); return TK_REAL; }
 "exists"                { yycolnum += strlen(yytext); return TK_EXISTS; }
 "forall"                { yycolnum += strlen(yytext); return TK_FORALL; }
 "Constant"              { yycolnum += strlen(yytext); return TK_CONSTANT; }
 "Variable"              { yycolnum += strlen(yytext); return TK_VARIABLE; }
 "let"                   { yycolnum += strlen(yytext); return TK_LET; }
 ":"                     { yycolnum += strlen(yytext); return TK_COLON; }
-"::"                    { yycolnum += strlen(yytext); return TK_DOUBLECOLON; }
 "true"                  {
-                            yylval.LexerString = new string(yytext);
+                            yylval.lexer_string = new string(yytext);
                             yycolnum += strlen(yytext);
                             return TK_BOOL_CONST;
                         }
 "false"                 {
-                            yylval.LexerString = new string(yytext);
+                            yylval.lexer_string = new string(yytext);
                             yycolnum += strlen(yytext);
                             return TK_BOOL_CONST;
                         }
 {NUMERAL}               {
                             yycolnum += strlen(yytext);
-                            yylval.LexerString = new string(yytext);
+                            yylval.lexer_string = new string(yytext);
                             return TK_NUMERAL;
                         }
 {DECIMAL}               {
                             yycolnum += strlen(yytext);
-                            yylval.LexerString = new string(yytext);
+                            yylval.lexer_string = new string(yytext);
                             return TK_DECIMAL;
-                        }
-{INTCONST}              {
-                            yycolnum += strlen(yytext);
-                            yylval.LexerString = new string(yytext);
-                            return TK_INT_LITERAL;
-                        }
-{REALCONST}             {
-                            yycolnum += strlen(yytext);
-                            yylval.LexerString = new string(yytext);
-                            return TK_REAL_LITERAL;
                         }
 {HEXCONST}              {
                             yycolnum += strlen(yytext);
-                            yylval.LexerString = new string(yytext);
+                            yylval.lexer_string = new string(yytext);
                             return TK_HEX_CONST;
                         }
 {BINCONST}              {
                             yycolnum += strlen(yytext);
-                            yylval.LexerString = new string(yytext);
+                            yylval.lexer_string = new string(yytext);
                             return TK_BIN_CONST;
                         }
 {STRINGCONST}           {
                             yycolnum += strlen(yytext);
                             string *SymbolVal = new string(yytext);
-                            yylval.LexerString = SymbolVal;
+                            yylval.lexer_string = SymbolVal;
                             return TK_STRING_LITERAL;
+                        }
+"_"                     {
+                            yycolnum += strlen(yytext);
+                            return TK_UNDERSCORE;
                         }
 {SYMBOL}                {
                             yycolnum += strlen(yytext);
                             string *SymbolVal = new string(yytext);
-                            yylval.LexerString = SymbolVal;
+                            yylval.lexer_string = SymbolVal;
                             return TK_SYMBOL;
                         }
 .                       { return TK_ERROR; }

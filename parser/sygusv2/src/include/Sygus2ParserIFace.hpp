@@ -49,15 +49,11 @@ namespace Sygus2Parser {
 class SourceLocation
 {
 private:
-    i32 start_line;
-    i32 start_column;
-    i32 end_line;
-    i32 end_column;
-    string file_name;
+    i32 line;
+    i32 column;
 
 public:
-    SourceLocation(i32 start_line, i32 start_column, i32 end_line, i32 end_column);
-    SourceLocation(i32 start_line, i32 start_column, i32 end_line, i32 end_column, const string& file_name);
+    SourceLocation(i32 line, i32 column);
     SourceLocation(const SourceLocation& other);
     SourceLocation(SourceLocation&& other);
 
@@ -70,11 +66,8 @@ public:
     SourceLocation& operator = (SourceLocation&& other);
     i64 get_hash_code() const;
 
-    i32 get_start_line() const;
-    i32 get_start_column() const;
-    i32 get_end_line() const;
-    i32 get_end_column() const;
-    const string& get_file_name() const;
+    i32 get_line() const;
+    i32 get_column() const;
 
     string to_string() const;
     static SourceLocation none;
@@ -153,6 +146,8 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
+
+    bool is_indexed() const;
 
     // accessors
     const string& get_symbol() const;
@@ -260,7 +255,7 @@ protected:
 
 public:
     FunctionApplicationTerm(const SourceLocation& location,
-                            Identifier* identifier
+                            Identifier* identifier,
                             const vector<Term*>& application_arguments);
     virtual ~FunctionApplicationTerm();
 
@@ -314,6 +309,7 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
+    virtual void resolve_types(SymbolTable* symbol_table) const override;
 
     QuantifierKind get_quantifier_kind() const;
     const vector<const SortedSymbol*> get_quantified_symbols() const;
@@ -353,6 +349,7 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
+    virtual void resolve_types(SymbolTable* symbol_table) const override;
 
     const vector<const VariableBinding*> get_bindings() const;
     const Term* get_let_body() const;
@@ -602,19 +599,76 @@ public:
     const Literal* get_option_value() const;
 };
 
+class GrammarTerm : public ASTBase
+{
+public:
+    virtual void resolve_types(SymbolTable* symbol_table) const = 0;
+};
+
+class ConstantGrammarTerm : public GrammarTerm
+{
+private:
+    SortExpr* sort_expr;
+
+public:
+    ConstantGrammarTerm(const SourceLocation& location, SortExpr* sort_expr);
+    virtual ~ConstantGrammarTerm();
+
+    virtual void accept(ASTVisitorBase* visitor) const override;
+    virtual ASTBase* clone() const override;
+
+    virtual void resolve_types(SymbolTable* symbol_table) const override;
+
+    const SortExpr* get_sort_expr() const;
+};
+
+class VariableGrammarTerm : public GrammarTerm
+{
+private:
+    SortExpr* sort_expr;
+
+public:
+    VariableGrammarTerm(const SourceLocation& location, SortExpr* sort_expr);
+    virtual ~VariableGrammarTerm();
+
+    virtual void accept(ASTVisitorBase* visitor) const override;
+    virtual ASTBase* clone() const override;
+
+    virtual void resolve_types(SymbolTable* symbol_table) const override;
+
+    const SortExpr* get_sort_expr() const;
+};
+
+class BinderFreeGrammarTerm : public GrammarTerm
+{
+private:
+    Term* binder_free_term;
+
+public:
+    BinderFreeGrammarTerm(const SourceLocation& location, Term* binder_free_term);
+    virtual ~BinderFreeGrammarTerm();
+
+    virtual void accept(ASTVisitorBase* visitor) const override;
+    virtual ASTBase* clone() const override;
+
+    virtual void resolve_types(SymbolTable* symbol_table) const override;
+
+    const Term* get_binder_free_term() const;
+};
+
 class GroupedRuleList : public ASTBase
 {
 private:
     string head_symbol;
     SortExpr* head_symbol_sort;
-    vector<Term*> expansion_rules;
-    vector<const Term*> const_expansion_rules;
+    vector<GrammarTerm*> expansion_rules;
+    vector<const GrammarTerm*> const_expansion_rules;
 
 public:
     GroupedRuleList(const SourceLocation& location,
                     const string& head_symbol,
                     SortExpr* head_symbol_sort,
-                    const vector<Term*>& expansion_rules);
+                    const vector<GrammarTerm*>& expansion_rules);
     virtual ~GroupedRuleList();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
@@ -622,7 +676,7 @@ public:
 
     const string& get_head_symbol() const;
     const SortExpr* get_head_symbol_sort() const;
-    const vector<const Term*>& get_expansion_rules();
+    const vector<const GrammarTerm*>& get_expansion_rules();
 };
 
 class Grammar : public ASTBase
@@ -636,7 +690,7 @@ private:
 public:
     Grammar(const SourceLocation& location,
             const vector<SortedSymbol*>& grammar_nonterminals,
-            vector<GroupedRuleList*> grouped_rule_lists);
+            const vector<GroupedRuleList*>& grouped_rule_lists);
     virtual ~Grammar();
 
     virtual void accept(ASTVisitorBase* visitor) const override;

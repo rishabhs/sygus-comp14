@@ -45,7 +45,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Sygus2Bison {
 extern Sygus2Parser::Program* the_program;
-extern string* file_name = null;
+extern string* file_name;
 }
 
 extern FILE* yyin;
@@ -54,41 +54,23 @@ extern int yyparse();
 namespace Sygus2Parser {
 
 // Implementation of SourceLocation
-SourceLocation SourceLocation::none(-1, -1, -1, -1, "");
+SourceLocation SourceLocation::none(-1, -1);
 
-SourceLocation::SourceLocation(i32 start_line, i32 start_column,
-                               i32 end_line, i32 end_column,
-                               const string& file_name)
-    : start_line(start_line), start_column(start_column),
-      end_line(end_line), end_column(end_column),
-      file_name(file_name)
-{
-    // Nothing here
-}
-
-SourceLocation::SourceLocation(i32 start_line, i32 start_column,
-                               i32 end_line, i32 end_column)
-    : start_line(start_line), start_column(start_column),
-      end_line(end_line), end_column(end_column),
-      file_name("")
+SourceLocation::SourceLocation(i32 line, i32 column)
+    : line(line), column(column)
 {
     // Nothing here
 }
 
 SourceLocation::SourceLocation(const SourceLocation& other)
-    : start_line(other.start_line), start_column(other.start_column),
-      end_line(other.end_line), end_column(other.end_column),
-      file_name(other.file_name)
+    : line(other.line), column(other.column)
 {
     // Nothing here
 }
 
 SourceLocation::SourceLocation(SourceLocation&& other)
-    : start_line(std::move(other.start_line)),
-      start_column(std::move(other.start_column)),
-      end_line(std::move(other.end_line)),
-      end_column(std::move(other.end_column)),
-      file_name(std::move(other.file_name))
+    : line(std::move(other.line)),
+      column(std::move(other.column))
 {
     // Nothing here
 }
@@ -104,11 +86,7 @@ bool SourceLocation::operator == (const SourceLocation& other) const
         return true;
     }
 
-    return start_line == other.start_line &&
-        start_column == other.start_column &&
-        end_line == other.end_line &&
-        end_column == other.end_column &&
-        file_name == other.file_name;
+    return line == other.line && column == other.column;
 }
 
 bool SourceLocation::operator != (const SourceLocation& other) const
@@ -118,9 +96,7 @@ bool SourceLocation::operator != (const SourceLocation& other) const
 
 i64 SourceLocation::get_hash_code() const
 {
-    std::hash<string> string_hasher;
-    return (((((((start_line * 317) ^ start_column)* 317) ^ end_line) * 317) ^ end_column) * 317) ^
-        string_hasher(file_name);
+    return (((i64)line * 317) ^ column);
 }
 
 SourceLocation& SourceLocation::operator = (const SourceLocation& other)
@@ -128,11 +104,8 @@ SourceLocation& SourceLocation::operator = (const SourceLocation& other)
     if (&other == this) {
         return *this;
     }
-    start_line = other.start_line;
-    start_column = other.start_column;
-    end_line = other.end_line;
-    end_column = other.end_column;
-    file_name = other.file_name;
+    line = other.line;
+    column = other.column;
     return *this;
 }
 
@@ -142,47 +115,25 @@ SourceLocation& SourceLocation::operator = (SourceLocation&& other)
         return *this;
     }
 
-    start_line = std::move(other.start_line);
-    start_column = std::move(other.start_column);
-    end_line = std::move(other.end_line);
-    end_column = std::move(other.end_column);
-    file_name = std::move(other.file_name);
+    line = other.line;
+    column = other.column;
     return *this;
 }
 
-i32 SourceLocation::get_start_line() const
+i32 SourceLocation::get_line() const
 {
-    return start_line;
+    return line;
 }
 
-i32 SourceLocation::get_start_column() const
+i32 SourceLocation::get_column() const
 {
-    return start_column;
-}
-
-i32 SourceLocation::get_end_line() const
-{
-    return end_line;
-}
-
-i32 SourceLocation::get_end_column() const
-{
-    return end_column;
-}
-
-const string& SourceLocation::get_file_name() const
-{
-    return file_name;
+    return column;
 }
 
 string SourceLocation::to_string() const
 {
     ostringstream sstr;
-    sstr << start_line << ":" << start_column << " - "
-         << end_line << ":" << end_column;
-    if (file_name.length() > 0) {
-        sstr << " of file \"" << file_name << "\"";
-    }
+    sstr << line << ":" << column;
     return sstr.str();
 }
 

@@ -20,15 +20,15 @@ SYGUS2_PARSER_TESTER_DEPS=$(addprefix $(SYGUS2_PARSER_ROOT)/obj/$(BUILD_SUFFIX)/
 
 SYGUS2_PARSER_PARSER_GEN=$(SRC_DIR)/Sygus2Parser.tab.cpp
 SYGUS2_PARSER_LEXER_GEN=$(SRC_DIR)/Sygus2Lexer.tab.cpp
-SYGUS2_PARSER_PARSER_OBJ=$(OBJ_DIR)/SynthLib2Parser.tab.o
-SYGUS2_PARSER_LEXER_OBJ=$(OBJ_DIR)/SynthLib2Lexer.o
+SYGUS2_PARSER_PARSER_OBJ=$(OBJ_DIR)/Sygus2Parser.tab.o
+SYGUS2_PARSER_LEXER_OBJ=$(OBJ_DIR)/Sygus2Lexer.o
 
-# SYGUS2_PARSER_OBJS+=$(SYGUS2_PARSER_PARSER_OBJ)
-# SYGUS2_PARSER_OBJS+=$(SYGUS2_PARSER_LEXER_OBJ)
+SYGUS2_PARSER_OBJS+=$(SYGUS2_PARSER_PARSER_OBJ)
+SYGUS2_PARSER_OBJS+=$(SYGUS2_PARSER_LEXER_OBJ)
 
-SYGUS2_PARSER_STATIC=$(SYGUS2_PARSER_ROOT)/lib/$(BUILD_SUFFIX)/libsynthlib2parser.a
-SYGUS2_PARSER_DYNAMIC=$(SYGUS2_PARSER_ROOT)/lib/$(BUILD_SUFFIX)/libsynthlib2parser.so
-SYGUS2_PARSER_TESTER=$(SYGUS2_PARSER_ROOT)/bin/$(BUILD_SUFFIX)/SynthLib2Tester
+SYGUS2_PARSER_STATIC=$(SYGUS2_PARSER_ROOT)/lib/$(BUILD_SUFFIX)/libsygus2parser.a
+SYGUS2_PARSER_DYNAMIC=$(SYGUS2_PARSER_ROOT)/lib/$(BUILD_SUFFIX)/libsygus2parser.so
+SYGUS2_PARSER_TESTER=$(SYGUS2_PARSER_ROOT)/bin/$(BUILD_SUFFIX)/Sygus2Tester
 
 default:			debug
 debug:				all
@@ -59,9 +59,9 @@ endif
 $(SYGUS2_PARSER_PARSER_GEN):	Sygus2Parser.y
 ifeq "x$(VERBOSE_BUILD)" "x"
 		@echo "$(BISONPRINTNAME) `basename $<` --> `basename $@`"; \
-		$(BISON) --defines=$(SRC_DIR)/Sygus2Parser.tab.h -o $@ $<
+		$(BISON) -v --defines=$(SRC_DIR)/Sygus2Parser.tab.h -o $@ $<
 else
-		$(BISON) --defines=$(SRC_DIR)/Sygus2Parser.tab.h -o $@ $<
+		$(BISON) -v --defines=$(SRC_DIR)/Sygus2Parser.tab.h -o $@ $<
 endif
 
 $(SYGUS2_PARSER_LEXER_GEN): Sygus2Lexer.l
@@ -91,9 +91,9 @@ endif
 $(SYGUS2_PARSER_TESTER): $(SYGUS2_PARSER_TESTER_DEPS) $(SYGUS2_PARSER_TESTER_OBJS) $(SYGUS2_PARSER_STATIC)
 ifeq "x$(VERBOSE_BUILD)" "x"
 		@echo "$(LDPRINTNAME) `basename $@`"; \
-		$(CXX) $(CXXFLAGS) $(OPTFLAGS) $(SYGUS2_PARSER_TESTER_OBJS) -L $(SYGUS2_PARSER_ROOT)/lib/$(BUILD_SUFFIX) -Wl,-Bstatic -lsynthlib2parser -Wl,-Bdynamic -o $@
+		$(CXX) $(CXXFLAGS) $(OPTFLAGS) $(SYGUS2_PARSER_TESTER_OBJS) -L $(SYGUS2_PARSER_ROOT)/lib/$(BUILD_SUFFIX) -Wl,-Bstatic -lsygus2parser -Wl,-Bdynamic -o $@
 else
-		$(CXX) $(CXXFLAGS) $(OPTFLAGS) $(SYGUS2_PARSER_TESTER_OBJS) -L $(SYGUS2_PARSER_ROOT)/lib/$(BUILD_SUFFIX) -Wl,-Bstatic -lsynthlib2parser -Wl,-Bdynamic -o $@
+		$(CXX) $(CXXFLAGS) $(OPTFLAGS) $(SYGUS2_PARSER_TESTER_OBJS) -L $(SYGUS2_PARSER_ROOT)/lib/$(BUILD_SUFFIX) -Wl,-Bstatic -lsygus2parser -Wl,-Bdynamic -o $@
 endif
 
 
@@ -128,8 +128,8 @@ clean:
 	rm -rf lib/opt/*
 	rm -rf bin/debug/*
 	rm -rf bin/opt/*
-	rm -rf $(SYNTH_LIB_PARSER_LEXER_GEN) $(SYNTH_LIB_PARSER_PARSER_GEN) src/SynthLib2Parser.tab.h src/SynthLib2Parser.output
+	rm -rf $(SYGUS2_PARSER_LEXER_GEN) $(SYGUS2_PARSER_PARSER_GEN) src/Sygus2Parser.tab.h src/Sygus2Parser.output
 
 ifneq ($(MAKECMDGOALS), clean)
--include $(SYNTH_LIB_PARSER_DEPS)
+-include $(SYGUS2_PARSER_DEPS)
 endif

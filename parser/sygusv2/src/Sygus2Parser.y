@@ -35,12 +35,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 %{
-    #include <SynthLib2ParserIFace.hpp>
-    #include <SymbolTable.hpp>
+    #include "include/Sygus2ParserIFace.hpp"
+    #include "include/Sygus2ParserExceptions.hpp"
+    // #include "include/SymbolTable.hpp"
+    // #include "include/LogicSymbols.hpp"
     #include <iostream>
     #include <string.h>
-    #include <boost/lexical_cast.hpp>
-    #include <LogicSymbols.hpp>
 
     using namespace std;
     using namespace Sygus2Parser;
@@ -65,73 +65,105 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }
 
     #define GET_CURRENT_LOCATION()                                                                 \
-        SourceLocation(@$.first_line, @$.first_column, @$.last_line, @$.last_column,               \
-                       file_name == nullptr ? "", *file_name)
+        SourceLocation(yylinenum, yycolnum)
 
 %}
 
 %union {
     // yyunion fields
+    Program* the_program;
     string* lexer_string;
+
     Command* the_command;
+    vector<Command*>* command_list;
+
+    SortedSymbol* the_sorted_symbol;
+    vector<SortedSymbol*>* sorted_symbol_list;
+
+    Identifier* the_identifier;
+
+    SortExpr* the_sort_expr;
+    vector<SortExpr*>* sort_expr_list;
+
+    Index* the_index;
+    vector<Index*>* index_list;
+
+    Term* the_term;
+    vector<Term*>* term_list;
+
+    VariableBinding* the_binding;
+    vector<VariableBinding*>* binding_list;
+
+    GroupedRuleList* the_grouped_rule_list;
+    vector<GroupedRuleList*>* grouped_rule_list_list;
+
     Grammar* the_grammar;
-    vector<SortedSymbol*>* sorted_symbol_vector;
+
+    GrammarTerm* the_grammar_term;
+    vector<GrammarTerm*>* grammar_term_list;
+
+    Literal* the_literal;
 }
 
-%token TK_DEFINE_SORT TK_DEFINE_FUN TK_DECLARE_FUN TK_SET_OPTION TK_SET_FEATURE
+%token TK_DEFINE_SORT TK_DEFINE_FUN TK_SET_OPTION TK_SET_FEATURE
 %token TK_CHECK_SYNTH TK_SYNTH_FUN TK_DECLARE_VAR TK_INV_CONSTRAINT TK_SYNTH_INV
-%token TK_LPAREN TK_RPAREN TK_SET_LOGIC TK_BV
-%token TK_BOOL TK_ENUM TK_CONSTRAINT
-%token TK_CONSTANT TK_VARIABLE TK_LOCAL_VARIABLE TK_INPUT_VARIABLE
-%token TK_ERROR TK_DOUBLECOLON TK_COLON
-%token TK_LET TK_ARRAY TK_REAL TK_EXISTS TK_FORALL
-%token TK_DECLARE_DATATYPE TK_DECLARE_DATATYPES TK_DECLARE_SORT
+%token TK_LPAREN TK_RPAREN TK_SET_LOGIC
+%token TK_CONSTRAINT
+%token TK_CONSTANT TK_VARIABLE
+%token TK_ERROR TK_COLON TK_UNDERSCORE
+%token TK_LET TK_EXISTS TK_FORALL
+%token TK_DECLARE_SORT
 
-%token<LexerString> TK_NUMERAL TK_DECIMAL TK_BOOL_CONST TK_HEX_CONST TK_BIN_CONST
-%token<LexerString> TK_ENUM_LITERAL TK_BV_LITERAL TK_SYMBOL
-
-%type<lexer_string> Symbol BoolConst
-%type<sorted_symbol_vector> SortedSymbolStar
-%type<the_grammar> OptGrammarDef
+%token<lexer_string> TK_SYMBOL TK_BOOL_CONST TK_NUMERAL TK_DECIMAL
+%token<lexer_string> TK_HEX_CONST TK_BIN_CONST TK_STRING_LITERAL
 
 
-/* %type<TheSortExpr> SortExpr */
-/* %type<TheCmd> SortDefCmd FunDefCmd FunDeclCmd SetOptionCmd SetFeatureCmd SynthFunCmd */
-/* %type<TheCmd> CheckSynthCmd VarDeclCmd ConstraintCmd SetLogicCmd Cmd DatatypeDeclCmd */
-/* %type<TheCmd> DatatypesDeclCmd InvConstraintCmd SortDeclCmd */
-/* %type<CmdList> CmdStar */
-/* %type<LexerString> IntConst */
-/* %type<LexerString> BoolConst */
-/* %type<LexerString> BVConst */
-/* %type<LexerString> EnumConst */
-/* %type<LexerString> RealConst; */
-/* %type<SymbolVector> ECList */
-/* %type<SymbolVector> SymbolPlus */
-/* %type<LexerString> Symbol */
-/* %type<SymbolSortVector> ArgList */
-/* %type<SymbolSortVector> SymbolSortPairStar */
-/* %type<SymbolSortPair> SymbolSortPair */
-/* %type<TheTerm> Term LetTerm */
-/* %type<TermVector> TermStar */
-/* %type<TheLiteral> Literal */
-/* %type<NTDefVector> NTDefPlus */
-/* %type<TheNTDef> NTDef */
-/* %type<GTermVector> GTermPlus */
-/* %type<TheGTerm> GTerm LetGTerm */
-/* %type<GTermVector> GTermStar */
-/* %type<TheProgram> Prog */
-/* %type<STPair> LetBindingTerm */
-/* %type<STPairVector> LetBindingTermPlus */
-/* %type<SGPair> LetBindingGTerm */
-/* %type<SGPairVector> LetBindingGTermPlus */
-/* %type<SortVector> SortStar */
+%type<the_program> Program
+
+%type<command_list> CommandStar
+
+%type<the_command> Command CheckSynthCommand ConstraintCommand VarDeclCommand InvConstraintCommand
+%type<the_command> SetFeatureCommand SynthFunCommand SynthInvCommand SmtCommand
+%type<the_command> SortDeclCommand FunDefCommand SortDefCommand SetLogicCommand SetOptionCommand
+
+%type<the_sorted_symbol> SortedSymbol
+%type<sorted_symbol_list> SortedSymbolStar SortedSymbolPlus
+
+%type<the_sort_expr> SortExpr
+%type<sort_expr_list> SortExprPlus
+
+%type<the_identifier> Identifier
+
+%type<lexer_string> Symbol
+
+%type<the_literal> Literal
+
+%type<the_term> Term
+%type<term_list> TermPlus
+
+%type<the_index> Index
+%type<index_list> IndexPlus
+
+%type<the_binding> Binding
+%type<binding_list> BindingPlus
+
+%type<the_grammar> OptGrammarDef GrammarDef
+
+%type<the_grouped_rule_list> GroupedRuleList
+%type<grouped_rule_list_list> GroupedRuleListPlus
+
+%type<the_grammar_term> GTerm
+%type<grammar_term_list> GTermPlus
+
+%type<the_term> BFTerm
+%type<term_list> BFTermPlus
 
 %%
 
-start : Prog
-      { SynthLib2Bison::TheProgram = $1; }
+start : Program
+      { Sygus2Bison::the_program = $1; }
 
-Prog : CommandStar
+Program : CommandStar
      {
          $$ = new Program(GET_CURRENT_LOCATION(), *$1);
          delete $1;
@@ -144,7 +176,7 @@ CommandStar : CommandStar Command
             }
             | /* empty */
             {
-                $$ = new vector<ASTCmd*>();
+                $$ = new vector<Command*>();
             }
 
 Command : CheckSynthCommand
@@ -174,20 +206,20 @@ ConstraintCommand : TK_LPAREN TK_CONSTRAINT Term TK_RPAREN
 
 VarDeclCommand : TK_LPAREN TK_DECLARE_VAR Symbol SortExpr TK_RPAREN
            {
-               $$ = new VarDeclCmd(GET_CURRENT_LOCATION(), *$3, $4);
+               $$ = new DeclareVarCommand(GET_CURRENT_LOCATION(), *$3, $4);
                delete $3;
            }
 
 InvConstraintCommand : TK_LPAREN TK_INV_CONSTRAINT Symbol Symbol Symbol Symbol TK_RPAREN
                  {
-                     $$ = new InvConstraintCmd(GET_CURRENT_LOCATION(), *$3, *$4, *$5, *$6);
+                     $$ = new InvConstraintCommand(GET_CURRENT_LOCATION(), *$3, *$4, *$5, *$6);
                      delete $3;
                      delete $4;
                      delete $5;
                      delete $6;
                  }
 
-SetFeatureCommand : TK_LPAREN TK_SET_FEATURE TK_COLON Symbol BoolConst TK_RPAREN
+SetFeatureCommand : TK_LPAREN TK_SET_FEATURE TK_COLON Symbol TK_BOOL_CONST TK_RPAREN
               {
                   bool value;
                   if (*$5 == "true") {
@@ -195,30 +227,28 @@ SetFeatureCommand : TK_LPAREN TK_SET_FEATURE TK_COLON Symbol BoolConst TK_RPAREN
                   } else if (*$5 == "false") {
                       value = false;
                   } else {
-                      cout << "Error parsing a boolean value: " << value << endl;
-                      throw Exception();
+                      cout << "Error parsing a boolean value: " << *$5 << endl;
+                      throw MalformedLiteralException("Error parsing boolean value: " + *$5, "");
                   }
-                  $$ = new SetFeatureCmd(GetCurrentLocation(), *$4, value);
+                  $$ = new SetFeatureCommand(GET_CURRENT_LOCATION(), *$4, value);
                   delete $4;
                   delete $5;
               }
 
-SynthFunCmd : TK_LPAREN TK_SYNTH_FUN Symbol SortedSymbolStar SortExpr OptGrammarDef TK_RPAREN
+SynthFunCommand : TK_LPAREN TK_SYNTH_FUN Symbol TK_LPAREN SortedSymbolStar TK_RPAREN SortExpr OptGrammarDef TK_RPAREN
+                {
+                    $$ = new SynthFunCommand(GET_CURRENT_LOCATION(), *$3, *$5, $7, $8);
+                    delete $3;
+                    delete $5;
+                }
+
+SynthInvCommand : TK_LPAREN TK_SYNTH_INV Symbol TK_LPAREN SortedSymbolStar TK_RPAREN OptGrammarDef TK_RPAREN
             {
-                $$ = new SynthFunCmd(GetCurrentLocation(), *$3, *$4, $5, $6);
-
-
+                $$ = new SynthInvCommand(GET_CURRENT_LOCATION(), *$3, *$5, $7);
                 delete $3;
-                delete $4;
-                delete $7;
+                delete $5;
             }
 
-SynthInvCommand : TK_LPAREN TK_SYNTH_INV Symbol SortedSymbolStar OptGrammarDef TK_RPAREN
-            {
-                $$ = new SynthInvCommand(GET_CURRENT_LOCATION(), *$3, *$4, $5);
-                delete $3;
-                delete $4;
-            }
 SortDeclCommand : TK_LPAREN TK_DECLARE_SORT Symbol TK_NUMERAL TK_RPAREN
                 {
                     istringstream istr(*$4);
@@ -229,11 +259,11 @@ SortDeclCommand : TK_LPAREN TK_DECLARE_SORT Symbol TK_NUMERAL TK_RPAREN
                 }
 
 
-FunDefCommand : TK_LPAREN TK_DEFINE_FUN Symbol SortedSymbolStar SortExpr Term TK_RPAREN
+FunDefCommand : TK_LPAREN TK_DEFINE_FUN Symbol TK_LPAREN SortedSymbolStar TK_RPAREN SortExpr Term TK_RPAREN
           {
-              $$ = new DefineFunCommand(GET_CURRENT_LOCATION(), *$3, *$4, $5, $6, NULL);
+              $$ = new DefineFunCommand(GET_CURRENT_LOCATION(), *$3, *$5, $7, $8);
               delete $3;
-              delete $4;
+              delete $5;
           }
 
 SortDefCommand : TK_LPAREN TK_DEFINE_SORT Symbol SortExpr TK_RPAREN
@@ -256,15 +286,25 @@ SetOptionCommand : TK_LPAREN TK_SET_OPTION TK_COLON Symbol Literal TK_RPAREN
 
 SortExpr : Identifier
          {
-             $$ = new SortExpr(GET_CURRENT_LOCATION(), *$1);
-             delete $1;
+             $$ = new SortExpr(GET_CURRENT_LOCATION(), $1);
          }
          | TK_LPAREN Identifier SortExprPlus TK_RPAREN
          {
-             $$ = new SortExpr(GET_CURRENT_LOCATION(), *$1, *$2);
-             delete $1;
-             delete $2;
+             $$ = new SortExpr(GET_CURRENT_LOCATION(), $2, *$3);
+             delete $3;
          }
+
+Identifier : Symbol
+           {
+               $$ = new Identifier(GET_CURRENT_LOCATION(), *$1);
+               delete $1;
+           }
+           | TK_LPAREN TK_UNDERSCORE Symbol IndexPlus TK_RPAREN
+           {
+               $$ = new Identifier(GET_CURRENT_LOCATION(), *$3, *$4);
+               delete $3;
+               delete $4;
+           }
 
 SortExprPlus : SortExprPlus SortExpr
              {
@@ -274,20 +314,8 @@ SortExprPlus : SortExprPlus SortExpr
              | SortExpr
              {
                  $$ = new vector<SortExpr*>();
-                 $$->push_back($1)
+                 $$->push_back($1);
              }
-
-Identifier : Symbol
-           {
-               $$ = new Identifier(GET_CURRENT_LOCATION(), *$1);
-               delete $1;
-           }
-           | TK_LPAREN UNDERSCORE Symbol IndexPlus TK_RPAREN
-           {
-               $$ = new Identifier(GET_CURRENT_LOCATION(), *$3, *$4);
-               delete $3;
-               delete $4;
-           }
 
 Symbol : TK_SYMBOL
        {
@@ -302,7 +330,7 @@ IndexPlus : IndexPlus Index
           | Index
           {
               $$ = new vector<Index*>();
-              $$->push_back($1)
+              $$->push_back($1);
           }
 
 Index : TK_NUMERAL
@@ -332,21 +360,32 @@ Term : Identifier
          $$ = new FunctionApplicationTerm(GET_CURRENT_LOCATION(), $2, *$3);
          delete $3;
      }
-     | TK_LPAREN TK_EXISTS SortedSymbolPlus Term TK_RPAREN
+     | TK_LPAREN TK_EXISTS TK_LPAREN SortedSymbolPlus TK_RPAREN Term TK_RPAREN
      {
-         $$ = new QuantifiedTerm(GET_CURRENT_LOCATION(), QuantifierKind::Exists, *$3, $4);
-         delete $3;
+         $$ = new QuantifiedTerm(GET_CURRENT_LOCATION(), QuantifierKind::Exists, *$4, $6);
+         delete $4;
      }
-     | TK_LPAREN TK_FORALL SortedSymbolPlus Term TK_RPAREN
+     | TK_LPAREN TK_FORALL TK_LPAREN SortedSymbolPlus TK_RPAREN Term TK_RPAREN
      {
-         $$ = new QuantifiedTerm(GET_CURRENT_LOCATION(), QuantifierKind::Forall, *$3, $4);
-         delete $3;
+         $$ = new QuantifiedTerm(GET_CURRENT_LOCATION(), QuantifierKind::Forall, *$4, $6);
+         delete $4;
      }
-     | TK_LPAREN TK_LET BindingPlus Term TK_RPAREN
+     | TK_LPAREN TK_LET TK_LPAREN BindingPlus TK_RPAREN Term TK_RPAREN
      {
-         $$ = new LetTerm(GET_CURRENT_LOCATION(), *$3, $4);
-         delete $3;
+         $$ = new LetTerm(GET_CURRENT_LOCATION(), *$4, $6);
+         delete $4;
      }
+
+TermPlus : TermPlus Term
+         {
+             $$ = $1;
+             $$->push_back($2);
+         }
+         | Term
+         {
+             $$ = new vector<Term*>();
+             $$->push_back($1);
+         }
 
 SortedSymbolPlus : SortedSymbolPlus SortedSymbol
                  {
@@ -356,7 +395,7 @@ SortedSymbolPlus : SortedSymbolPlus SortedSymbol
                  | SortedSymbol
                  {
                      $$ = new vector<SortedSymbol*>();
-                     $$->push_back($1)
+                     $$->push_back($1);
                  }
 
 SortedSymbolStar : SortedSymbolStar SortedSymbol
@@ -378,7 +417,7 @@ SortedSymbol : TK_LPAREN Symbol SortExpr TK_RPAREN
 BindingPlus : BindingPlus Binding
             {
                 $$ = $1;
-                $$->push_back($2)
+                $$->push_back($2);
             }
             | Binding
             {
@@ -388,13 +427,13 @@ BindingPlus : BindingPlus Binding
 
 Binding : TK_LPAREN Symbol Term TK_RPAREN
         {
-            $$ = new VariableBinding(GET_CURRENT_LOCATION(), $2, $3);
+            $$ = new VariableBinding(GET_CURRENT_LOCATION(), *$2, $3);
             delete $2;
         }
 
 Literal : TK_NUMERAL
         {
-            $$ = new Literal(GET_CURRENT_LOCATION(), *$1 LiteralKind::Numeral);
+            $$ = new Literal(GET_CURRENT_LOCATION(), *$1, LiteralKind::Numeral);
             delete $1;
         }
         | TK_BOOL_CONST
@@ -433,22 +472,74 @@ OptGrammarDef : GrammarDef
               }
 
 GrammarDef : TK_LPAREN SortedSymbolPlus TK_RPAREN TK_LPAREN GroupedRuleListPlus TK_RPAREN
+           {
+               $$ = new Grammar(GET_CURRENT_LOCATION(), *$2, *$5);
+               delete $2;
+               delete $5;
+           }
 
-GroupedRuleListPlus : GroupedRuleListPlus : GroupedRuleList
+GroupedRuleListPlus : GroupedRuleListPlus GroupedRuleList
+                    {
+                        $$ = $1;
+                        $$->push_back($2);
+                    }
                     | GroupedRuleList
+                    {
+                        $$ = new vector<GroupedRuleList*>();
+                        $$->push_back($1);
+                    }
 
 GroupedRuleList : TK_LPAREN Symbol SortExpr TK_LPAREN GTermPlus TK_RPAREN TK_RPAREN
+                {
+                    $$ = new GroupedRuleList(GET_CURRENT_LOCATION(), *$2, $3, *$5);
+                    delete $2;
+                    delete $5;
+                }
 
 GTermPlus : GTermPlus GTerm
+          {
+              $$ = $1;
+              $$->push_back($2);
+          }
           | GTerm
+          {
+              $$ = new vector<GrammarTerm*>();
+              $$->push_back($1);
+          }
 
 GTerm : TK_LPAREN TK_CONSTANT SortExpr TK_RPAREN
+      {
+          $$ = new ConstantGrammarTerm(GET_CURRENT_LOCATION(), $3);
+      }
       | TK_LPAREN TK_VARIABLE SortExpr TK_RPAREN
+      {
+          $$ = new VariableGrammarTerm(GET_CURRENT_LOCATION(), $3);
+      }
       | BFTerm
+      {
+          $$ = new BinderFreeGrammarTerm(GET_CURRENT_LOCATION(), $1);
+      }
 
-BFTerm : IdentifierTerm
-       | LiteralTerm
+BFTerm : Identifier
+       {
+           $$ = new IdentifierTerm(GET_CURRENT_LOCATION(), $1);
+       }
+       | Literal
+       {
+           $$ = new LiteralTerm(GET_CURRENT_LOCATION(), $1);
+       }
        | TK_LPAREN Identifier BFTermPlus TK_RPAREN
+       {
+           $$ = new FunctionApplicationTerm(GET_CURRENT_LOCATION(), $2, *$3);
+           delete $3;
+       }
 
 BFTermPlus : BFTermPlus BFTerm
+           {
+               $$ = $1;
+               $$->push_back($2);
+           }
            | BFTerm
+           {
+               $$ = new vector<Term*>();
+           }
