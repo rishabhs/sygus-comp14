@@ -443,6 +443,32 @@ LiteralKind Literal::get_literal_kind() const
     return literal_kind;
 }
 
+// Implementation of Term
+Term::Term(const SourceLocation& location)
+    : ASTBase(location), computed_sort(nullptr)
+{
+    // Nothing here
+}
+
+Term::~Term()
+{
+    // Nothing here
+}
+
+const SortExpr* Term::get_computed_sort() const
+{
+    return computed_sort;
+}
+
+IdentifierTerm::IdentifierTerm(const SourceLocation& location, Identifier* identifier)
+    : Term(location), identifier(identifier)
+{
+    // Nothing here
+}
+
+
+
+
     // ArgSortPair::ArgSortPair(const SourceLocation& Location,
     //                          const string& Name,
     //                          const SortExpr* Sort)

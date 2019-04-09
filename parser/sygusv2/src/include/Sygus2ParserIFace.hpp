@@ -168,11 +168,84 @@ public:
              const vector<SortExpr*>& param_sorts);
     virtual ~SortExpr();
 
+    bool operator == (const SortExpr& other) const;
+    bool operator != (const SortExpr& other) const;
+
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
 
     const Identifier* get_identifier() const;
     const vector<const SortExpr*>& get_param_sorts() const;
+
+    static SortExpr* create_bool_sort_expr(const SourceLocation& location = SourceLocation::none);
+    static SortExpr* create_int_sort_expr(const SourceLocation& location = SourceLocation::none);
+    static SortExpr* create_real_sort_expr(const SourceLocation& location = SourceLocation::none);
+    static SortExpr* create_bv_sort_expr(u32 bv_size,
+                                         const SourceLocation& location = SourceLocation::none);
+    static SortExpr* create_string_sort_expr(const SourceLocation& location = SourceLocation::none);
+    static SortExpr* create_array_sort_expr(SortExpr* key_sort, SortExpr* value_sort,
+                                            const SourceLocation& location = SourceLocation::none);
+    static SortExpr* create_datatype_sort_expr(const string& sort_name,
+                                               const vector<string>& sort_constructors,
+                                               const SourceLocation& location = SourceLocation::none);
+};
+
+class SortNameAndArity : public ASTBase
+{
+private:
+    string sort_name;
+    u32 sort_arity;
+
+public:
+    SortNameAndArity(const SourceLocation& location,
+                     const string& sort_name, u32 sort_arity);
+    virtual ~SortNameAndArity();
+
+    virtual void accept(ASTVisitorBase* visitor) const override;
+    virtual ASTBase* clone() const override;
+
+    const string& get_sort_name() const;
+    u32 get_sort_arity() const;
+};
+
+class DatatypeConstructor : public ASTBase
+{
+private:
+    string constructor_name;
+    vector<SortedSymbol*> constructor_parameters;
+    vector<const SortedSymbol*> const_constructor_parameters;
+
+public:
+    DatatypeConstructor(const SourceLocation& location,
+                        const string& constructor_name,
+                        const vector<SortedSymbol*>& constructor_parameters);
+    virtual ~DatatypeConstructor();
+
+    virtual void accept(ASTVisitorBase* visitor) const override;
+    virtual ASTBase* clone() const override;
+
+    const string& get_constructor_name() const;
+    const vector<const SortedSymbol*>& get_constructor_parameters() const;
+};
+
+class DatatypeConstructorList : public ASTBase
+{
+private:
+    vector<string>& sort_parameter_names;
+    vector<DatatypeConstructor*> datatype_constructors;
+    vector<const DatatypeConstructor*> const_datatype_constructors;
+
+public:
+    DatatypeConstructorList(const SourceLocation& location,
+                            const vector<string>& sort_parameter_names,
+                            const vector<DatatypeConstructor*>& datatype_constructors);
+    virtual ~DatatypeConstructorList();
+
+    virtual void accept(ASTVisitorBase* visitor) const override;
+    virtual ASTBase* clone() const override;
+
+    const vector<string>& get_sort_parameter_names() const;
+    const vector<const DatatypeConstructor*> get_datatype_constructors() const;
 };
 
 enum class LiteralKind
@@ -206,10 +279,13 @@ public:
 class Term : public ASTBase
 {
 protected:
-    SymbolTableScope* symbol_table_scope;
+    mutable SortExpr* computed_sort;
+    Term(const SourceLocation& location);
+    virtual ~Term();
 
 public:
-    virtual void resolve_types(SymbolTable* symbol_table) const = 0;
+    virtual void compute_sort(SymbolTable* symbol_table) const = 0;
+    const SortExpr* get_computed_sort() const;
 };
 
 class IdentifierTerm : public Term
@@ -224,7 +300,7 @@ public:
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
 
-    virtual void resolve_types(SymbolTable* symbol_table) const override;
+    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
     const Identifier* get_identifier() const;
 };
@@ -241,7 +317,7 @@ public:
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
 
-    virtual void resolve_types(SymbolTable* symbol_table) const override;
+    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
     const Literal* get_literal() const;
 };
@@ -262,7 +338,7 @@ public:
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
 
-    virtual void resolve_types(SymbolTable* symbol_table) const override;
+    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
     const Identifier* get_identifier() const;
     const vector<const Term*>& get_application_arguments() const;
@@ -309,7 +385,7 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
-    virtual void resolve_types(SymbolTable* symbol_table) const override;
+    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
     QuantifierKind get_quantifier_kind() const;
     const vector<const SortedSymbol*> get_quantified_symbols() const;
@@ -349,7 +425,7 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
-    virtual void resolve_types(SymbolTable* symbol_table) const override;
+    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
     const vector<const VariableBinding*> get_bindings() const;
     const Term* get_let_body() const;
@@ -551,10 +627,13 @@ class DefineSortCommand : public Command
 {
 private:
     string sort_name;
+    vector<string> sort_parameters;
     SortExpr* sort_expr;
 
 public:
-    DefineSortCommand(const SourceLocation& location, const string& sort_name,
+    DefineSortCommand(const SourceLocation& location,
+                      const string& sort_name,
+                      const vector<string>& sort_parameters,
                       SortExpr* sort_expr);
     virtual ~DefineSortCommand();
 
@@ -563,6 +642,40 @@ public:
 
     const string& get_sort_name() const;
     const SortExpr* get_sort_expr() const;
+    const vector<string>& get_sort_parameters() const;
+};
+
+class DeclareDatatypesCommand : public Command
+{
+private:
+    vector<SortNameAndArity*> sort_names_and_arities;
+    vector<DatatypeConstructorList*> datatype_constructor_lists;
+    vector<const SortNameAndArity*> const_sort_names_and_arities;
+
+public:
+    DeclareDatatypesCommand(const SourceLocation& location,
+                            const vector<SortNameAndArity*>& sort_names_and_arities,
+                            const vector<DatatypeConstructorList*>& constructor_lists);
+    virtual ~DeclareDatatypesCommand();
+
+    virtual void accept(ASTVisitorBase* visitor) const override;
+    virtual ASTBase* clone() const override;
+};
+
+class DeclareDatatypeCommand : public Command
+{
+private:
+    string datatype_sort_name;
+    DatatypeConstructorList* datatype_constructor_list;
+
+public:
+    DeclareDatatypeCommand(const SourceLocation& location,
+                           const string& datatype_sort_name,
+                           DatatypeConstructorList* datatype_constructor_list);
+    virtual ~DeclareDatatypeCommand();
+
+    virtual void accept(ASTVisitorBase* visitor) const override;
+    virtual ASTBase* clone() const override;
 };
 
 class SetLogicCommand : public Command

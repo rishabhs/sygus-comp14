@@ -73,8 +73,11 @@ STRINGCONST             "\""({SYMBOLCC}|{WS}|{DIGIT}|","|"("|")")*"\""
 ";"                     { BEGIN linecomment; yycolnum += 1; }
 <linecomment>\n         { BEGIN INITIAL; yylinenum++; yycolnum = 0; }
 <linecomment>.          { yycolnum++; }
+"par"                   { yycolnum += strlen(yytext); return TK_PAR; }
 "define-sort"           { yycolnum += strlen(yytext); return TK_DEFINE_SORT; }
 "declare-sort"          { yycolnum += strlen(yytext); return TK_DECLARE_SORT; }
+"declare-datatype"      { yycolnum += strlen(yytext); return TK_DECLARE_DATATYPE; }
+"declare-datatypes"     { yycolnum += strlen(yytext); return TK_DECLARE_DATATYPES; }
 "define-fun"            { yycolnum += strlen(yytext); return TK_DEFINE_FUN; }
 "set-option"            { yycolnum += strlen(yytext); return TK_SET_OPTION;}
 "set-feature"           { yycolnum += strlen(yytext); return TK_SET_FEATURE;}

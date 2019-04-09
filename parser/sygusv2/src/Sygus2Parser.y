@@ -74,6 +74,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     Program* the_program;
     string* lexer_string;
 
+    vector<string>* symbol_list;
+
     Command* the_command;
     vector<Command*>* command_list;
 
@@ -84,6 +86,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     SortExpr* the_sort_expr;
     vector<SortExpr*>* sort_expr_list;
+
+    SortNameAndArity* sort_name_and_arity;
+    vector<SortNameAndArity*>* sort_name_and_arity_list;
+
+    DatatypeConstructor* datatype_constructor;
+    vector<DatatypeConstructor*>* datatype_constructor_list;
+
+    DatatypeConstructorList* datatype_constructors;
+    vector<DatatypeConstructorList*>* datatype_constructors_list;
 
     Index* the_index;
     vector<Index*>* index_list;
@@ -107,8 +118,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 %token TK_DEFINE_SORT TK_DEFINE_FUN TK_SET_OPTION TK_SET_FEATURE
 %token TK_CHECK_SYNTH TK_SYNTH_FUN TK_DECLARE_VAR TK_INV_CONSTRAINT TK_SYNTH_INV
-%token TK_LPAREN TK_RPAREN TK_SET_LOGIC
-%token TK_CONSTRAINT
+%token TK_LPAREN TK_RPAREN TK_SET_LOGIC TK_PAR
+%token TK_CONSTRAINT TK_DECLARE_DATATYPE TK_DECLARE_DATATYPES
 %token TK_CONSTANT TK_VARIABLE
 %token TK_ERROR TK_COLON TK_UNDERSCORE
 %token TK_LET TK_EXISTS TK_FORALL
@@ -125,6 +136,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 %type<the_command> Command CheckSynthCommand ConstraintCommand VarDeclCommand InvConstraintCommand
 %type<the_command> SetFeatureCommand SynthFunCommand SynthInvCommand SmtCommand
 %type<the_command> SortDeclCommand FunDefCommand SortDefCommand SetLogicCommand SetOptionCommand
+%type<the_command> DeclareDatatypeCommand DeclareDatatypesCommand
 
 %type<the_sorted_symbol> SortedSymbol
 %type<sorted_symbol_list> SortedSymbolStar SortedSymbolPlus
@@ -132,9 +144,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 %type<the_sort_expr> SortExpr
 %type<sort_expr_list> SortExprPlus
 
+%type<sort_name_and_arity> SortNameAndArity
+%type<sort_name_and_arity_list> SortNameAndArityPlus
+
+%type<datatype_constructor> ConstructorDefinition
+%type<datatype_constructor_list> ConstructorDefinitionPlus
+
+%type<datatype_constructors> DatatypeConstructorList SimpleDatatypeConstructorList
+%type<datatype_constructors> ParameterizedDatatypeConstructorList
+%type<datatype_constructors_list> DatatypeConstructorListPlus
+
 %type<the_identifier> Identifier
 
 %type<lexer_string> Symbol
+%type<symbol_list> SymbolPlus
 
 %type<the_literal> Literal
 
@@ -193,6 +216,8 @@ SmtCommand : SortDeclCommand
            | SortDefCommand
            | SetLogicCommand
            | SetOptionCommand
+           | DeclareDatatypeCommand
+           | DeclareDatatypesCommand
 
 CheckSynthCommand : TK_LPAREN TK_CHECK_SYNTH TK_RPAREN
                   {
@@ -266,10 +291,117 @@ FunDefCommand : TK_LPAREN TK_DEFINE_FUN Symbol TK_LPAREN SortedSymbolStar TK_RPA
               delete $5;
           }
 
-SortDefCommand : TK_LPAREN TK_DEFINE_SORT Symbol SortExpr TK_RPAREN
+SortDefCommand : TK_LPAREN TK_DEFINE_SORT Symbol SymbolPlus SortExpr TK_RPAREN
+               {
+                   $$ = new DefineSortCommand(GET_CURRENT_LOCATION(), *$3, *$4, $5);
+                   delete $3;
+                   delete $4;
+               }
+               | TK_LPAREN TK_DEFINE_SORT Symbol SortExpr TK_RPAREN
+               {
+                   vector<string> empty_string_vector;
+                   $$ = new DefineSortCommand(GET_CURRENT_LOCATION(), *$3, empty_string_vector, $4);
+                   delete $3;
+               }
+
+DeclareDatatypesCommand : TK_LPAREN TK_DECLARE_DATATYPES TK_LPAREN SortNameAndArityPlus TK_RPAREN
+                          TK_LPAREN DatatypeConstructorListPlus TK_RPAREN
+                        {
+                            $$ = new DeclareDatatypesCommand(GET_CURRENT_LOCATION(), *$4, *$7);
+                            delete $4;
+                            delete $7;
+                        }
+
+DeclareDatatypeCommand : TK_LPAREN TK_DECLARE_DATATYPE Symbol DatatypeConstructorList TK_RPAREN
+                       {
+                           $$ = new DeclareDatatypeCommand(GET_CURRENT_LOCATION(), *$3, $4);
+                           delete $3;
+                       }
+
+SortNameAndArityPlus : SortNameAndArityPlus SortNameAndArity
+                     {
+                         $$ = $1;
+                         $$->push_back($2);
+                     }
+                     | SortNameAndArity
+                     {
+                         $$ = new vector<SortNameAndArity*>();
+                         $$->push_back($1);
+                     }
+
+SortNameAndArity : TK_LPAREN Symbol TK_NUMERAL TK_RPAREN
+                 {
+                     istringstream istr(*$3);
+                     u32 value;
+                     istr >> value;
+                     $$ = new SortNameAndArity(GET_CURRENT_LOCATION(), *$2, value);
+                     delete $2;
+                     delete $3;
+                 }
+
+DatatypeConstructorListPlus : DatatypeConstructorListPlus DatatypeConstructorList
+                            {
+                                $$ = $1;
+                                $$->push_back($2);
+                            }
+                            | DatatypeConstructorList
+                            {
+                                $$ = new vector<DatatypeConstructorList*>();
+                                $$->push_back($1);
+                            }
+
+DatatypeConstructorList : ParameterizedDatatypeConstructorList
+                        { $$ = $1; }
+                        | SimpleDatatypeConstructorList
+                        { $$ = $1; }
+
+SimpleDatatypeConstructorList : TK_LPAREN ConstructorDefinitionPlus TK_RPAREN
+                              {
+                                  vector<string> empty_sort_parameter_names;
+                                  $$ = new DatatypeConstructorList(GET_CURRENT_LOCATION(),
+                                                                   empty_sort_parameter_names,
+                                                                   *$2);
+                                  delete $2;
+                              }
+
+ParameterizedDatatypeConstructorList : TK_LPAREN TK_PAR SymbolPlus
+                                       TK_LPAREN ConstructorDefinitionPlus TK_RPAREN TK_RPAREN
+                                     {
+                                         $$ = new DatatypeConstructorList(GET_CURRENT_LOCATION(),
+                                                                          *$3, *$5);
+                                         delete $3;
+                                         delete $5;
+                                     }
+
+ConstructorDefinitionPlus : ConstructorDefinitionPlus ConstructorDefinition
+                          {
+                              $$ = $1;
+                              $$->push_back($2);
+                          }
+                          | ConstructorDefinition
+                          {
+                              $$ = new vector<DatatypeConstructor*>();
+                              $$->push_back($1);
+                          }
+
+ConstructorDefinition : TK_LPAREN Symbol SortedSymbolStar TK_RPAREN
+                      {
+                          $$ = new DatatypeConstructor(GET_CURRENT_LOCATION(), *$2, *$3);
+                          delete $2;
+                          delete $3;
+                      }
+
+SymbolPlus : TK_LPAREN SymbolPlus Symbol TK_RPAREN
            {
-               $$ = new DefineSortCommand(GET_CURRENT_LOCATION(), *$3, $4);
+               $$ = $2;
+               $$->push_back(*$3);
                delete $3;
+           }
+           | TK_LPAREN Symbol TK_RPAREN
+           {
+               $$ = new vector<string>();
+               $$->push_back(*$2);
+               delete $2;
            }
 
 SetLogicCommand : TK_LPAREN TK_SET_LOGIC Symbol TK_RPAREN

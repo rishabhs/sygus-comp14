@@ -82,7 +82,6 @@ namespace SynthLib2Parser {
                                  const SortExpr* NewSort);
         static void Reset();
     };
-
 } /* end namespace */
 
 #endif /* __SYNTHLIB2_PARSER_LOGIC_SYMBOLS_HPP */
