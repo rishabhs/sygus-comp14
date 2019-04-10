@@ -176,18 +176,6 @@ public:
 
     const Identifier* get_identifier() const;
     const vector<const SortExpr*>& get_param_sorts() const;
-
-    static SortExpr* create_bool_sort_expr(const SourceLocation& location = SourceLocation::none);
-    static SortExpr* create_int_sort_expr(const SourceLocation& location = SourceLocation::none);
-    static SortExpr* create_real_sort_expr(const SourceLocation& location = SourceLocation::none);
-    static SortExpr* create_bv_sort_expr(u32 bv_size,
-                                         const SourceLocation& location = SourceLocation::none);
-    static SortExpr* create_string_sort_expr(const SourceLocation& location = SourceLocation::none);
-    static SortExpr* create_array_sort_expr(SortExpr* key_sort, SortExpr* value_sort,
-                                            const SourceLocation& location = SourceLocation::none);
-    static SortExpr* create_datatype_sort_expr(const string& sort_name,
-                                               const vector<string>& sort_constructors,
-                                               const SourceLocation& location = SourceLocation::none);
 };
 
 class SortNameAndArity : public ASTBase
@@ -231,7 +219,7 @@ public:
 class DatatypeConstructorList : public ASTBase
 {
 private:
-    vector<string>& sort_parameter_names;
+    vector<string> sort_parameter_names;
     vector<DatatypeConstructor*> datatype_constructors;
     vector<const DatatypeConstructor*> const_datatype_constructors;
 
@@ -245,7 +233,7 @@ public:
     virtual ASTBase* clone() const override;
 
     const vector<string>& get_sort_parameter_names() const;
-    const vector<const DatatypeConstructor*> get_datatype_constructors() const;
+    const vector<const DatatypeConstructor*>& get_datatype_constructors() const;
 };
 
 enum class LiteralKind
@@ -279,13 +267,13 @@ public:
 class Term : public ASTBase
 {
 protected:
-    mutable SortExpr* computed_sort;
+    mutable SortExpr* sort;
     Term(const SourceLocation& location);
-    virtual ~Term();
 
 public:
-    virtual void compute_sort(SymbolTable* symbol_table) const = 0;
-    const SortExpr* get_computed_sort() const;
+    virtual ~Term();
+    void set_sort(SortExpr* sort) const;
+    const SortExpr* get_sort() const;
 };
 
 class IdentifierTerm : public Term
@@ -299,8 +287,6 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
-
-    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
     const Identifier* get_identifier() const;
 };
@@ -316,8 +302,6 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
-
-    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
     const Literal* get_literal() const;
 };
@@ -337,8 +321,6 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
-
-    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
     const Identifier* get_identifier() const;
     const vector<const Term*>& get_application_arguments() const;
@@ -385,10 +367,9 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
-    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
     QuantifierKind get_quantifier_kind() const;
-    const vector<const SortedSymbol*> get_quantified_symbols() const;
+    const vector<const SortedSymbol*>& get_quantified_symbols() const;
     const Term* get_quantified_term() const;
 };
 
@@ -419,27 +400,26 @@ private:
     Term* let_body;
 
 public:
-    LetTerm(const SourceLocation& location, const vector<VariableBinding*> bindings,
+    LetTerm(const SourceLocation& location, const vector<VariableBinding*>& bindings,
             Term* let_body);
     virtual ~LetTerm();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
-    virtual void compute_sort(SymbolTable* symbol_table) const override;
 
-    const vector<const VariableBinding*> get_bindings() const;
+    const vector<const VariableBinding*>& get_bindings() const;
     const Term* get_let_body() const;
 };
 
 class Command : public ASTBase
 {
 private:
-    Command();
-    Command(const Command&);
-    Command(Command&&);
+    Command() = delete;
+    Command(const Command&) = delete;
+    Command(Command&&) = delete;
 
-    Command& operator = (const Command&);
-    Command& operator = (Command&&);
+    Command& operator = (const Command&) = delete;
+    Command& operator = (Command&&) = delete;
 
 protected:
     Command(const SourceLocation& location);
@@ -457,6 +437,9 @@ public:
 
 class ConstraintCommand : public Command
 {
+private:
+    Term* constraint_term;
+
 public:
     ConstraintCommand(const SourceLocation& location,
                       Term* constraint_term);
@@ -473,6 +456,7 @@ class DeclareVarCommand : public Command
 private:
     string symbol;
     SortExpr* sort_expr;
+
 public:
     DeclareVarCommand(const SourceLocation& location,
                       const string& symbol,
@@ -541,14 +525,11 @@ private:
     Grammar* synthesis_grammar;
 
     vector<const SortedSymbol*> const_function_parameters;
-    vector<SortExpr*> function_parameter_sorts;
-    vector<string> function_parameter_symbols;
-    vector<const SortExpr*> const_function_parameter_sorts;
 
 public:
     SynthFunCommand(const SourceLocation& location,
                     const string& function_symbol,
-                    const vector<SortedSymbol*> function_parameters,
+                    const vector<SortedSymbol*>& function_parameters,
                     SortExpr* function_range_sort,
                     Grammar* synthesis_grammar);
     virtual ~SynthFunCommand();
@@ -557,9 +538,7 @@ public:
     virtual ASTBase* clone() const override;
 
     const string& get_function_symbol() const;
-    const vector<const SortedSymbol*> get_function_parameters() const;
-    const vector<string>& get_function_parameter_symbols() const;
-    const vector<const SortExpr*>& get_function_parameter_sorts() const;
+    const vector<const SortedSymbol*>& get_function_parameters() const;
     const SortExpr* get_function_range_sort() const;
     const Grammar* get_synthesis_grammar() const;
 };
@@ -569,7 +548,7 @@ class SynthInvCommand : public SynthFunCommand
 public:
     SynthInvCommand(const SourceLocation& location,
                     const string& function_symbol,
-                    const vector<SortedSymbol*> function_parameters,
+                    const vector<SortedSymbol*>& function_parameters,
                     Grammar* synthesis_grammar);
     virtual ~SynthInvCommand();
 
@@ -618,7 +597,7 @@ public:
     virtual ASTBase* clone() const override;
 
     const string& get_function_symbol() const;
-    const vector<const SortExpr*>& get_function_parameters() const;
+    const vector<const SortedSymbol*>& get_function_parameters() const;
     const SortExpr* get_function_range_sort() const;
     const Term* get_function_body() const;
 };
@@ -650,7 +629,9 @@ class DeclareDatatypesCommand : public Command
 private:
     vector<SortNameAndArity*> sort_names_and_arities;
     vector<DatatypeConstructorList*> datatype_constructor_lists;
+
     vector<const SortNameAndArity*> const_sort_names_and_arities;
+    vector<const DatatypeConstructorList*> const_datatype_constructor_lists;
 
 public:
     DeclareDatatypesCommand(const SourceLocation& location,
@@ -660,12 +641,15 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
+
+    const vector<const SortNameAndArity*>& get_sort_names_and_arities() const;
+    const vector<const DatatypeConstructorList*>& get_datatype_constructor_lists() const;
 };
 
 class DeclareDatatypeCommand : public Command
 {
 private:
-    string datatype_sort_name;
+    string datatype_name;
     DatatypeConstructorList* datatype_constructor_list;
 
 public:
@@ -676,6 +660,9 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
+
+    const string& get_datatype_name() const;
+    const DatatypeConstructorList* get_datatype_constructor_list() const;
 };
 
 class SetLogicCommand : public Command
@@ -712,10 +699,21 @@ public:
     const Literal* get_option_value() const;
 };
 
-class GrammarTerm : public ASTBase
+class GrammarTerm : public Term
 {
+private:
+    GrammarTerm() = delete;
+    GrammarTerm(const GrammarTerm& other) = delete;
+    GrammarTerm(GrammarTerm&& other) = delete;
+
+    GrammarTerm& operator = (const GrammarTerm& other) = delete;
+    GrammarTerm& operator = (GrammarTerm&& other) = delete;
+
+protected:
+    GrammarTerm(const SourceLocation& location);
+
 public:
-    virtual void resolve_types(SymbolTable* symbol_table) const = 0;
+    virtual ~GrammarTerm();
 };
 
 class ConstantGrammarTerm : public GrammarTerm
@@ -729,8 +727,6 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
-
-    virtual void resolve_types(SymbolTable* symbol_table) const override;
 
     const SortExpr* get_sort_expr() const;
 };
@@ -747,8 +743,6 @@ public:
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
 
-    virtual void resolve_types(SymbolTable* symbol_table) const override;
-
     const SortExpr* get_sort_expr() const;
 };
 
@@ -763,8 +757,6 @@ public:
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBase* clone() const override;
-
-    virtual void resolve_types(SymbolTable* symbol_table) const override;
 
     const Term* get_binder_free_term() const;
 };
@@ -789,7 +781,7 @@ public:
 
     const string& get_head_symbol() const;
     const SortExpr* get_head_symbol_sort() const;
-    const vector<const GrammarTerm*>& get_expansion_rules();
+    const vector<const GrammarTerm*>& get_expansion_rules() const;
 };
 
 class Grammar : public ASTBase
@@ -810,7 +802,7 @@ public:
     virtual ASTBase* clone() const override;
 
     const vector<const SortedSymbol*>& get_nonterminals() const;
-    unordered_map<string, const GroupedRuleList*>& get_grouped_rule_lists() const;
+    const unordered_map<string, const GroupedRuleList*>& get_grouped_rule_lists() const;
 };
 
 class Program : public ASTBase
@@ -852,794 +844,6 @@ public:
     SymbolTable* GetSymbolTable() const;
 };
 
-
-// class ArgSortPair : public ASTBase
-// {
-// private:
-//     string Name;
-//     const SortExpr* Sort;
-
-// public:
-//     ArgSortPair(const SourceLocation& Location,
-//                 const string& Name,
-//                 const SortExpr* Sort);
-//     virtual ~ArgSortPair();
-
-//     void Accept(ASTVisitorBase* Visitor) const override;
-//     ASTBase* Clone() const override;
-
-//     // Accessors
-//     const string& GetName() const;
-//     const SortExpr* GetSort() const;
-// };
-
-// // Commands
-// class ASTCmd : public ASTBase
-// {
-// protected:
-//     ASTCmdKind CmdKind;
-
-// public:
-//     ASTCmd(const SourceLocation& Location, ASTCmdKind CmdKind);
-//     virtual ~ASTCmd();
-
-//     // Accessors
-//     ASTCmdKind GetKind() const;
-// };
-
-// class CheckSynthCmd : public ASTCmd
-// {
-// public:
-//     CheckSynthCmd(const SourceLocation& Location);
-//     virtual ~CheckSynthCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-// };
-
-// class SetLogicCmd : public ASTCmd
-// {
-// private:
-//     string LogicName;
-
-// public:
-//     SetLogicCmd(const SourceLocation& Location,
-//                 const string& LogicName);
-//     virtual ~SetLogicCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // accessors
-//     const string& GetLogicName() const;
-// };
-
-// class FunDefCmd : public ASTCmd
-// {
-// private:
-//     string Symbol;
-//     ArgList Arguments;
-//     const SortExpr* Type;
-//     Term* Def;
-//     mutable SymbolTableScope* Scope;
-
-// public:
-//     FunDefCmd(const SourceLocation& Location,
-//               const string& FunSymbol,
-//               const ArgList& FunArgs,
-//               const SortExpr* FunType,
-//               Term* FunDef,
-//               SymbolTableScope* Scope);
-
-//     virtual ~FunDefCmd();
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // Accessors
-//     const string& GetFunName() const;
-//     const ArgList& GetArgs() const;
-//     const SortExpr* GetSort() const;
-//     Term* GetTerm() const;
-
-//     SymbolTableScope* GetScope() const;
-//     void SetScope(SymbolTableScope* Scope) const;
-// };
-
-// class FunDeclCmd : public ASTCmd
-// {
-// private:
-//     string Symbol;
-//     vector<const SortExpr*> ArgTypes;
-//     const SortExpr* Type;
-
-// public:
-//     FunDeclCmd(const SourceLocation& Location,
-//                const string& FunSymbol,
-//                const vector<const SortExpr*>& ArgSorts,
-//                const SortExpr* Sort);
-//     virtual ~FunDeclCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     const string& GetFunName() const;
-//     const vector<const SortExpr*>& GetArgSorts() const;
-//     const SortExpr* GetSort() const;
-// };
-
-// class SynthFunCmd : public ASTCmd
-// {
-// private:
-//     string SynthFunName;
-//     ArgList Arguments;
-//     const SortExpr* FunType;
-//     vector<NTDef*> GrammarRules;
-//     mutable SymbolTableScope* Scope;
-
-// public:
-//     SynthFunCmd(const SourceLocation& Location,
-//                 const string& Name,
-//                 const ArgList& Args,
-//                 const SortExpr* FunType,
-//                 const vector<NTDef*> GrammarRules,
-//                 SymbolTableScope* Scope);
-//     virtual ~SynthFunCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // accessors
-//     const string& GetFunName() const;
-//     const ArgList& GetArgs() const;
-//     const SortExpr* GetSort() const;
-//     const vector<NTDef*>& GetGrammarRules() const;
-//     void SetScope(SymbolTableScope* Scope) const;
-//     SymbolTableScope* GetScope() const;
-// };
-
-// class SynthInvCmd : public SynthFunCmd
-// {
-// public:
-//     SynthInvCmd(const SourceLocation& Location,
-//                 const string& Name,
-//                 const ArgList& Args,
-//                 const vector<NTDef*> GrammarRules,
-//                 SymbolTableScope* Scope);
-
-//     virtual ~SynthInvCmd();
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-// };
-
-// class ConstraintCmd : public ASTCmd
-// {
-// private:
-//     Term* TheTerm;
-
-// public:
-//     ConstraintCmd(const SourceLocation& Location,
-//                   Term* TheTerm);
-//     virtual ~ConstraintCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // accessors
-//     Term* GetTerm() const;
-// };
-
-// class InvConstraintCmd : public ASTCmd
-// {
-// private:
-//     string FunctionToSynthesize;
-//     string Precondition;
-//     string TransitionRelation;
-//     string PostCondition;
-
-// public:
-//     InvConstraintCmd(const SourceLocation& Location,
-//                      const string& FunctionToSynthesize,
-//                      const string& Precondition,
-//                      const string& TransitionRelation,
-//                      const string& PostCondition);
-//     virtual ~InvConstraintCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // accessors
-//     const string& GetFunctionName() const;
-//     const string& GetPreconditionName() const;
-//     const string& GetTransitionRelationName() const;
-//     const string& GetPostConditionName() const;
-// };
-
-// class SortDefCmd : public ASTCmd
-// {
-// private:
-//     string Symbol;
-//     const SortExpr* Expr;
-
-// public:
-//     SortDefCmd(const SourceLocation& Location,
-//                const string& Symbol,
-//                const SortExpr* TheSortExpr);
-//     virtual ~SortDefCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // accessors
-//     const string& GetName() const;
-//     const SortExpr* GetSortExpr() const;
-// };
-
-// class SetOptionCmd : public ASTCmd
-// {
-// private:
-//     string Key;
-//     const Literal* Value;
-
-// public:
-//     SetOptionCmd(const SourceLocation& Location,
-//                  const string& key, const Literal* value);
-//     virtual ~SetOptionCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // accessors
-//     const string& GetKey() const;
-//     const Literal* GetValue() const;
-// };
-
-// class SetFeatureCmd : public ASTCmd
-// {
-// private:
-//     string Key;
-//     string Value;
-
-// public:
-//     SetFeatureCmd(const SourceLocation& Location,
-//                   const string& Key, const string& Value);
-//     virtual ~SetFeatureCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     const string& GetKey() const;
-//     const string& GetValue() const;
-// };
-
-// class VarDeclCmd : public ASTCmd
-// {
-// private:
-//     string VarName;
-//     const SortExpr* VarType;
-
-// public:
-//     VarDeclCmd(const SourceLocation& Location,
-//                const string& VarName,
-//                const SortExpr* VarType);
-//     virtual ~VarDeclCmd();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // accessors
-//     const string& GetName() const;
-//     const SortExpr* GetSort() const;
-// };
-
-// class SortExpr : public ASTBase
-// {
-// private:
-//     SortKind Kind;
-
-// public:
-//     SortExpr(const SourceLocation& Location,
-//              SortKind Kind);
-
-//     virtual ~SortExpr();
-//     SortKind GetKind() const;
-
-//     virtual bool Equals(const SortExpr& Other) const = 0;
-//     virtual string ToMangleString() const = 0;
-//     virtual u32 Hash() const = 0;
-// };
-
-// class IntSortExpr : public SortExpr
-// {
-// public:
-//     IntSortExpr(const SourceLocation& Location);
-//     IntSortExpr();
-//     virtual ~IntSortExpr();
-
-//     virtual bool Equals(const SortExpr& Other) const override;
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual string ToMangleString() const override;
-//     virtual u32 Hash() const override;
-// };
-
-// class BVSortExpr : public SortExpr
-// {
-// private:
-//     u32 Size;
-// public:
-//     BVSortExpr(const SourceLocation& Location,
-//                u32 Size);
-//     BVSortExpr(u32 Size);
-//     virtual ~BVSortExpr();
-
-//     virtual bool Equals(const SortExpr& Other) const override;
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual string ToMangleString() const override;
-//     virtual u32 Hash() const override;
-//     // accessors
-//     u32 GetSize() const;
-// };
-
-// class NamedSortExpr : public SortExpr
-// {
-// private:
-//     string Name;
-
-// public:
-//     NamedSortExpr(const SourceLocation& Location,
-//                   const string& Name);
-//     NamedSortExpr(const string& Name);
-//     virtual ~NamedSortExpr();
-//     virtual bool Equals(const SortExpr& Other) const override;
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual string ToMangleString() const override;
-//     const string& GetName() const;
-//     virtual u32 Hash() const override;
-// };
-
-// class ArraySortExpr : public SortExpr
-// {
-// private:
-//     const SortExpr* DomainSort;
-//     const SortExpr* RangeSort;
-
-// public:
-//     ArraySortExpr(const SourceLocation& Location,
-//                   const SortExpr* DomainSort,
-//                   const SortExpr* RangeSort);
-//     ArraySortExpr(const SortExpr* DomainSort, const SortExpr* RangeSort);
-//     virtual ~ArraySortExpr();
-
-//     virtual bool Equals(const SortExpr& Other) const override;
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual string ToMangleString() const override;
-
-//     // accessors
-//     const SortExpr* GetDomainSort() const;
-//     const SortExpr* GetRangeSort() const;
-//     virtual u32 Hash() const override;
-// };
-
-// class RealSortExpr : public SortExpr
-// {
-// public:
-//     RealSortExpr(const SourceLocation& Location);
-//     RealSortExpr();
-//     virtual ~RealSortExpr();
-
-//     virtual bool Equals(const SortExpr& Other) const override;
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual string ToMangleString() const override;
-//     virtual u32 Hash() const override;
-// };
-
-// class FunSortExpr : public SortExpr
-// {
-// private:
-//     vector<const SortExpr*> ArgSorts;
-//     const SortExpr* RetSort;
-
-// public:
-//     FunSortExpr(const SourceLocation& Location,
-//                 const vector<const SortExpr*>& ArgSorts,
-//                 const SortExpr* RetSort);
-//     FunSortExpr(const vector<const SortExpr*>& ArgSorts,
-//                 const SortExpr* RetSort);
-
-//     virtual ~FunSortExpr();
-
-//     virtual bool Equals(const SortExpr& Other) const override;
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual string ToMangleString() const override;
-
-//     // Accessors
-//     const vector<const SortExpr*>& GetArgSorts() const;
-//     const SortExpr* GetRetSort() const;
-//     virtual u32 Hash() const override;
-// };
-
-// class BoolSortExpr : public SortExpr
-// {
-// public:
-//     BoolSortExpr(const SourceLocation& Location);
-//     BoolSortExpr();
-//     virtual ~BoolSortExpr();
-
-//     virtual bool Equals(const SortExpr& Other) const override;
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual string ToMangleString() const override;
-//     virtual u32 Hash() const override;
-// };
-
-// class EnumSortExpr : public SortExpr
-// {
-// private:
-//     mutable string EnumSortName;
-//     const vector<string> EnumSortConstructorVec;
-//     const set<string> EnumSortConstructorSet;
-
-// public:
-//     EnumSortExpr(const SourceLocation& Location,
-//                  const string& EnumSortName,
-//                  const vector<string>& EnumConstructors);
-//     EnumSortExpr(const SourceLocation& Location,
-//                  const vector<string>& EnumConstructors);
-//     virtual ~EnumSortExpr();
-
-//     virtual bool Equals(const SortExpr& Other) const override;
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual string ToMangleString() const override;
-//     virtual u32 Hash() const override;
-
-//     // accessors
-//     const vector<string>& GetConstructors() const;
-//     const string& GetEnumSortName() const;
-//     void SetEnumSortName(const string& Name) const;
-//     bool IsConstructorValid(const string& ConstructorName) const;
-// };
-
-// class Literal : public ASTBase
-// {
-// private:
-//     string LiteralString;
-//     SortExpr* LiteralSort;
-
-// public:
-//     Literal(const SourceLocation& Location,
-//             const string& Constructor,
-//             SortExpr* Sort);
-
-//     virtual ~Literal();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     const SortExpr* GetSort(SymbolTable* SymTab) const;
-//     const string& GetLiteralString() const;
-// };
-
-// class Term : public ASTBase
-// {
-// private:
-//     TermKind Kind;
-
-// public:
-//     Term(const SourceLocation& Location, TermKind Kind);
-
-//     virtual ~Term();
-
-//     TermKind GetKind() const;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const = 0;
-// };
-
-// class FunTerm : public Term
-// {
-// private:
-//     string FunName;
-//     vector<Term*> Args;
-
-// public:
-//     FunTerm(const SourceLocation& Location,
-//             const string& FunName,
-//             const vector<Term*>& Args);
-//     virtual ~FunTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     // accessors
-//     const string& GetFunName() const;
-//     const vector<Term*>& GetArgs() const;
-// };
-
-// class LiteralTerm : public Term
-// {
-// private:
-//     Literal* TheLiteral;
-
-// public:
-//     LiteralTerm(const SourceLocation& Location,
-//                 Literal* TheLiteral);
-//     virtual ~LiteralTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     // accessors
-//     Literal* GetLiteral() const;
-// };
-
-// class SymbolTerm : public Term
-// {
-// private:
-//     string TheSymbol;
-
-// public:
-//     SymbolTerm(const SourceLocation& Location,
-//                const string& TheSymbol);
-//     virtual ~SymbolTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     const string& GetSymbol() const;
-// };
-
-// class LetBindingTerm : public ASTBase
-// {
-// private:
-//     const string VarName;
-//     const SortExpr* VarSort;
-//     Term* BoundToTerm;
-
-// public:
-//     LetBindingTerm(const SourceLocation& Location,
-//                    const string& VarName,
-//                    const SortExpr* VarSort,
-//                    Term* BoundToTerm);
-//     virtual ~LetBindingTerm();
-
-//     void Accept(ASTVisitorBase* Visitor) const override;
-//     ASTBase* Clone() const override;
-
-//     // Accessors
-//     const string& GetVarName() const;
-//     const SortExpr* GetVarSort() const;
-//     Term* GetBoundToTerm() const;
-// };
-
-// class LetTerm : public Term
-// {
-// private:
-//     vector<LetBindingTerm*> Bindings;
-//     Term* BoundInTerm;
-//     mutable SymbolTableScope* Scope;
-
-// public:
-//     LetTerm(const SourceLocation& Location,
-//             const vector<LetBindingTerm*>& Bindings,
-//             Term* BoundInTerm,
-//             SymbolTableScope* Scope);
-//     virtual ~LetTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     // Accessors
-//     const vector<LetBindingTerm*>& GetBindings() const;
-//     Term* GetBoundInTerm() const;
-//     void SetScope(SymbolTableScope* Scope) const;
-//     SymbolTableScope* GetScope() const;
-// };
-
-// // TODO: uggh, this code is similar to Term, consider refactoring
-// class GTerm : public ASTBase
-// {
-// private:
-//     GTermKind Kind;
-
-// public:
-//     GTerm(const SourceLocation& Location,
-//           GTermKind Kind);
-//     virtual ~GTerm();
-
-//     GTermKind GetKind() const;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const = 0;
-// };
-
-// class SymbolGTerm : public GTerm
-// {
-// private:
-//     string TheSymbol;
-
-// public:
-//     SymbolGTerm(const SourceLocation& Location,
-//                 const string& TheSymbol);
-//     virtual ~SymbolGTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     // Accessors
-//     const string& GetSymbol() const;
-// };
-
-// class FunGTerm : public GTerm
-// {
-// private:
-//     string FunName;
-//     vector<GTerm*> Args;
-
-// public:
-//     FunGTerm(const SourceLocation& Location,
-//              const string& FunName,
-//              const vector<GTerm*>& Args);
-//     virtual ~FunGTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     // Accessors
-//     const string& GetName() const;
-//     const vector<GTerm*>& GetArgs() const;
-// };
-
-// class LiteralGTerm : public GTerm
-// {
-// private:
-//     Literal* TheLiteral;
-
-// public:
-//     LiteralGTerm(const SourceLocation& Location,
-//                  Literal* TheLiteral);
-//     virtual ~LiteralGTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     Literal* GetLiteral() const;
-// };
-
-// class ConstantGTerm : public GTerm
-// {
-// private:
-//     const SortExpr* ConstantSort;
-
-// public:
-//     ConstantGTerm(const SourceLocation& Location,
-//                   const SortExpr* Sort);
-//     virtual ~ConstantGTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     // accessor
-//     const SortExpr* GetSort() const;
-// };
-
-// class VariableGTerm : public GTerm
-// {
-// private:
-//     const SortExpr* VariableSort;
-//     VariableKind Kind;
-
-// public:
-//     VariableGTerm(const SourceLocation& Location,
-//                   const SortExpr* VariableSort,
-//                   VariableKind Kind);
-//     virtual ~VariableGTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     // accessors
-//     const SortExpr* GetSort() const;
-//     VariableKind GetKind() const;
-// };
-
-// class LetBindingGTerm : public ASTBase
-// {
-// private:
-//     string VarName;
-//     const SortExpr* VarSort;
-//     GTerm* BoundToTerm;
-
-// public:
-//     LetBindingGTerm(const SourceLocation& Location,
-//                     const string& VarName,
-//                     const SortExpr* VarSort,
-//                     GTerm* BoundToTerm);
-//     virtual ~LetBindingGTerm();
-
-//     void Accept(ASTVisitorBase* Visitor) const override;
-//     ASTBase* Clone() const override;
-
-//     const string& GetVarName() const;
-//     GTerm* GetBoundToTerm() const;
-//     const SortExpr* GetVarSort() const;
-// };
-
-// class LetGTerm : public GTerm
-// {
-// private:
-//     vector<LetBindingGTerm*> Bindings;
-//     GTerm* BoundInTerm;
-//     mutable SymbolTableScope* Scope;
-
-// public:
-//     LetGTerm(const SourceLocation& Location,
-//              const vector<LetBindingGTerm*>& Bindings,
-//              GTerm* BoundInTerm,
-//              SymbolTableScope* Scope);
-
-//     virtual ~LetGTerm();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-//     virtual const SortExpr* GetTermSort(SymbolTable* SymTab) const override;
-
-//     // accessors
-//     const vector<LetBindingGTerm*>& GetBindings() const;
-//     GTerm* GetBoundInTerm() const;
-//     void SetScope(SymbolTableScope* Scope) const;
-//     SymbolTableScope* GetScope() const;
-// };
-
-// class NTDef : public ASTBase
-// {
-// private:
-//     string Symbol;
-//     const SortExpr* Sort;
-//     vector<GTerm*> Expansions;
-
-// public:
-//     NTDef(const SourceLocation& Location,
-//           const string& Symbol,
-//           const SortExpr* Sort,
-//           const vector<GTerm*>& Expansions);
-//     virtual ~NTDef();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // accessors
-//     const string& GetName() const;
-//     const SortExpr* GetSort() const;
-//     const vector<GTerm*>& GetExpansions() const;
-// };
-
-// class Program : public ASTBase
-// {
-// private:
-//     vector<ASTCmd*> Cmds;
-
-// public:
-//     Program(const vector<ASTCmd*>& Cmds);
-//     virtual ~Program();
-
-//     virtual void Accept(ASTVisitorBase* Visitor) const override;
-//     virtual ASTBase* Clone() const override;
-
-//     // accessors
-//     const vector<ASTCmd*>& GetCmds() const;
-// };
-
 class ASTVisitorBase
 {
 private:
@@ -1648,55 +852,43 @@ public:
     ASTVisitorBase(const string& Name);
     virtual ~ASTVisitorBase();
 
-    // Visit methods
-    // virtual void VisitProgram(const Program* Prog);
-
-    // virtual void VisitFunDefCmd(const FunDefCmd* Cmd);
-    // virtual void VisitFunDeclCmd(const FunDeclCmd* Cmd);
-    // virtual void VisitSynthFunCmd(const SynthFunCmd* Cmd);
-    // virtual void VisitSortDefCmd(const SortDefCmd* Cmd);
-    // virtual void VisitSetOptionCmd(const SetOptionCmd* Cmd);
-    // virtual void VisitSetFeatureCmd(const SetFeatureCmd* Cmd);
-    // virtual void VisitVarDeclCmd(const VarDeclCmd* Cmd);
-    // virtual void VisitConstraintCmd(const ConstraintCmd* Cmd);
-    // virtual void VisitSetLogicCmd(const SetLogicCmd* Cmd);
-    // virtual void VisitCheckSynthCmd(const CheckSynthCmd* Cmd);
-    // virtual void VisitArgSortPair(const ArgSortPair* ASPair);
-
-    // virtual void VisitIntSortExpr(const IntSortExpr* Sort);
-    // virtual void VisitBVSortExpr(const BVSortExpr* Sort);
-    // virtual void VisitNamedSortExpr(const NamedSortExpr* Sort);
-    // virtual void VisitArraySortExpr(const ArraySortExpr* Sort);
-    // virtual void VisitRealSortExpr(const RealSortExpr* Sort);
-    // virtual void VisitFunSortExpr(const FunSortExpr* Sort);
-    // virtual void VisitBoolSortExpr(const BoolSortExpr* Sort);
-    // virtual void VisitEnumSortExpr(const EnumSortExpr* Sort);
-
-    // virtual void VisitLetBindingTerm(const LetBindingTerm* Binding);
-
-    // virtual void VisitFunTerm(const FunTerm* TheTerm);
-    // virtual void VisitLiteralTerm(const LiteralTerm* TheTerm);
-    // virtual void VisitSymbolTerm(const SymbolTerm* TheTerm);
-    // virtual void VisitLetTerm(const LetTerm* TheTerm);
-
-    // virtual void VisitLetBindingGTerm(const LetBindingGTerm* Binding);
-
-    // virtual void VisitFunGTerm(const FunGTerm* TheTerm);
-    // virtual void VisitLiteralGTerm(const LiteralGTerm* TheTerm);
-    // virtual void VisitSymbolGTerm(const SymbolGTerm* TheTerm);
-    // virtual void VisitLetGTerm(const LetGTerm* TheTerm);
-    // virtual void VisitConstantGTerm(const ConstantGTerm* TheTerm);
-    // virtual void VisitVariableGTerm(const VariableGTerm* TheTerm);
-
-    // virtual void VisitNTDef(const NTDef* Def);
-    // virtual void VisitLiteral(const Literal* TheLiteral);
-
     const string& GetName() const;
 
     virtual void visit_index(const Index* index);
     virtual void visit_identifier(const Identifier* identifier);
     virtual void visit_sort_expr(const SortExpr* sort_expr);
+    virtual void visit_sort_name_and_arity(const SortNameAndArity* sort_name_and_arity);
+    virtual void visit_datatype_constructor(const DatatypeConstructor* datatype_constructor);
+    virtual void visit_datatype_constructor_list(const DatatypeConstructorList* datatype_constructor_list);
     virtual void visit_literal(const Literal* literal);
+    virtual void visit_literal_term(const LiteralTerm* literal_term);
+    virtual void visit_identifier_term(const IdentifierTerm* identifier_term);
+    virtual void visit_function_application_term(const FunctionApplicationTerm* function_application_term);
+    virtual void visit_quantified_term(const QuantifiedTerm* quantified_term);
+    virtual void visit_variable_binding(const VariableBinding* variable_binding);
+    virtual void visit_let_term(const LetTerm* let_term);
+
+    virtual void visit_check_synth_command(const CheckSynthCommand* check_synth_command);
+    virtual void visit_constraint_command(const ConstraintCommand* constraint_command);
+    virtual void visit_declare_var_command(const DeclareVarCommand* declare_var_command);
+    virtual void visit_inv_constraint_command(const InvConstraintCommand* inv_constraint_command);
+    virtual void visit_set_feature_command(const SetFeatureCommand* set_feature_command);
+    virtual void visit_synth_fun_command(const SynthFunCommand* synth_fun_command);
+    virtual void visit_synth_inv_command(const SynthInvCommand* synth_inv_command);
+    virtual void visit_declare_sort_command(const DeclareSortCommand* declare_sort_command);
+    virtual void visit_define_fun_command(const DefineFunCommand* define_fun_command);
+    virtual void visit_define_sort_command(const DefineSortCommand* define_sort_command);
+    virtual void visit_declare_datatypes_command(const DeclareDatatypesCommand* declare_datatypes_command);
+    virtual void visit_declare_datatype_command(const DeclareDatatypeCommand* declare_datatype_command);
+    virtual void visit_set_logic_command(const SetLogicCommand* set_logic_command);
+    virtual void visit_set_option_command(const SetOptionCommand* set_option_command);
+    virtual void visit_constant_grammar_term(const ConstantGrammarTerm* constant_grammar_term);
+    virtual void visit_variable_grammar_term(const VariableGrammarTerm* variable_grammar_term);
+    virtual void visit_binder_free_grammar_term(const BinderFreeGrammarTerm* binder_free_grammar_term);
+    virtual void visit_grouped_rule_list(const GroupedRuleList* grouped_rule_list);
+    virtual void visit_grammar(const Grammar* grammar);
+
+    virtual void visit_program(const Program* program);
 };
 
 

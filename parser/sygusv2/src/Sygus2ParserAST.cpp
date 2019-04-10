@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "include/Sygus2ParserIFace.hpp"
+#include "include/Sygus2ParserExceptions.hpp"
  // #include "include/SymbolTable.hpp"
  // #include "include/LogicSymbols.hpp"
  // #include "include/SymtabBuilder.hpp"
@@ -384,6 +385,34 @@ SortExpr::~SortExpr()
     // Nothing here
 }
 
+bool SortExpr::operator == (const SortExpr& other) const
+{
+    if (&other == this) {
+        return true;
+    }
+
+    if(*identifier != *(other.identifier)) {
+        return false;
+    }
+
+    if (param_sorts.size() != other.param_sorts.size()) {
+        return false;
+    }
+
+    for(size_t i = 0; i < param_sorts.size(); ++i) {
+        if (*(param_sorts[i]) != *(other.param_sorts[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool SortExpr::operator != (const SortExpr& other) const
+{
+    return !(*this == other);
+}
+
 void SortExpr::accept(ASTVisitorBase* visitor) const
 {
     visitor->visit_sort_expr(this);
@@ -409,6 +438,127 @@ const vector<const SortExpr*>& SortExpr::get_param_sorts() const
 {
     return const_param_sorts;
 }
+
+// Implementation of SortNameAndArity
+SortNameAndArity::SortNameAndArity(const SourceLocation& location,
+                                   const string& sort_name, u32 sort_arity)
+    : ASTBase(location), sort_name(sort_name), sort_arity(sort_arity)
+{
+    // Nothing here
+}
+
+SortNameAndArity::~SortNameAndArity()
+{
+    // Nothing here
+}
+
+void SortNameAndArity::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_sort_name_and_arity(this);
+}
+
+ASTBase* SortNameAndArity::clone() const
+{
+    return new SortNameAndArity(location, sort_name, sort_arity);
+}
+
+const string& SortNameAndArity::get_sort_name() const
+{
+    return sort_name;
+}
+
+u32 SortNameAndArity::get_sort_arity() const
+{
+    return sort_arity;
+}
+
+// Implementation of DatatypeConstructor
+DatatypeConstructor::DatatypeConstructor(const SourceLocation& location,
+                                         const string& constructor_name,
+                                         const vector<SortedSymbol*>& constructor_parameters)
+    : ASTBase(location), constructor_name(constructor_name),
+      constructor_parameters(constructor_parameters)
+{
+    const_constructor_parameters.insert(const_constructor_parameters.end(),
+                                        constructor_parameters.begin(),
+                                        constructor_parameters.end());
+}
+
+DatatypeConstructor::~DatatypeConstructor()
+{
+    for(auto const& param : constructor_parameters) {
+        delete param;
+    }
+}
+
+void DatatypeConstructor::accept(ASTVisitorBase* visitor) const
+{
+    return visitor->visit_datatype_constructor(this);
+}
+
+ASTBase* DatatypeConstructor::clone() const
+{
+    vector<SortedSymbol*> cloned_params;
+    for(auto const& param : constructor_parameters) {
+        cloned_params.push_back(static_cast<SortedSymbol*>(param->clone()));
+    }
+    return new DatatypeConstructor(location, constructor_name, cloned_params);
+}
+
+const string& DatatypeConstructor::get_constructor_name() const
+{
+    return constructor_name;
+}
+
+const vector<const SortedSymbol*>& DatatypeConstructor::get_constructor_parameters() const
+{
+    return const_constructor_parameters;
+}
+
+// Implementation of DatatypeConstructorList
+DatatypeConstructorList::DatatypeConstructorList(const SourceLocation& location,
+                                                 const vector<string>& sort_parameter_names,
+                                                 const vector<DatatypeConstructor*>& datatype_constructors)
+    : ASTBase(location), sort_parameter_names(sort_parameter_names),
+      datatype_constructors(datatype_constructors)
+{
+    const_datatype_constructors.insert(const_datatype_constructors.end(),
+                                       datatype_constructors.begin(),
+                                       datatype_constructors.end());
+}
+
+DatatypeConstructorList::~DatatypeConstructorList()
+{
+    for(auto const& constructor : datatype_constructors) {
+        delete constructor;
+    }
+}
+
+void DatatypeConstructorList::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_datatype_constructor_list(this);
+}
+
+ASTBase* DatatypeConstructorList::clone() const
+{
+    vector<DatatypeConstructor*> cloned_constructors;
+    for(auto const& constructor : datatype_constructors) {
+        cloned_constructors.push_back(static_cast<DatatypeConstructor*>(constructor->clone()));
+    }
+
+    return new DatatypeConstructorList(location, sort_parameter_names, cloned_constructors);
+}
+
+const vector<string>& DatatypeConstructorList::get_sort_parameter_names() const
+{
+    return sort_parameter_names;
+}
+
+const vector<const DatatypeConstructor*>& DatatypeConstructorList::get_datatype_constructors() const
+{
+    return const_datatype_constructors;
+}
+
 
 // Implementation of Literal
 Literal::Literal(const SourceLocation& location, const string& literal_string,
@@ -445,7 +595,7 @@ LiteralKind Literal::get_literal_kind() const
 
 // Implementation of Term
 Term::Term(const SourceLocation& location)
-    : ASTBase(location), computed_sort(nullptr)
+    : ASTBase(location), sort(nullptr)
 {
     // Nothing here
 }
@@ -455,9 +605,14 @@ Term::~Term()
     // Nothing here
 }
 
-const SortExpr* Term::get_computed_sort() const
+const SortExpr* Term::get_sort() const
 {
-    return computed_sort;
+    return sort;
+}
+
+void Term::set_sort(SortExpr* sort) const
+{
+    this->sort = sort;
 }
 
 IdentifierTerm::IdentifierTerm(const SourceLocation& location, Identifier* identifier)
@@ -466,2028 +621,1034 @@ IdentifierTerm::IdentifierTerm(const SourceLocation& location, Identifier* ident
     // Nothing here
 }
 
-
-
-
-    // ArgSortPair::ArgSortPair(const SourceLocation& Location,
-    //                          const string& Name,
-    //                          const SortExpr* Sort)
-    //     : ASTBase(Location), Name(Name), Sort(Sort)
-    // {
-    //     // Nothing here
-    // }
-
-    // ArgSortPair::~ArgSortPair()
-    // {
-    //     delete Sort;
-    // }
-
-    // void ArgSortPair::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitArgSortPair(this);
-    // }
-
-    // ASTBase* ArgSortPair::Clone() const
-    // {
-    //     return new ArgSortPair(Location, Name, static_cast<const SortExpr*>(Sort->Clone()));
-    // }
-
-    // const string& ArgSortPair::GetName() const
-    // {
-    //     return Name;
-    // }
-
-    // const SortExpr* ArgSortPair::GetSort() const
-    // {
-    //     return Sort;
-    // }
-
-    // // ASTCmd
-    // ASTCmd::ASTCmd(const SourceLocation& Location, ASTCmdKind Kind)
-    //     : ASTBase(Location), CmdKind(Kind)
-    // {
-    //     // Nothing here
-    // }
-
-    // ASTCmd::~ASTCmd()
-    // {
-    //     // Nothing here
-    // }
-
-    // ASTCmdKind ASTCmd::GetKind() const
-    // {
-    //     return CmdKind;
-    // }
-
-    // CheckSynthCmd::CheckSynthCmd(const SourceLocation& Location)
-    //     : ASTCmd(Location, CMD_CHECKSYNTH)
-    // {
-    //     // Nothing here
-    // }
-
-    // CheckSynthCmd::~CheckSynthCmd()
-    // {
-    //     // Nothing here
-    // }
-
-    // void CheckSynthCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitCheckSynthCmd(this);
-    // }
-
-    // ASTBase* CheckSynthCmd::Clone() const
-    // {
-    //     return new CheckSynthCmd(Location);
-    // }
-
-    // SetLogicCmd::SetLogicCmd(const SourceLocation& Location,
-    //                          const string& LogicName)
-    //     : ASTCmd(Location, CMD_SETLOGIC), LogicName(LogicName)
-    // {
-    //     // Nothing here
-    // }
-
-    // SetLogicCmd::~SetLogicCmd()
-    // {
-    //     // Nothing here
-    // }
-
-    // void SetLogicCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitSetLogicCmd(this);
-    // }
-
-    // ASTBase* SetLogicCmd::Clone() const
-    // {
-    //     return new SetLogicCmd(Location, LogicName);
-    // }
-
-    // const string& SetLogicCmd::GetLogicName() const
-    // {
-    //     return LogicName;
-    // }
-
-    // FunDefCmd::FunDefCmd(const SourceLocation& Location,
-    //                      const string& FunSymbol,
-    //                      const ArgList& FunArgs,
-    //                      const SortExpr* FunType,
-    //                      Term* FunDef,
-    //                      SymbolTableScope* Scope)
-    //     : ASTCmd(Location, CMD_FUNDEF),
-    //       Symbol(FunSymbol), Arguments(FunArgs),
-    //       Type(FunType), Def(FunDef), Scope(Scope)
-    // {
-    //     // Nothing here
-    // }
-
-    // FunDefCmd::~FunDefCmd()
-    // {
-    //     for(auto const& ASPair : Arguments) {
-    //         delete ASPair;
-    //     }
-    //     delete Type;
-    //     delete Def;
-    //     delete Scope;
-    // }
-
-    // void FunDefCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitFunDefCmd(this);
-    // }
-
-    // ASTBase* FunDefCmd::Clone() const
-    // {
-    //     return new FunDefCmd(Location, Symbol, CloneVector(Arguments),
-    //                          static_cast<const SortExpr*>(Type->Clone()),
-    //                          static_cast<Term*>(Def->Clone()),
-    //                          Scope->Clone());
-    // }
-
-    // const string& FunDefCmd::GetFunName() const
-    // {
-    //     return Symbol;
-    // }
-
-    // const ArgList& FunDefCmd::GetArgs() const
-    // {
-    //     return Arguments;
-    // }
-
-    // const SortExpr* FunDefCmd::GetSort() const
-    // {
-    //     return Type;
-    // }
-
-    // Term* FunDefCmd::GetTerm() const
-    // {
-    //     return Def;
-    // }
-
-    // void FunDefCmd::SetScope(SymbolTableScope* Scope) const
-    // {
-    //     this->Scope = Scope;
-    // }
-
-    // SymbolTableScope* FunDefCmd::GetScope() const
-    // {
-    //     return Scope;
-    // }
-
-    // FunDeclCmd::FunDeclCmd(const SourceLocation& Location,
-    //                        const string& FunSymbol,
-    //                        const vector<const SortExpr*>& ArgTypes,
-    //                        const SortExpr* Type)
-    //     : ASTCmd(Location, CMD_FUNDECL),
-    //       Symbol(FunSymbol), ArgTypes(ArgTypes), Type(Type)
-    // {
-    //     // Nothing here
-    // }
-
-    // FunDeclCmd::~FunDeclCmd()
-    // {
-    //     for (auto const& Arg : ArgTypes) {
-    //         delete Arg;
-    //     }
-    //     delete Type;
-    // }
-
-    // void FunDeclCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitFunDeclCmd(this);
-    // }
-
-    // ASTBase* FunDeclCmd::Clone() const
-    // {
-    //     return new FunDeclCmd(Location, Symbol, CloneVector(ArgTypes),
-    //                           static_cast<const SortExpr*>(Type->Clone()));
-    // }
-
-    // const string& FunDeclCmd::GetFunName() const
-    // {
-    //     return Symbol;
-    // }
-
-    // const vector<const SortExpr*>& FunDeclCmd::GetArgSorts() const
-    // {
-    //     return ArgTypes;
-    // }
-
-    // const SortExpr* FunDeclCmd::GetSort() const
-    // {
-    //     return Type;
-    // }
-
-    // SynthFunCmd::SynthFunCmd(const SourceLocation& Location,
-    //                          const string& Name,
-    //                          const ArgList& Args,
-    //                          const SortExpr* FunType,
-    //                          const vector<NTDef*> GrammarRules,
-    //                          SymbolTableScope* Scope)
-    //     : ASTCmd(Location, CMD_SYNTHFUN), SynthFunName(Name),
-    //       Arguments(Args), FunType(FunType), GrammarRules(GrammarRules),
-    //       Scope(Scope)
-    // {
-    //     // Nothing here
-    // }
-
-    // SynthFunCmd::~SynthFunCmd()
-    // {
-    //     for(auto const& ASPair : Arguments) {
-    //         delete ASPair;
-    //     }
-
-    //     delete FunType;
-    //     for(auto const& NonTerm : GrammarRules) {
-    //         delete NonTerm;
-    //     }
-
-    //     delete Scope;
-    // }
-
-    // void SynthFunCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitSynthFunCmd(this);
-    // }
-
-    // ASTBase* SynthFunCmd::Clone() const
-    // {
-    //     return new SynthFunCmd(Location, SynthFunName, CloneVector(Arguments),
-    //                            static_cast<const SortExpr*>(FunType->Clone()),
-    //                            CloneVector(GrammarRules), Scope->Clone());
-    // }
-
-    // const string& SynthFunCmd::GetFunName() const
-    // {
-    //     return SynthFunName;
-    // }
-
-    // const ArgList& SynthFunCmd::GetArgs() const
-    // {
-    //     return Arguments;
-    // }
-
-    // const SortExpr* SynthFunCmd::GetSort() const
-    // {
-    //     return FunType;
-    // }
-
-    // const vector<NTDef*>& SynthFunCmd::GetGrammarRules() const
-    // {
-    //     return GrammarRules;
-    // }
-
-    // void SynthFunCmd::SetScope(SymbolTableScope* Scope) const
-    // {
-    //     this->Scope = Scope;
-    // }
-
-    // SymbolTableScope* SynthFunCmd::GetScope() const
-    // {
-    //     return Scope;
-    // }
-
-    // ConstraintCmd::ConstraintCmd(const SourceLocation& Location, Term* TheTerm)
-    //     : ASTCmd(Location, CMD_CONSTRAINT), TheTerm(TheTerm)
-    // {
-    //     // Nothing here
-    // }
-
-    // ConstraintCmd::~ConstraintCmd()
-    // {
-    //     delete TheTerm;
-    // }
-
-    // void ConstraintCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitConstraintCmd(this);
-    // }
-
-    // ASTBase* ConstraintCmd::Clone() const
-    // {
-    //     return new ConstraintCmd(Location, static_cast<Term*>(TheTerm->Clone()));
-    // }
-
-    // Term* ConstraintCmd::GetTerm() const
-    // {
-    //     return TheTerm;
-    // }
-
-    // SortDefCmd::SortDefCmd(const SourceLocation& Location,
-    //                        const string& Symbol, const SortExpr* Expr)
-    //     : ASTCmd(Location, CMD_SORTDEF), Symbol(Symbol), Expr(Expr)
-    // {
-    //     // Nothing here
-    // }
-
-    // SortDefCmd::~SortDefCmd()
-    // {
-    //     delete Expr;
-    // }
-
-    // void SortDefCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitSortDefCmd(this);
-    // }
-
-    // ASTBase* SortDefCmd::Clone() const
-    // {
-    //     return new SortDefCmd(Location, Symbol, static_cast<SortExpr*>(Expr->Clone()));
-    // }
-
-    // const string& SortDefCmd::GetName() const
-    // {
-    //     return Symbol;
-    // }
-
-    // const SortExpr* SortDefCmd::GetSortExpr() const
-    // {
-    //     return Expr;
-    // }
-
-    // SetOptionCmd::SetOptionCmd(const SourceLocation& Location,
-    //                            const string& Key, const string& Value)
-    //     : ASTCmd(Location, CMD_SETOPTION), Key(Key), Value(Value)
-    // {
-    //     // Nothing here
-    // }
-
-    // SetOptionCmd::~SetOptionCmd()
-    // {
-    //     // Nothing here
-    // }
-
-    // void SetOptionCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitSetOptionCmd(this);
-    // }
-
-    // ASTBase* SetOptionCmd::Clone() const
-    // {
-    //     return new SetOptionCmd(Location, Key, Value);
-    // }
-
-    // const string& SetOptionCmd::GetKey() const
-    // {
-    //     return Key;
-    // }
-
-    // const string& SetOptionCmd::GetValue() const
-    // {
-    //     return Value;
-    // }
-
-    // SetFeatureCmd::SetFeatureCmd(const SourceLocation& Location,
-    //                              const string& Key, const string& Value)
-    //     : ASTCmd(Location, CMD_SETFEATURE), Key(Key), Value(Value)
-    // {
-    //     // Nothing here
-    // }
-
-    // SetFeatureCmd::~SetFeatureCmd()
-    // {
-    //     // Nothing here
-    // }
-
-    // void SetFeatureCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitSetFeatureCmd(this);
-    // }
-
-    // ASTBase* SetFeatureCmd::Clone() const
-    // {
-    //     return new SetFeatureCmd(Location, Key, Value);
-    // }
-
-    // const string& SetFeatureCmd::GetKey() const
-    // {
-    //     return Key;
-    // }
-
-    // const string& SetFeatureCmd::GetValue() const
-    // {
-    //     return Value;
-    // }
-
-    // VarDeclCmd::VarDeclCmd(const SourceLocation& Location,
-    //                        const string& VarName,
-    //                        const SortExpr* VarType)
-    //     : ASTCmd(Location, CMD_VARDECL), VarName(VarName),
-    //       VarType(VarType)
-    // {
-    //     // Nothing here
-    // }
-
-    // VarDeclCmd::~VarDeclCmd()
-    // {
-    //     delete VarType;
-    // }
-
-    // void VarDeclCmd::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitVarDeclCmd(this);
-    // }
-
-    // ASTBase* VarDeclCmd::Clone() const
-    // {
-    //     return new VarDeclCmd(Location, VarName, static_cast<const SortExpr*>(VarType->Clone()));
-    // }
-
-    // const string& VarDeclCmd::GetName() const
-    // {
-    //     return VarName;
-    // }
-
-    // const SortExpr* VarDeclCmd::GetSort() const
-    // {
-    //     return VarType;
-    // }
-
-    // SortExpr::SortExpr(const SourceLocation& Location,
-    //                    SortKind Kind)
-    //     : ASTBase(Location), Kind(Kind)
-    // {
-    //     // Nothing here
-    // }
-
-    // SortExpr::~SortExpr()
-    // {
-    //     // Nothing here
-    // }
-
-    // SortKind SortExpr::GetKind() const
-    // {
-    //     return Kind;
-    // }
-
-    // IntSortExpr::IntSortExpr(const SourceLocation& Location)
-    //     : SortExpr(Location, SORTKIND_INT)
-    // {
-    //     // Nothing here
-    // }
-
-    // IntSortExpr::IntSortExpr()
-    //     : SortExpr(SourceLocation::None, SORTKIND_INT)
-    // {
-    //     // Nothing here
-    // }
-
-    // IntSortExpr::~IntSortExpr()
-    // {
-    //     // Nothing here
-    // }
-
-    // bool IntSortExpr::Equals(const SortExpr& Other) const
-    // {
-    //     auto OtherPtr = dynamic_cast<const IntSortExpr*>(&Other);
-    //     if(OtherPtr == NULL) {
-    //         return false;
-    //     } else {
-    //         return true;
-    //     }
-    // }
-
-    // u32 IntSortExpr::Hash() const
-    // {
-    //     return boost::hash_value((u32)GetKind());
-    // }
-
-    // void IntSortExpr::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitIntSortExpr(this);
-    // }
-
-    // ASTBase* IntSortExpr::Clone() const
-    // {
-    //     return new IntSortExpr(Location);
-    // }
-
-    // string IntSortExpr::ToMangleString() const
-    // {
-    //     return "Int";
-    // }
-
-    // BVSortExpr::BVSortExpr(const SourceLocation& Location,
-    //                        u32 Size)
-    //     : SortExpr(Location, SORTKIND_BV), Size(Size)
-    // {
-    //     // Nothing here
-    // }
-
-    // BVSortExpr::BVSortExpr(u32 Size)
-    //     : SortExpr(SourceLocation::None, SORTKIND_BV), Size(Size)
-    // {
-    //     // Nothing here
-    // }
-
-    // BVSortExpr::~BVSortExpr()
-    // {
-    //     // Nothing here
-    // }
-
-    // bool BVSortExpr::Equals(const SortExpr& Other) const
-    // {
-    //     auto OtherPtr = dynamic_cast<const BVSortExpr*>(&Other);
-    //     if(OtherPtr == NULL) {
-    //         return false;
-    //     } else {
-    //         return OtherPtr->Size == Size;
-    //     }
-    // }
-
-    // u32 BVSortExpr::Hash() const
-    // {
-    //     u64 Retval = 0;
-    //     boost::hash_combine(Retval, (u64)GetKind());
-    //     boost::hash_combine(Retval, Size);
-    //     return (u32)Retval;
-    // }
-
-    // void BVSortExpr::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitBVSortExpr(this);
-    // }
-
-    // ASTBase* BVSortExpr::Clone() const
-    // {
-    //     return new BVSortExpr(Location, Size);
-    // }
-
-    // string BVSortExpr::ToMangleString() const
-    // {
-    //     return ((string)"BV" + to_string(Size));
-    // }
-
-    // u32 BVSortExpr::GetSize() const
-    // {
-    //     return Size;
-    // }
-
-    // NamedSortExpr::NamedSortExpr(const SourceLocation& Location,
-    //                              const string& Name)
-    //     : SortExpr(Location, SORTKIND_NAMED), Name(Name)
-    // {
-    //     // Nothing here
-    // }
-
-    // NamedSortExpr::NamedSortExpr(const string& Name)
-    //     : SortExpr(SourceLocation::None, SORTKIND_NAMED), Name(Name)
-    // {
-    //     // Nothing here
-    // }
-
-    // NamedSortExpr::~NamedSortExpr()
-    // {
-    //     // Nothing here
-    // }
-
-    // bool NamedSortExpr::Equals(const SortExpr& Other) const
-    // {
-    //     auto OtherPtr = dynamic_cast<const NamedSortExpr*>(&Other);
-    //     if (OtherPtr == NULL) {
-    //         return false;
-    //     } else {
-    //         return (OtherPtr->Name == Name);
-    //     }
-    // }
-
-    // void NamedSortExpr::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitNamedSortExpr(this);
-    // }
-
-    // ASTBase* NamedSortExpr::Clone() const
-    // {
-    //     return new NamedSortExpr(Location, Name);
-    // }
-
-    // u32 NamedSortExpr::Hash() const
-    // {
-    //     return boost::hash_value(Name);
-    // }
-
-    // string NamedSortExpr::ToMangleString() const
-    // {
-    //     throw SynthLib2ParserException("Internal: Tried to call NamedSortExpr::ToMangleString()");
-    // }
-
-    // const string& NamedSortExpr::GetName() const
-    // {
-    //     return Name;
-    // }
-
-    // ArraySortExpr::ArraySortExpr(const SourceLocation& Location,
-    //                              const SortExpr* DomainSort,
-    //                              const SortExpr* RangeSort)
-    //     : SortExpr(Location, SORTKIND_ARRAY), DomainSort(DomainSort), RangeSort(RangeSort)
-    // {
-    //     // Nothing here
-    // }
-
-    // ArraySortExpr::ArraySortExpr(const SortExpr* DomainSort,
-    //                              const SortExpr* RangeSort)
-    //     : SortExpr(SourceLocation::None, SORTKIND_ARRAY),
-    //       DomainSort(DomainSort), RangeSort(RangeSort)
-    // {
-    //     // Nothing here
-    // }
-
-    // ArraySortExpr::~ArraySortExpr()
-    // {
-    //     delete RangeSort;
-    //     delete DomainSort;
-    // }
-
-    // bool ArraySortExpr::Equals(const SortExpr& Other) const
-    // {
-    //     auto OtherPtr = dynamic_cast<const ArraySortExpr*>(&Other);
-    //     if(OtherPtr == NULL) {
-    //         return false;
-    //     }
-    //     return (DomainSort->Equals(*(OtherPtr->DomainSort)) &&
-    //             RangeSort->Equals(*(OtherPtr->RangeSort)));
-    // }
-
-    // void ArraySortExpr::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitArraySortExpr(this);
-    // }
-
-    // u32 ArraySortExpr::Hash() const
-    // {
-    //     u64 Retval = 0;
-    //     boost::hash_combine(Retval, (u64)GetKind());
-    //     boost::hash_combine(Retval, DomainSort->Hash());
-    //     boost::hash_combine(Retval, RangeSort->Hash());
-    //     return (u32)Retval;
-    // }
-
-    // ASTBase* ArraySortExpr::Clone() const
-    // {
-    //     return new ArraySortExpr(Location, static_cast<const SortExpr*>(DomainSort->Clone()),
-    //                              static_cast<const SortExpr*>(RangeSort->Clone()));
-    // }
-
-    // string ArraySortExpr::ToMangleString() const
-    // {
-    //     return ((string)"Array_" + RangeSort->ToMangleString() +
-    //             "_of_" + DomainSort->ToMangleString());
-    // }
-
-    // const SortExpr* ArraySortExpr::GetDomainSort() const
-    // {
-    //     return DomainSort;
-    // }
-
-    // const SortExpr* ArraySortExpr::GetRangeSort() const
-    // {
-    //     return RangeSort;
-    // }
-
-    // RealSortExpr::RealSortExpr(const SourceLocation& Location)
-    //     : SortExpr(Location, SORTKIND_REAL)
-    // {
-    //     // Nothing here
-    // }
-
-    // RealSortExpr::RealSortExpr()
-    //     : SortExpr(SourceLocation::None, SORTKIND_REAL)
-    // {
-    //     // Nothing here
-    // }
-
-    // RealSortExpr::~RealSortExpr()
-    // {
-    //     // Nothing here
-    // }
-
-    // bool RealSortExpr::Equals(const SortExpr& Other) const
-    // {
-    //     return (dynamic_cast<const RealSortExpr*>(&Other) != NULL);
-    // }
-
-    // u32 RealSortExpr::Hash() const
-    // {
-    //     return boost::hash_value((u32)GetKind());
-    // }
-
-    // void RealSortExpr::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitRealSortExpr(this);
-    // }
-
-    // ASTBase* RealSortExpr::Clone() const
-    // {
-    //     return new RealSortExpr(Location);
-    // }
-
-    // string RealSortExpr::ToMangleString() const
-    // {
-    //     return "Real";
-    // }
-
-    // FunSortExpr::FunSortExpr(const SourceLocation& Location,
-    //                          const vector<const SortExpr*>& ArgSorts,
-    //                          const SortExpr* RetSort)
-    //     : SortExpr(Location, SORTKIND_FUN), ArgSorts(ArgSorts),
-    //       RetSort(RetSort)
-    // {
-    //     // Nothing here
-    // }
-
-    // FunSortExpr::FunSortExpr(const vector<const SortExpr*>& ArgSorts,
-    //                          const SortExpr* RetSort)
-    //     : SortExpr(SourceLocation::None, SORTKIND_FUN),
-    //       ArgSorts(ArgSorts), RetSort(RetSort)
-    // {
-    //     // Nothing here
-    // }
-
-    // FunSortExpr::~FunSortExpr()
-    // {
-    //     for(auto const& ArgSort : ArgSorts) {
-    //         delete ArgSort;
-    //     }
-    //     delete RetSort;
-    // }
-
-    // bool FunSortExpr::Equals(const SortExpr& Other) const
-    // {
-    //     auto OtherPtr = dynamic_cast<const FunSortExpr*>(&Other);
-    //     if(OtherPtr == NULL) {
-    //         return false;
-    //     }
-    //     const u32 NumArgs = ArgSorts.size();
-    //     if(OtherPtr->ArgSorts.size() != NumArgs) {
-    //         return false;
-    //     }
-    //     for(u32 i = 0; i < NumArgs; ++i) {
-    //         if(!ArgSorts[i]->Equals(*(OtherPtr->ArgSorts[i]))) {
-    //             return false;
-    //         }
-    //     }
-
-    //     return (RetSort->Equals(*(OtherPtr->RetSort)));
-    // }
-
-    // u32 FunSortExpr::Hash() const
-    // {
-    //     u64 Retval = 0;
-    //     boost::hash_combine(Retval, (u64)GetKind());
-    //     for(auto const& ArgSort : ArgSorts) {
-    //         boost::hash_combine(Retval, ArgSort->Hash());
-    //     }
-    //     boost::hash_combine(Retval, RetSort->Hash());
-    // return (u32)Retval;
-    // }
-
-    // void FunSortExpr::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitFunSortExpr(this);
-    // }
-
-    // ASTBase* FunSortExpr::Clone() const
-    // {
-    //     return new FunSortExpr(Location, CloneVector(ArgSorts),
-    //                            static_cast<SortExpr*>(RetSort->Clone()));
-    // }
-
-    // string FunSortExpr::ToMangleString() const
-    // {
-    //     string Retval;
-    //     for(auto const& ArgSort : ArgSorts) {
-    //         Retval += ArgSort->ToMangleString() + "->";
-    //     }
-    //     Retval += RetSort->ToMangleString();
-    //     return Retval;
-    // }
-
-    // const vector<const SortExpr*>& FunSortExpr::GetArgSorts() const
-    // {
-    //     return ArgSorts;
-    // }
-
-    // const SortExpr* FunSortExpr::GetRetSort() const
-    // {
-    //     return RetSort;
-    // }
-
-    // BoolSortExpr::BoolSortExpr(const SourceLocation& Location)
-    //     : SortExpr(Location, SORTKIND_BOOL)
-    // {
-    //     // Nothing here
-    // }
-
-    // BoolSortExpr::BoolSortExpr()
-    //     : SortExpr(SourceLocation::None, SORTKIND_BOOL)
-    // {
-    //     // Nothing here
-    // }
-
-    // BoolSortExpr::~BoolSortExpr()
-    // {
-    //     // Nothing here
-    // }
-
-    // void BoolSortExpr::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitBoolSortExpr(this);
-    // }
-
-    // ASTBase* BoolSortExpr::Clone() const
-    // {
-    //     return new BoolSortExpr(Location);
-    // }
-
-    // u32 BoolSortExpr::Hash() const
-    // {
-    //     return boost::hash_value((u32)GetKind());
-    // }
-
-    // bool BoolSortExpr::Equals(const SortExpr& Other) const
-    // {
-    //     return (dynamic_cast<const BoolSortExpr*>(&Other) != NULL);
-    // }
-
-    // string BoolSortExpr::ToMangleString() const
-    // {
-    //     return "Bool";
-    // }
-
-    // EnumSortExpr::EnumSortExpr(const SourceLocation& Location,
-    //                            const string& EnumSortName,
-    //                            const vector<string>& EnumConstructors)
-    //     : SortExpr(Location, SORTKIND_ENUM),
-    //       EnumSortName(EnumSortName), EnumSortConstructorVec(EnumConstructors),
-    //       EnumSortConstructorSet(EnumConstructors.begin(), EnumConstructors.end())
-    // {
-    //     // Nothing here
-    // }
-
-    // EnumSortExpr::EnumSortExpr(const SourceLocation& Location,
-    //                            const vector<string>& EnumConstructors)
-    //     : SortExpr(Location, SORTKIND_ENUM),
-    //       EnumSortConstructorVec(EnumConstructors),
-    //       EnumSortConstructorSet(EnumConstructors.begin(), EnumConstructors.end())
-    // {
-    //     // Nothing here
-    // }
-
-    // EnumSortExpr::~EnumSortExpr()
-    // {
-    //     // Nothing here
-    // }
-
-    // bool EnumSortExpr::Equals(const SortExpr& Other) const
-    // {
-    //     auto OtherPtr = dynamic_cast<const EnumSortExpr*>(&Other);
-    //     if(OtherPtr == NULL) {
-    //         return false;
-    //     }
-
-    //     return (EnumSortName == OtherPtr->EnumSortName &&
-    //             includes(EnumSortConstructorSet.begin(), EnumSortConstructorSet.end(),
-    //                      OtherPtr->EnumSortConstructorSet.begin(),
-    //                      OtherPtr->EnumSortConstructorSet.end()) &&
-    //             includes(OtherPtr->EnumSortConstructorSet.begin(),
-    //                      OtherPtr->EnumSortConstructorSet.end(),
-    //                      EnumSortConstructorSet.begin(), EnumSortConstructorSet.end()));
-    // }
-
-    // void EnumSortExpr::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitEnumSortExpr(this);
-    // }
-
-    // u32 EnumSortExpr::Hash() const
-    // {
-    //     u64 Retval = 0;
-    //     boost::hash_combine(Retval, (u64)GetKind());
-    //     for(auto const& Constructor : EnumSortConstructorVec) {
-    //         boost::hash_combine(Retval, Constructor);
-    //     }
-    //     boost::hash_combine(Retval, EnumSortName);
-    //     return (u32)Retval;
-    // }
-
-    // ASTBase* EnumSortExpr::Clone() const
-    // {
-    //     return new EnumSortExpr(Location, EnumSortName, EnumSortConstructorVec);
-    // }
-
-    // string EnumSortExpr::ToMangleString() const
-    // {
-    //     return ("EnumSort_" + EnumSortName);
-    // }
-
-    // const vector<string>& EnumSortExpr::GetConstructors() const
-    // {
-    //     return EnumSortConstructorVec;
-    // }
-
-    // const string& EnumSortExpr::GetEnumSortName() const
-    // {
-    //     return EnumSortName;
-    // }
-
-    // void EnumSortExpr::SetEnumSortName(const string& Name) const
-    // {
-    //     EnumSortName = Name;
-    // }
-
-    // bool EnumSortExpr::IsConstructorValid(const string& ConstructorName) const
-    // {
-    //     // Works only for unqualified constructors
-    //     return (EnumSortConstructorSet.find(ConstructorName) !=
-    //             EnumSortConstructorSet.end());
-    // }
-
-    // // Literals and terms
-    // Literal::Literal(const SourceLocation& Location,
-    //                  const string& Constructor,
-    //                  SortExpr* Sort)
-    // : ASTBase(Location), LiteralString(Constructor),
-    //       LiteralSort(Sort)
-    // {
-    //     // Nothing here
-    // }
-
-    // Literal::~Literal()
-    // {
-    //     delete LiteralSort;
-    // }
-
-    // void Literal::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitLiteral(this);
-    // }
-
-    // ASTBase* Literal::Clone() const
-    // {
-    //     return new Literal(Location, LiteralString, static_cast<SortExpr*>(LiteralSort->Clone()));
-    // }
-
-    // const SortExpr* Literal::GetSort(SymbolTable* SymTab) const
-    // {
-    //     if (LiteralSort != NULL) {
-    //         return LiteralSort;
-    //     } else {
-    //         // This must be an enum constant
-    //         // lookup the type of the enumerated type in the symbol table
-    //         vector<string> SplitVec;
-    //         boost::algorithm::split(SplitVec, LiteralString,
-    //                                 boost::algorithm::is_any_of(":"),
-    //                                 boost::algorithm::token_compress_on);
-    //         if (SplitVec.size() != 2) {
-    //             throw SynthLib2ParserException("Internal: Expected a well-formed enum literal");
-    //         }
-    //         auto const& EnumTypeName = SplitVec[0];
-    //         auto const& EnumConsName = SplitVec[1];
-
-    //         // Lookup the type in the symbol table
-    //         auto STE = SymTab->LookupSort(EnumTypeName);
-    //         if(STE == NULL || STE->GetKind() != STENTRY_SORT) {
-    //             throw SynthLib2ParserException((string)"Identifier \"" + EnumTypeName + "\" does not " +
-    //                                            "refer to an enumeration sort\n" +
-    //                                            Location.ToString());
-    //         }
-    //         // Resolve this sort
-    //         auto Sort = SymTab->ResolveSort(STE->GetSort());
-    //         if (Sort == NULL || Sort->GetKind() != SORTKIND_ENUM) {
-    //             throw SynthLib2ParserException((string)"Identifier \"" + EnumTypeName + "\" does not " +
-    //                                            "refer to an enumeration sort\n" +
-    //                                            Location.ToString());
-    //         }
-    //         // Check that the constructor is valid for the sort
-
-    //         if(!(dynamic_cast<const EnumSortExpr*>(Sort)->IsConstructorValid(EnumConsName))) {
-    //             throw SynthLib2ParserException((string)"Constructor \"" + EnumConsName + "\" is not " +
-    //                                            "a valid constructor for enumeration type \"" +
-    //                                            EnumTypeName + "\"" +
-    //                                            Location.ToString());
-    //         }
-    //         // return the enumeration sort
-    //         return Sort;
-    //     }
-    // }
-
-    // const string& Literal::GetLiteralString() const
-    // {
-    //     return LiteralString;
-    // }
-
-    // Term::Term(const SourceLocation& Location,
-    //            TermKind Kind)
-    //     : ASTBase(Location), Kind(Kind)
-    // {
-    //     // Nothing here
-    // }
-
-    // Term::~Term()
-    // {
-    //     // Nothing here
-    // }
-
-    // TermKind Term::GetKind() const
-    // {
-    //     return Kind;
-    // }
-
-    // FunTerm::FunTerm(const SourceLocation& Location,
-    //                  const string& FunName,
-    //                  const vector<Term*>& Args)
-    //     : Term(Location, TERMKIND_FUN), FunName(FunName), Args(Args)
-    // {
-    //     // Nothing here
-    // }
-
-    // FunTerm::~FunTerm()
-    // {
-    //     for(auto const& Arg : Args) {
-    //         delete Arg;
-    //     }
-    // }
-
-    // void FunTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitFunTerm(this);
-    // }
-
-    // ASTBase* FunTerm::Clone() const
-    // {
-    //     return new FunTerm(Location, FunName, CloneVector(Args));
-    // }
-
-    // const SortExpr* FunTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     ostringstream SS;
-
-    //     // determine this function's sort from the symbol table
-    //     const u32 NumArgs = Args.size();
-    //     vector<const SortExpr*> ArgSorts(NumArgs);
-
-    //     for(u32 i = 0; i < NumArgs; ++i) {
-    //         ArgSorts[i] = Args[i]->GetTermSort(SymTab);
-    //     }
-
-    //     auto Entry = SymTab->LookupFun(FunName, ArgSorts);
-    //     if(Entry == NULL) {
-    //         SS.str("");
-    //         SS << "Could not determine type of term: "
-    //            << *this << endl;
-    //         SS << "This could be due to an undeclared function or "
-    //            << "mismatched arguments to function" << endl;
-    //         SS << Location;
-    //         throw SynthLib2ParserException(SS.str());
-    //     }
-
-    //     auto FunSort = dynamic_cast<const FunSortExpr*>(Entry->GetSort());
-    //     if(FunSort == NULL) {
-    //         throw SynthLib2ParserException("Identifier \"" + FunName + "\" does " +
-    //                                        "not refer to an function, but used as one");
-    //     }
-    //     return FunSort->GetRetSort();
-    // }
-
-    // const string& FunTerm::GetFunName() const
-    // {
-    //     return FunName;
-    // }
-
-    // const vector<Term*>& FunTerm::GetArgs() const
-    // {
-    //     return Args;
-    // }
-
-    // LiteralTerm::LiteralTerm(const SourceLocation& Location,
-    //                          Literal* TheLiteral)
-    //     : Term(Location, TERMKIND_LITERAL), TheLiteral(TheLiteral)
-    // {
-    //     // Nothing here
-    // }
-
-    // LiteralTerm::~LiteralTerm()
-    // {
-    //     delete TheLiteral;
-    // }
-
-    // void LiteralTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitLiteralTerm(this);
-    // }
-
-    // ASTBase* LiteralTerm::Clone() const
-    // {
-    //     return new LiteralTerm(Location, static_cast<Literal*>(TheLiteral->Clone()));
-    // }
-
-    // const SortExpr* LiteralTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     return TheLiteral->GetSort(SymTab);
-    // }
-
-    // Literal* LiteralTerm::GetLiteral() const
-    // {
-    //     return TheLiteral;
-    // }
-
-    // SymbolTerm::SymbolTerm(const SourceLocation& Location,
-    //                        const string& TheSymbol)
-    //     : Term(Location, TERMKIND_SYMBOL), TheSymbol(TheSymbol)
-    // {
-    //     // Nothing here
-    // }
-
-    // SymbolTerm::~SymbolTerm()
-    // {
-    //     // Nothing here
-    // }
-
-    // void SymbolTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitSymbolTerm(this);
-    // }
-
-    // ASTBase* SymbolTerm::Clone() const
-    // {
-    //     return new SymbolTerm(Location, TheSymbol);
-    // }
-
-    // const SortExpr* SymbolTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     auto Entry = SymTab->Lookup(TheSymbol);
-    //     if(Entry == NULL) {
-    //         throw SynthLib2ParserException("Could not resolve identifier \"" +
-    //                                        TheSymbol + "\"");
-    //     }
-
-    //     auto const SymSort = Entry->GetSort();
-    //     if(Entry->GetKind() == STENTRY_USER_FUNCTION ||
-    //        Entry->GetKind() == STENTRY_SYNTH_FUNCTION ||
-    //        Entry->GetKind() == STENTRY_THEORY_FUNCTION ||
-    //        Entry->GetKind() == STENTRY_UNINTERP_FUNCTION) {
-    //         auto SymFunSort = dynamic_cast<const FunSortExpr*>(SymSort);
-    //         return SymFunSort->GetRetSort();
-    //     } else {
-    //         return SymSort;
-    //     }
-    // }
-
-    // const string& SymbolTerm::GetSymbol() const
-    // {
-    //     return TheSymbol;
-    // }
-
-    // LetBindingTerm::LetBindingTerm(const SourceLocation& Location,
-    //                                const string& VarName,
-    //                                const SortExpr* VarSort,
-    //                                Term* BoundToTerm)
-    //     : ASTBase(Location), VarName(VarName), VarSort(VarSort),
-    //       BoundToTerm(BoundToTerm)
-    // {
-    //     // Nothing here
-    // }
-
-    // LetBindingTerm::~LetBindingTerm()
-    // {
-    //     delete VarSort;
-    //     delete BoundToTerm;
-    // }
-
-    // void LetBindingTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitLetBindingTerm(this);
-    // }
-
-    // ASTBase* LetBindingTerm::Clone() const
-    // {
-    //     return new LetBindingTerm(Location, VarName,
-    //                               static_cast<const SortExpr*>(VarSort->Clone()),
-    //                               static_cast<Term*>(BoundToTerm->Clone()));
-    // }
-
-    // const string& LetBindingTerm::GetVarName() const
-    // {
-    //     return VarName;
-    // }
-
-    // Term* LetBindingTerm::GetBoundToTerm() const
-    // {
-    //     return BoundToTerm;
-    // }
-
-    // const SortExpr* LetBindingTerm::GetVarSort() const
-    // {
-    //     return VarSort;
-    // }
-
-    // LetTerm::LetTerm(const SourceLocation& Location,
-    //                  const vector<LetBindingTerm*>& Bindings,
-    //                  Term* BoundInTerm,
-    //                  SymbolTableScope* Scope)
-    //     : Term(Location, TERMKIND_LET),
-    //       Bindings(Bindings),
-    //       BoundInTerm(BoundInTerm),
-    //       Scope(Scope)
-    // {
-    //     // Nothing here
-    // }
-
-    // LetTerm::~LetTerm()
-    // {
-    //     for(auto const& Binding : Bindings) {
-    //         delete Binding;
-    //     }
-
-    //     delete BoundInTerm;
-    //     delete Scope;
-    // }
-
-    // void LetTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitLetTerm(this);
-    // }
-
-    // ASTBase* LetTerm::Clone() const
-    // {
-    //     return new LetTerm(Location, CloneVector(Bindings),
-    //                        static_cast<Term*>(BoundInTerm->Clone()),
-    //                        Scope->Clone());
-    // }
-
-    // const SortExpr* LetTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     // push the scope onto the symbol table
-    //     SymTab->Push(Scope);
-    //     auto Retval = BoundInTerm->GetTermSort(SymTab);
-    //     SymTab->Pop();
-    //     return Retval;
-    // }
-
-    // const vector<LetBindingTerm*>& LetTerm::GetBindings() const
-    // {
-    //     return Bindings;
-    // }
-
-    // Term* LetTerm::GetBoundInTerm() const
-    // {
-    //     return BoundInTerm;
-    // }
-
-    // void LetTerm::SetScope(SymbolTableScope* Scope) const
-    // {
-    //     this->Scope = Scope;
-    // }
-
-    // SymbolTableScope* LetTerm::GetScope() const
-    // {
-    //     return Scope;
-    // }
-
-    // GTerm::GTerm(const SourceLocation& Location,
-    //              GTermKind Kind)
-    //     : ASTBase(Location), Kind(Kind)
-    // {
-    //     // Nothing here
-    // }
-
-    // GTerm::~GTerm()
-    // {
-    //     // Nothing here
-    // }
-
-    // GTermKind GTerm::GetKind() const
-    // {
-    //     return Kind;
-    // }
-
-    // SymbolGTerm::SymbolGTerm(const SourceLocation& Location,
-    //                          const string& TheSymbol)
-    //     : GTerm(Location, GTERMKIND_SYMBOL),
-    //       TheSymbol(TheSymbol)
-    // {
-    //     // Nothing here
-    // }
-
-    // SymbolGTerm::~SymbolGTerm()
-    // {
-    //     // Nothing here
-    // }
-
-    // void SymbolGTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitSymbolGTerm(this);
-    // }
-
-    // ASTBase* SymbolGTerm::Clone() const
-    // {
-    //     return new SymbolGTerm(Location, TheSymbol);
-    // }
-
-    // const SortExpr* SymbolGTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     auto Entry = SymTab->Lookup(TheSymbol);
-    //     auto SymSort = Entry->GetSort();
-    //     if(Entry->GetKind() == STENTRY_THEORY_FUNCTION ||
-    //        Entry->GetKind() == STENTRY_SYNTH_FUNCTION ||
-    //        Entry->GetKind() == STENTRY_USER_FUNCTION ||
-    //        Entry->GetKind() == STENTRY_UNINTERP_FUNCTION) {
-
-    //         auto SymFunSort = dynamic_cast<const FunSortExpr*>(SymSort);
-    //         return SymFunSort->GetRetSort();
-    //     } else {
-    //         return SymSort;
-    //     }
-    // }
-
-    // const string& SymbolGTerm::GetSymbol() const
-    // {
-    //     return TheSymbol;
-    // }
-
-    // FunGTerm::FunGTerm(const SourceLocation& Location,
-    //                    const string& FunName,
-    //                    const vector<GTerm*>& Args)
-    //     : GTerm(Location, GTERMKIND_FUN),
-    //       FunName(FunName), Args(Args)
-    // {
-    //     // Nothing here
-    // }
-
-    // FunGTerm::~FunGTerm()
-    // {
-    //     for(auto const& Arg : Args) {
-    //         delete Arg;
-    //     }
-    // }
-
-    // void FunGTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitFunGTerm(this);
-    // }
-
-    // ASTBase* FunGTerm::Clone() const
-    // {
-    //     return new FunGTerm(Location, FunName,
-    //                         CloneVector(Args));
-    // }
-
-    // const SortExpr* FunGTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     const u32 NumArgs = Args.size();
-    //     vector<const SortExpr*> ArgSorts(NumArgs);
-
-    //     for(u32 i = 0; i < NumArgs; ++i) {
-    //         ArgSorts[i] = Args[i]->GetTermSort(SymTab);
-    //     }
-
-
-    //     auto Entry = SymTab->LookupFun(FunName, ArgSorts);
-    //     if(Entry == NULL) {
-    //         throw SynthLib2ParserException("Could not resolve identifier \"" +
-    //                                        FunName + "\"");
-    //     }
-    //     auto EntrySort = Entry->GetSort();
-    //     auto EntryFunSort = dynamic_cast<const FunSortExpr*>(EntrySort);
-    //     if(EntryFunSort == NULL) {
-    //         throw SynthLib2ParserException("Identifier \"" + FunName + "\" does not " +
-    //                                        "refer to a function, but is used as one");
-    //     }
-    //     return EntryFunSort->GetRetSort();
-    // }
-
-    // const string& FunGTerm::GetName() const
-    // {
-    //     return FunName;
-    // }
-
-    // const vector<GTerm*>& FunGTerm::GetArgs() const
-    // {
-    //     return Args;
-    // }
-
-    // LiteralGTerm::LiteralGTerm(const SourceLocation& Location,
-    //                            Literal* TheLiteral)
-    //     : GTerm(Location, GTERMKIND_LITERAL), TheLiteral(TheLiteral)
-    // {
-    //     // Nothing here
-    // }
-
-    // LiteralGTerm::~LiteralGTerm()
-    // {
-    //     delete TheLiteral;
-    // }
-
-    // void LiteralGTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitLiteralGTerm(this);
-    // }
-
-    // ASTBase* LiteralGTerm::Clone() const
-    // {
-    //     return new LiteralGTerm(Location,
-    //                             static_cast<Literal*>(TheLiteral->Clone()));
-    // }
-
-    // const SortExpr* LiteralGTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     return TheLiteral->GetSort(SymTab);
-    // }
-
-    // Literal* LiteralGTerm::GetLiteral() const
-    // {
-    //     return TheLiteral;
-    // }
-
-    // ConstantGTerm::ConstantGTerm(const SourceLocation& Location,
-    //                              const SortExpr* Sort)
-    //     : GTerm(Location, GTERMKIND_CONSTANT), ConstantSort(Sort)
-    // {
-    //     // Nothing here
-    // }
-
-    // ConstantGTerm::~ConstantGTerm()
-    // {
-    //     delete ConstantSort;
-    // }
-
-    // void ConstantGTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitConstantGTerm(this);
-    // }
-
-    // ASTBase* ConstantGTerm::Clone() const
-    // {
-    //     return new ConstantGTerm(Location,
-    //                              static_cast<const SortExpr*>(ConstantSort->Clone()));
-    // }
-
-    // const SortExpr* ConstantGTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     return ConstantSort;
-    // }
-
-    // const SortExpr* ConstantGTerm::GetSort() const
-    // {
-    //     return ConstantSort;
-    // }
-
-    // VariableGTerm::VariableGTerm(const SourceLocation& Location,
-    //                              const SortExpr* VariableSort,
-    //                              VariableKind Kind)
-    //     : GTerm(Location, GTERMKIND_VARIABLE), VariableSort(VariableSort),
-    //       Kind(Kind)
-    // {
-    //     // Nothing here
-    // }
-
-    // VariableGTerm::~VariableGTerm()
-    // {
-    //     delete VariableSort;
-    // }
-
-    // void VariableGTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitVariableGTerm(this);
-    // }
-
-    // ASTBase* VariableGTerm::Clone() const
-    // {
-    //     return new VariableGTerm(Location, static_cast<const SortExpr*>(VariableSort->Clone()),
-    //                              Kind);
-    // }
-
-    // const SortExpr* VariableGTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     return VariableSort;
-    // }
-
-    // const SortExpr* VariableGTerm::GetSort() const
-    // {
-    //     return VariableSort;
-    // }
-
-    // VariableKind VariableGTerm::GetKind() const
-    // {
-    //     return Kind;
-    // }
-
-    // LetBindingGTerm::LetBindingGTerm(const SourceLocation& Location,
-    //                                  const string& VarName,
-    //                                  const SortExpr* VarSort,
-    //                                  GTerm* BoundToTerm)
-    //     : ASTBase(Location), VarName(VarName),
-    //       VarSort(VarSort), BoundToTerm(BoundToTerm)
-    // {
-    //     // Nothing here
-    // }
-
-    // LetBindingGTerm::~LetBindingGTerm()
-    // {
-    //     delete VarSort;
-    //     delete BoundToTerm;
-    // }
-
-    // void LetBindingGTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitLetBindingGTerm(this);
-    // }
-
-    // ASTBase* LetBindingGTerm::Clone() const
-    // {
-    //     return new LetBindingGTerm(Location, VarName,
-    //                                static_cast<const SortExpr*>(VarSort->Clone()),
-    //                                static_cast<GTerm*>(BoundToTerm->Clone()));
-    // }
-
-    // const string& LetBindingGTerm::GetVarName() const
-    // {
-    //     return VarName;
-    // }
-
-    // GTerm* LetBindingGTerm::GetBoundToTerm() const
-    // {
-    //     return BoundToTerm;
-    // }
-
-    // const SortExpr* LetBindingGTerm::GetVarSort() const
-    // {
-    //     return VarSort;
-    // }
-
-    // LetGTerm::LetGTerm(const SourceLocation& Location,
-    //                    const vector<LetBindingGTerm*>& Bindings,
-    //                    GTerm* BoundInTerm,
-    //                    SymbolTableScope* Scope)
-    //     : GTerm(Location, GTERMKIND_LET),
-    //       Bindings(Bindings),
-    //       BoundInTerm(BoundInTerm),
-    //       Scope(Scope)
-    // {
-    //     // Nothing here
-    // }
-
-    // LetGTerm::~LetGTerm()
-    // {
-    //     for(auto const& Binding : Bindings) {
-    //         delete Binding;
-    //     }
-
-    //     delete BoundInTerm;
-    //     delete Scope;
-    // }
-
-    // void LetGTerm::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitLetGTerm(this);
-    // }
-
-    // ASTBase* LetGTerm::Clone() const
-    // {
-    //     return new LetGTerm(Location, CloneVector(Bindings),
-    //                         static_cast<GTerm*>(BoundInTerm->Clone()),
-    //                         Scope->Clone());
-    // }
-
-    // const SortExpr* LetGTerm::GetTermSort(SymbolTable* SymTab) const
-    // {
-    //     SymTab->Push(Scope);
-    //     auto Retval = BoundInTerm->GetTermSort(SymTab);
-    //     SymTab->Pop();
-    //     return Retval;
-    // }
-
-    // const vector<LetBindingGTerm*>& LetGTerm::GetBindings() const
-    // {
-    //     return Bindings;
-    // }
-
-    // GTerm* LetGTerm::GetBoundInTerm() const
-    // {
-    //     return BoundInTerm;
-    // }
-
-    // SymbolTableScope* LetGTerm::GetScope() const
-    // {
-    //     return Scope;
-    // }
-
-    // NTDef::NTDef(const SourceLocation& Location,
-    //              const string& Symbol,
-    //              const SortExpr* Sort,
-    //              const vector<GTerm*>& Expansions)
-    //     : ASTBase(Location),
-    //       Symbol(Symbol),
-    //       Sort(Sort), Expansions(Expansions)
-    // {
-    //     // Nothing here
-    // }
-
-    // NTDef::~NTDef()
-    // {
-    //     delete Sort;
-    //     for(auto const& Expansion : Expansions) {
-    //         delete Expansion;
-    //     }
-    // }
-
-    // void NTDef::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitNTDef(this);
-    // }
-
-    // ASTBase* NTDef::Clone() const
-    // {
-    //     return new NTDef(Location, Symbol, static_cast<const SortExpr*>(Sort->Clone()),
-    //                      CloneVector(Expansions));
-    // }
-
-    // const string& NTDef::GetName() const
-    // {
-    //     return Symbol;
-    // }
-
-    // const SortExpr* NTDef::GetSort() const
-    // {
-    //     return Sort;
-    // }
-
-    // const vector<GTerm*>& NTDef::GetExpansions() const
-    // {
-    //     return Expansions;
-    // }
-
-    // Program::Program(const vector<ASTCmd*>& Cmds)
-    //     : ASTBase(SourceLocation::None),
-    //       Cmds(Cmds)
-    // {
-    //     // Nothing here
-    // }
-
-    // Program::~Program()
-    // {
-    //     for(auto const& Cmd : Cmds) {
-    //         delete Cmd;
-    //     }
-    // }
-
-    // void Program::Accept(ASTVisitorBase* Visitor) const
-    // {
-    //     Visitor->VisitProgram(this);
-    // }
-
-    // ASTBase* Program::Clone() const
-    // {
-    //     return new Program(CloneVector(Cmds));
-    // }
-
-    // const vector<ASTCmd*>& Program::GetCmds() const
-    // {
-    //     return Cmds;
-    // }
-
-    // ASTVisitorBase::ASTVisitorBase(const string& Name)
-    //     : Name(Name)
-    // {
-    //     // Nothing here
-    // }
-
-    // ASTVisitorBase::~ASTVisitorBase()
-    // {
-    //     // Nothing here
-    // }
-
-    // void ASTVisitorBase::VisitProgram(const Program* Prog)
-    // {
-    //     auto const& Cmds = Prog->GetCmds();
-    //     for(auto const& Cmd : Cmds) {
-    //         Cmd->Accept(this);
-    //     }
-    // }
-
-    // void ASTVisitorBase::VisitArgSortPair(const ArgSortPair* ASPair)
-    // {
-    //     ASPair->GetSort()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitFunDefCmd(const FunDefCmd* Cmd)
-    // {
-    //     // Visit the args
-    //     auto const& Args = Cmd->GetArgs();
-    //     for(auto const& ASPair : Args) {
-    //         ASPair->Accept(this);
-    //     }
-
-    //     // Visit the return sort
-    //     Cmd->GetSort()->Accept(this);
-    //     // Visit the term
-    //     Cmd->GetTerm()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitFunDeclCmd(const FunDeclCmd* Cmd)
-    // {
-    //     // Visit the arg sorts
-    //     auto const& ArgTypes = Cmd->GetArgSorts();
-    //     for(auto const& ArgType : ArgTypes) {
-    //         ArgType->Accept(this);
-    //     }
-
-    //     // Visit the return sort
-    //     Cmd->GetSort()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitSynthFunCmd(const SynthFunCmd* Cmd)
-    // {
-    //     auto const& ArgSorts = Cmd->GetArgs();
-    //     for(auto const& Arg : ArgSorts) {
-    //         Arg->Accept(this);
-    //     }
-
-    //     // Visit the return type
-    //     Cmd->GetSort()->Accept(this);
-    //     // Visit the Grammar rules
-    //     auto const& Rules = Cmd->GetGrammarRules();
-    //     for(auto const& Rule : Rules) {
-    //         Rule->Accept(this);
-    //     }
-    // }
-
-    // void ASTVisitorBase::VisitSortDefCmd(const SortDefCmd* Cmd)
-    // {
-    //     // Just visit the sort expression
-    //     Cmd->GetSortExpr()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitSetOptionCmd(const SetOptionCmd* Cmd)
-    // {
-    //     // Nothing to do really.
-    // }
-
-    // void ASTVisitorBase::VisitSetFeatureCmd(const SetFeatureCmd* Cmd)
-    // {
-    //     // Nothing to do really.
-    // }
-
-    // void ASTVisitorBase::VisitVarDeclCmd(const VarDeclCmd* Cmd)
-    // {
-    //     // Visit the sort expression
-    //     Cmd->GetSort()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitConstraintCmd(const ConstraintCmd* Cmd)
-    // {
-    //     // Visit the constraint term
-    //     Cmd->GetTerm()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitSetLogicCmd(const SetLogicCmd* Cmd)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitCheckSynthCmd(const CheckSynthCmd* Cmd)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitIntSortExpr(const IntSortExpr* Sort)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitBVSortExpr(const BVSortExpr* Sort)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitNamedSortExpr(const NamedSortExpr* Sort)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitArraySortExpr(const ArraySortExpr* Sort)
-    // {
-    //     Sort->GetDomainSort()->Accept(this);
-    //     Sort->GetRangeSort()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitRealSortExpr(const RealSortExpr* Sort)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitFunSortExpr(const FunSortExpr* Sort)
-    // {
-    //     auto const& ArgSorts = Sort->GetArgSorts();
-    //     for(auto const& ArgSort : ArgSorts) {
-    //         ArgSort->Accept(this);
-    //     }
-    //     Sort->GetRetSort()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitBoolSortExpr(const BoolSortExpr* Sort)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitEnumSortExpr(const EnumSortExpr* Sort)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitFunTerm(const FunTerm* TheTerm)
-    // {
-    //     auto const& Args = TheTerm->GetArgs();
-    //     for(auto const& Arg : Args) {
-    //         Arg->Accept(this);
-    //     }
-    // }
-
-    // void ASTVisitorBase::VisitLiteralTerm(const LiteralTerm* TheTerm)
-    // {
-    //     TheTerm->GetLiteral()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitSymbolTerm(const SymbolTerm* TheTerm)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitLetTerm(const LetTerm* TheTerm)
-    // {
-    //     auto const& Bindings = TheTerm->GetBindings();
-    //     for(auto const& Binding : Bindings) {
-    //         Binding->Accept(this);
-    //     }
-    //     TheTerm->GetBoundInTerm()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitFunGTerm(const FunGTerm* TheTerm)
-    // {
-    //     auto const& Args = TheTerm->GetArgs();
-    //     for(auto const Arg : Args) {
-    //         Arg->Accept(this);
-    //     }
-    // }
-
-    // void ASTVisitorBase::VisitLiteralGTerm(const LiteralGTerm* TheTerm)
-    // {
-    //     TheTerm->GetLiteral()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitSymbolGTerm(const SymbolGTerm* TheTerm)
-    // {
-    //     // Nothing to do really
-    // }
-
-    // void ASTVisitorBase::VisitLetGTerm(const LetGTerm* TheTerm)
-    // {
-    //     auto const& Bindings = TheTerm->GetBindings();
-
-    //     for(auto const& Binding : Bindings) {
-    //         Binding->Accept(this);
-    //     }
-
-    //     TheTerm->GetBoundInTerm()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitConstantGTerm(const ConstantGTerm* TheTerm)
-    // {
-    //     TheTerm->GetSort()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitVariableGTerm(const VariableGTerm* TheTerm)
-    // {
-    //     TheTerm->GetSort()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitNTDef(const NTDef* Def)
-    // {
-    //     Def->GetSort()->Accept(this);
-    //     auto const& Expansions = Def->GetExpansions();
-    //     for(auto const& Expansion : Expansions) {
-    //         Expansion->Accept(this);
-    //     }
-    // }
-
-    // void ASTVisitorBase::VisitLiteral(const Literal* TheLiteral)
-    // {
-    //     // Nothing to do here really
-    // }
-
-    // void ASTVisitorBase::VisitLetBindingTerm(const LetBindingTerm* Binding)
-    // {
-    //     Binding->GetVarSort()->Accept(this);
-    //     Binding->GetBoundToTerm()->Accept(this);
-    // }
-
-    // void ASTVisitorBase::VisitLetBindingGTerm(const LetBindingGTerm* Binding)
-    // {
-    //     Binding->GetVarSort()->Accept(this);
-    //     Binding->GetBoundToTerm()->Accept(this);
-    // }
-
-    // SynthLib2Parser::SynthLib2Parser()
-    //     : TheProgram(NULL), TheSymbolTable(NULL),
-    //       ParseComplete(false)
-    // {
-    //     // Nothing here
-    // }
-
-    // SynthLib2Parser::~SynthLib2Parser()
-    // {
-    //     if(TheProgram != NULL) {
-    //         delete TheProgram;
-    //         TheProgram = NULL;
-    //     }
-    //     if(TheSymbolTable != NULL) {
-    //         delete TheSymbolTable;
-    //         TheSymbolTable = NULL;
-    //     }
-    // }
-
-    // void SynthLib2Parser::operator () (const string& FileName,
-    //                                    bool Pedantic)
-    // {
-    //     if(TheProgram != NULL) {
-    //         delete TheProgram;
-    //         TheProgram = NULL;
-    //     }
-    //     if(TheSymbolTable != NULL) {
-    //         delete TheSymbolTable;
-    //         TheSymbolTable = NULL;
-    //     }
-
-
-    //     yyin = fopen(FileName.c_str(), "r");
-    //     if (yyin == NULL) {
-    //         throw SynthLib2ParserException("Could not open input file \"" + FileName + "\"");
-    //     }
-    //     if(yyparse() != 0) {
-    //         throw SynthLib2ParserException("Error parsing input file \"" + FileName + "\"");
-    //     }
-
-    //     fclose(yyin);
-
-    //     TheProgram = SynthLib2Bison::TheProgram;
-    //     TheSymbolTable = new SymbolTable();
-
-    //     LogicSymbolLoader::LoadAll(TheSymbolTable);
-    //     SymtabBuilder::Do(TheProgram, TheSymbolTable);
-    //     LogicSymbolLoader::Reset();
-
-    //     SynthLib2Bison::TheProgram = NULL;
-    // }
-
-    // void SynthLib2Parser::operator () (FILE* Handle,
-    //                                    bool Pedantic)
-    // {
-    //     if (Handle == NULL) {
-    //         throw SynthLib2ParserException("Cannot parse NULL handle");
-    //     }
-
-    //     if(TheProgram != NULL) {
-    //         delete TheProgram;
-    //         TheProgram = NULL;
-    //     }
-    //     if(TheSymbolTable != NULL) {
-    //         delete TheSymbolTable;
-    //         TheSymbolTable = NULL;
-    //     }
-
-    //     yyin = Handle;
-
-    //     if(yyparse() != 0) {
-    //         throw SynthLib2ParserException("Error parsing input file via handle");
-    //     }
-
-    //     // Not ours to close;
-
-    //     TheProgram = SynthLib2Bison::TheProgram;
-    //     TheSymbolTable = new SymbolTable();
-
-    //     LogicSymbolLoader::LoadAll(TheSymbolTable);
-    //     SymtabBuilder::Do(TheProgram, TheSymbolTable);
-    //     LogicSymbolLoader::Reset();
-
-    //     SynthLib2Bison::TheProgram = NULL;
-    // }
-
-    // Program* SynthLib2Parser::GetProgram() const
-    // {
-    //     if(TheProgram == NULL) {
-    //         throw SynthLib2ParserException((string)"SynthLib2Parser: No program parsed yet!" +
-    //                                        " But SynthLib2Parser::GetProgram() called");
-    //     }
-    //     return TheProgram;
-    // }
-
-    // SymbolTable* SynthLib2Parser::GetSymbolTable() const
-    // {
-    //     if(TheSymbolTable == NULL) {
-    //         throw SynthLib2ParserException((string)"SynthLib2Parser: No program parsed yet!" +
-    //                                        " But SynthLib2Parser::GetSymbolTable() called");
-    //     }
-    //     return TheSymbolTable;
-    // }
+IdentifierTerm::~IdentifierTerm()
+{
+    delete identifier;
+}
+
+void IdentifierTerm::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_identifier_term(this);
+}
+
+ASTBase* IdentifierTerm::clone() const
+{
+    return new IdentifierTerm(location, static_cast<Identifier*>(identifier->clone()));
+}
+
+const Identifier* IdentifierTerm::get_identifier() const
+{
+    return identifier;
+}
+
+// Implementation of LiteralTerm
+LiteralTerm::LiteralTerm(const SourceLocation& location, Literal* literal)
+    : Term(location), literal(literal)
+{
+    // Nothing here
+}
+
+LiteralTerm::~LiteralTerm()
+{
+    delete literal;
+}
+
+void LiteralTerm::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_literal_term(this);
+}
+
+ASTBase* LiteralTerm::clone() const
+{
+    return new LiteralTerm(location, static_cast<Literal*>(literal->clone()));
+}
+
+const Literal* LiteralTerm::get_literal() const
+{
+    return literal;
+}
+
+// Implementation of FunctionApplicationTerm
+FunctionApplicationTerm::FunctionApplicationTerm(const SourceLocation& location,
+                                                 Identifier* identifier,
+                                                 const vector<Term*>& application_arguments)
+    : Term(location), identifier(identifier), application_arguments(application_arguments)
+{
+    const_application_arguments.insert(const_application_arguments.end(),
+                                       application_arguments.begin(),
+                                       application_arguments.end());
+}
+
+FunctionApplicationTerm::~FunctionApplicationTerm()
+{
+    for(auto const& arg : application_arguments) {
+        delete arg;
+    }
+}
+
+void FunctionApplicationTerm::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_function_application_term(this);
+}
+
+ASTBase* FunctionApplicationTerm::clone() const
+{
+    vector<Term*> cloned_args;
+    for(auto const& arg : application_arguments) {
+        cloned_args.push_back(static_cast<Term*>(arg->clone()));
+    }
+
+    return new FunctionApplicationTerm(location, static_cast<Identifier*>(identifier->clone()),
+                                       cloned_args);
+}
+
+const Identifier* FunctionApplicationTerm::get_identifier() const
+{
+    return identifier;
+}
+
+const vector<const Term*>& FunctionApplicationTerm::get_application_arguments() const
+{
+    return const_application_arguments;
+}
+
+// Implementation of QuantifiedTerm
+QuantifiedTerm::QuantifiedTerm(const SourceLocation& location,
+                               QuantifierKind quantifier_kind,
+                               const vector<SortedSymbol*> quantified_symbols,
+                               Term* quantified_term)
+    : Term(location), quantifier_kind(quantifier_kind),
+      quantified_symbols(quantified_symbols), quantified_term(quantified_term)
+{
+    const_quantified_symbols.insert(const_quantified_symbols.end(),
+                                    quantified_symbols.begin(),
+                                    quantified_symbols.end());
+}
+
+QuantifiedTerm::~QuantifiedTerm()
+{
+    for(auto const& sorted_sym : quantified_symbols) {
+        delete sorted_sym;
+    }
+
+    delete quantified_term;
+}
+
+void QuantifiedTerm::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_quantified_term(this);
+}
+
+ASTBase* QuantifiedTerm::clone() const
+{
+    vector<SortedSymbol*> cloned_quantified_symbols;
+    for(auto const& sorted_sym : quantified_symbols) {
+        cloned_quantified_symbols.push_back(static_cast<SortedSymbol*>(sorted_sym->clone()));
+    }
+
+    return new QuantifiedTerm(location, quantifier_kind, cloned_quantified_symbols,
+                              static_cast<Term*>(quantified_term->clone()));
+}
+
+QuantifierKind QuantifiedTerm::get_quantifier_kind() const
+{
+    return quantifier_kind;
+}
+
+const vector<const SortedSymbol*>& QuantifiedTerm::get_quantified_symbols() const
+{
+    return const_quantified_symbols;
+}
+
+const Term* QuantifiedTerm::get_quantified_term() const
+{
+    return quantified_term;
+}
+
+// Implementation of VariableBinding
+VariableBinding::VariableBinding(const SourceLocation& location,
+                                 const string& symbol, Term* binding)
+    : ASTBase(location), symbol(symbol), binding(binding)
+{
+    // Nothing here
+}
+
+VariableBinding::~VariableBinding()
+{
+    delete binding;
+}
+
+void VariableBinding::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_variable_binding(this);
+}
+
+ASTBase* VariableBinding::clone() const
+{
+    return new VariableBinding(location, symbol, static_cast<Term*>(binding->clone()));
+}
+
+const string& VariableBinding::get_symbol() const
+{
+    return symbol;
+}
+
+const Term* VariableBinding::get_binding() const
+{
+    return binding;
+}
+
+// Implementation of LetTerm
+LetTerm::LetTerm(const SourceLocation& location,
+                 const vector<VariableBinding*>& bindings,
+                 Term* let_body)
+    : Term(location), bindings(bindings), let_body(let_body)
+{
+    const_bindings.insert(const_bindings.end(), bindings.begin(), bindings.end());
+}
+
+LetTerm::~LetTerm()
+{
+    for(auto const& binding : bindings) {
+        delete binding;
+    }
+
+    delete let_body;
+}
+
+void LetTerm::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_let_term(this);
+}
+
+ASTBase* LetTerm::clone() const
+{
+    vector<VariableBinding*> cloned_bindings;
+    for(auto const& binding : bindings) {
+        cloned_bindings.push_back(static_cast<VariableBinding*>(binding->clone()));
+    }
+
+    return new LetTerm(location, cloned_bindings, static_cast<Term*>(let_body->clone()));
+}
+
+const vector<const VariableBinding*>& LetTerm::get_bindings() const
+{
+    return const_bindings;
+}
+
+const Term* LetTerm::get_let_body() const
+{
+    return let_body;
+}
+
+// Implementation of Command
+Command::Command(const SourceLocation& location)
+    : ASTBase(location)
+{
+    // Nothing here
+}
+
+// Implementation of CheckSynthCommand
+CheckSynthCommand::CheckSynthCommand(const SourceLocation& location)
+    : Command(location)
+{
+    // Nothing here
+}
+
+CheckSynthCommand::~CheckSynthCommand()
+{
+    // Nothing here
+}
+
+void CheckSynthCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_check_synth_command(this);
+}
+
+ASTBase* CheckSynthCommand::clone() const
+{
+    return new CheckSynthCommand(location);
+}
+
+// Implementation of ConstraintCommand
+ConstraintCommand::ConstraintCommand(const SourceLocation& location,
+                                     Term* constraint_term)
+    : Command(location), constraint_term(constraint_term)
+{
+    // Nothing here
+}
+
+ConstraintCommand::~ConstraintCommand()
+{
+    delete constraint_term;
+}
+
+void ConstraintCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_constraint_command(this);
+}
+
+ASTBase* ConstraintCommand::clone() const
+{
+    return new ConstraintCommand(location, static_cast<Term*>(constraint_term->clone()));
+}
+
+const Term* ConstraintCommand::get_constraint_term() const
+{
+    return constraint_term;
+}
+
+// Implementation of DeclareVarCommand
+DeclareVarCommand::DeclareVarCommand(const SourceLocation& location, const string& symbol,
+                                     SortExpr* sort_expr)
+    : Command(location), symbol(symbol), sort_expr(sort_expr)
+{
+    // Nothing here
+}
+
+DeclareVarCommand::~DeclareVarCommand()
+{
+    delete sort_expr;
+}
+
+void DeclareVarCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_declare_var_command(this);
+}
+
+ASTBase* DeclareVarCommand::clone() const
+{
+    return new DeclareVarCommand(location, symbol, static_cast<SortExpr*>(sort_expr->clone()));
+}
+
+const string& DeclareVarCommand::get_symbol() const
+{
+    return symbol;
+}
+
+const SortExpr* DeclareVarCommand::get_sort_expr() const
+{
+    return sort_expr;
+}
+
+
+// Implementation of InvConstraintCommand
+InvConstraintCommand::InvConstraintCommand(const SourceLocation& location,
+                                           const string& inv_fun_symbol,
+                                           const string& precondition_symbol,
+                                           const string& transition_relation_symbol,
+                                           const string& postcondition_symbol)
+    : Command(location), inv_fun_symbol(inv_fun_symbol),
+      precondition_symbol(precondition_symbol),
+      transition_relation_symbol(transition_relation_symbol),
+      postcondition_symbol(postcondition_symbol)
+{
+    // Nothing here
+}
+
+InvConstraintCommand::~InvConstraintCommand()
+{
+    // Nothing here
+}
+
+void InvConstraintCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_inv_constraint_command(this);
+}
+
+ASTBase* InvConstraintCommand::clone() const
+{
+    return new InvConstraintCommand(location, inv_fun_symbol, precondition_symbol,
+                                    transition_relation_symbol, postcondition_symbol);
+}
+
+const string& InvConstraintCommand::get_inv_fun_symbol() const
+{
+    return inv_fun_symbol;
+}
+
+const string& InvConstraintCommand::get_precondition_symbol() const
+{
+    return precondition_symbol;
+}
+
+const string& InvConstraintCommand::get_transition_relation_symbol() const
+{
+    return transition_relation_symbol;
+}
+
+const string& InvConstraintCommand::get_postcondition_symbol() const
+{
+    return postcondition_symbol;
+}
+
+// Implementation of SetFeatureCommand
+SetFeatureCommand::SetFeatureCommand(const SourceLocation& location,
+                                     const string& feature_name,
+                                     bool value)
+    : Command(location), feature_name(feature_name), value(value)
+{
+    // Nothing here
+}
+
+SetFeatureCommand::~SetFeatureCommand()
+{
+    // Nothing here
+}
+
+void SetFeatureCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_set_feature_command(this);
+}
+
+ASTBase* SetFeatureCommand::clone() const
+{
+    return new SetFeatureCommand(location, feature_name, value);
+}
+
+const string& SetFeatureCommand::get_feature_name() const
+{
+    return feature_name;
+}
+
+bool SetFeatureCommand::get_value() const
+{
+    return value;
+}
+
+// Implementation of SynthFunCommand
+SynthFunCommand::SynthFunCommand(const SourceLocation& location, const string& function_symbol,
+                                 const vector<SortedSymbol*>& function_parameters,
+                                 SortExpr* function_range_sort,
+                                 Grammar* synthesis_grammar)
+    : Command(location), function_symbol(function_symbol),
+      function_parameters(function_parameters), function_range_sort(function_range_sort),
+      synthesis_grammar(synthesis_grammar)
+{
+    const_function_parameters.insert(const_function_parameters.end(),
+                                     function_parameters.begin(),
+                                     function_parameters.end());
+}
+
+SynthFunCommand::~SynthFunCommand()
+{
+    for(auto const& param : function_parameters) {
+        delete param;
+    }
+    delete function_range_sort;
+    delete synthesis_grammar;
+}
+
+void SynthFunCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_synth_fun_command(this);
+}
+
+ASTBase* SynthFunCommand::clone() const
+{
+    vector<SortedSymbol*> cloned_params;
+    for(auto const& param : function_parameters) {
+        cloned_params.push_back(static_cast<SortedSymbol*>(param->clone()));
+    }
+
+    return new SynthFunCommand(location, function_symbol, cloned_params,
+                               static_cast<SortExpr*>(function_range_sort->clone()),
+                               static_cast<Grammar*>(synthesis_grammar->clone()));
+}
+
+const string& SynthFunCommand::get_function_symbol() const
+{
+    return function_symbol;
+}
+
+const vector<const SortedSymbol*>& SynthFunCommand::get_function_parameters() const
+{
+    return const_function_parameters;
+}
+
+const SortExpr* SynthFunCommand::get_function_range_sort() const
+{
+    return function_range_sort;
+}
+
+const Grammar* SynthFunCommand::get_synthesis_grammar() const
+{
+    return synthesis_grammar;
+}
+
+// Implementation of SynthInvCommand
+SynthInvCommand::SynthInvCommand(const SourceLocation& location,
+                                 const string& function_symbol,
+                                 const vector<SortedSymbol*>& function_parameters,
+                                 Grammar* synthesis_grammar)
+    : SynthFunCommand(location, function_symbol, function_parameters,
+                      new SortExpr(location, new Identifier(location, "Bool")),
+                      synthesis_grammar)
+{
+    // Nothing here
+}
+
+SynthInvCommand::~SynthInvCommand()
+{
+    // Nothing here
+}
+
+void SynthInvCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_synth_inv_command(this);
+}
+
+ASTBase* SynthInvCommand::clone() const
+{
+    vector<SortedSymbol*> cloned_params;
+
+    for(auto const& param : get_function_parameters()) {
+        cloned_params.push_back(static_cast<SortedSymbol*>(param->clone()));
+    }
+
+    return new SynthInvCommand(location, get_function_symbol(), cloned_params,
+                               static_cast<Grammar*>(get_synthesis_grammar()->clone()));
+}
+
+
+// Implementation of DeclareSortCommand
+DeclareSortCommand::DeclareSortCommand(const SourceLocation& location,
+                                       const string& sort_name,
+                                       u32 sort_arity)
+    : Command(location), sort_name(sort_name), sort_arity(sort_arity)
+{
+    // Nothing here
+}
+
+DeclareSortCommand::~DeclareSortCommand()
+{
+    // Nothing here
+}
+
+void DeclareSortCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_declare_sort_command(this);
+}
+
+ASTBase* DeclareSortCommand::clone() const
+{
+    return new DeclareSortCommand(location, sort_name, sort_arity);
+}
+
+const string& DeclareSortCommand::get_sort_name() const
+{
+    return sort_name;
+}
+
+u32 DeclareSortCommand::get_sort_arity() const
+{
+    return sort_arity;
+}
+
+// Implementation of DefineFunCommand
+DefineFunCommand::DefineFunCommand(const SourceLocation& location,
+                                   const string& function_symbol,
+                                   const vector<SortedSymbol*>& function_parameters,
+                                   SortExpr* function_range_sort,
+                                   Term* function_body)
+    : Command(location), function_symbol(function_symbol),
+      function_parameters(function_parameters), function_range_sort(function_range_sort),
+      function_body(function_body)
+{
+    const_function_parameters.insert(const_function_parameters.end(),
+                                     function_parameters.begin(),
+                                     function_parameters.end());
+}
+
+DefineFunCommand::~DefineFunCommand()
+{
+    for(auto const& param : function_parameters) {
+        delete param;
+    }
+
+    delete function_body;
+}
+
+void DefineFunCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_define_fun_command(this);
+}
+
+ASTBase* DefineFunCommand::clone() const
+{
+    vector<SortedSymbol*> cloned_params;
+    for(auto const& param : function_parameters) {
+        cloned_params.push_back(static_cast<SortedSymbol*>(param->clone()));
+    }
+
+    return new DefineFunCommand(location, function_symbol,cloned_params,
+                                static_cast<SortExpr*>(function_range_sort->clone()),
+                                static_cast<Term*>(function_body->clone()));
+}
+
+const string& DefineFunCommand::get_function_symbol() const
+{
+    return function_symbol;
+}
+
+const vector<const SortedSymbol*>& DefineFunCommand::get_function_parameters() const
+{
+    return const_function_parameters;
+}
+
+const SortExpr* DefineFunCommand::get_function_range_sort() const
+{
+    return function_range_sort;
+}
+
+const Term* DefineFunCommand::get_function_body() const
+{
+    return function_body;
+}
+
+// Implementation of DefineSortCommand
+DefineSortCommand::DefineSortCommand(const SourceLocation& location,
+                                     const string& sort_name,
+                                     const vector<string>& sort_parameters,
+                                     SortExpr* sort_expr)
+    : Command(location), sort_name(sort_name), sort_parameters(sort_parameters),
+      sort_expr(sort_expr)
+{
+    // Nothing here
+}
+
+DefineSortCommand::~DefineSortCommand()
+{
+    delete sort_expr;
+}
+
+void DefineSortCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_define_sort_command(this);
+}
+
+ASTBase* DefineSortCommand::clone() const
+{
+    return new DefineSortCommand(location, sort_name, sort_parameters,
+                                 static_cast<SortExpr*>(sort_expr->clone()));
+}
+
+const string& DefineSortCommand::get_sort_name() const
+{
+    return sort_name;
+}
+
+const SortExpr* DefineSortCommand::get_sort_expr() const
+{
+    return sort_expr;
+}
+
+const vector<string>& DefineSortCommand::get_sort_parameters() const
+{
+    return sort_parameters;
+}
+
+// Implementation of DeclareDatatypesCommand
+DeclareDatatypesCommand::DeclareDatatypesCommand(const SourceLocation& location,
+                                                 const vector<SortNameAndArity*>& sort_names_and_arities,
+                                                 const vector<DatatypeConstructorList*>& constructor_lists)
+    : Command(location), sort_names_and_arities(sort_names_and_arities),
+      datatype_constructor_lists(constructor_lists)
+{
+    const_sort_names_and_arities.insert(const_sort_names_and_arities.end(),
+                                        sort_names_and_arities.begin(),
+                                        sort_names_and_arities.end());
+    const_datatype_constructor_lists.insert(const_datatype_constructor_lists.end(),
+                                            datatype_constructor_lists.begin(),
+                                            datatype_constructor_lists.end());
+}
+
+DeclareDatatypesCommand::~DeclareDatatypesCommand()
+{
+    for(auto const& sort_name_and_arity : sort_names_and_arities) {
+        delete sort_name_and_arity;
+    }
+
+    for(auto const& constructor_list : datatype_constructor_lists) {
+        delete constructor_list;
+    }
+}
+
+void DeclareDatatypesCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_declare_datatypes_command(this);
+}
+
+ASTBase* DeclareDatatypesCommand::clone() const
+{
+    vector<SortNameAndArity*> cloned_sort_names_and_arities;
+    vector<DatatypeConstructorList*> cloned_constructors;
+
+    for(auto const& sort_name_and_arity : sort_names_and_arities) {
+        cloned_sort_names_and_arities.push_back(static_cast<SortNameAndArity*>(sort_name_and_arity->clone()));
+    }
+
+    for(auto const& constructor_list : datatype_constructor_lists) {
+        cloned_constructors.push_back(static_cast<DatatypeConstructorList*>(constructor_list->clone()));
+    }
+
+    return new DeclareDatatypesCommand(location, cloned_sort_names_and_arities,
+                                       cloned_constructors);
+}
+
+const vector<const SortNameAndArity*>& DeclareDatatypesCommand::get_sort_names_and_arities() const
+{
+    return const_sort_names_and_arities;
+}
+
+const vector<const DatatypeConstructorList*>& DeclareDatatypesCommand::get_datatype_constructor_lists() const
+{
+    return const_datatype_constructor_lists;
+}
+
+// Implementation of DeclareDatatypeCommand
+DeclareDatatypeCommand::DeclareDatatypeCommand(const SourceLocation& location,
+                                               const string& datatype_name,
+                                               DatatypeConstructorList* constructor_list)
+    : Command(location), datatype_name(datatype_name),
+      datatype_constructor_list(constructor_list)
+{
+    // Nothing here
+}
+
+DeclareDatatypeCommand::~DeclareDatatypeCommand()
+{
+    delete datatype_constructor_list;
+}
+
+void DeclareDatatypeCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_declare_datatype_command(this);
+}
+
+ASTBase* DeclareDatatypeCommand::clone() const
+{
+    return new DeclareDatatypeCommand(location, datatype_name,
+                                      static_cast<DatatypeConstructorList*>(datatype_constructor_list->clone()));
+}
+
+const DatatypeConstructorList* DeclareDatatypeCommand::get_datatype_constructor_list() const
+{
+    return datatype_constructor_list;
+}
+
+// Implementation of SetLogicCommand
+SetLogicCommand::SetLogicCommand(const SourceLocation& location, const string& logic_name)
+    : Command(location), logic_name(logic_name)
+{
+    // Nothing here
+}
+
+SetLogicCommand::~SetLogicCommand()
+{
+    // Nothing here
+}
+
+void SetLogicCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_set_logic_command(this);
+}
+
+ASTBase* SetLogicCommand::clone() const
+{
+    return new SetLogicCommand(location, logic_name);
+}
+
+const string& SetLogicCommand::get_logic_name() const
+{
+    return logic_name;
+}
+
+// Implementation of SetOptionCommand
+SetOptionCommand::SetOptionCommand(const SourceLocation& location,
+                                   const string& option_name,
+                                   Literal* option_value)
+    : Command(location), option_name(option_name), option_value(option_value)
+{
+    // Nothing here
+}
+
+SetOptionCommand::~SetOptionCommand()
+{
+    delete option_value;
+}
+
+void SetOptionCommand::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_set_option_command(this);
+}
+
+ASTBase* SetOptionCommand::clone() const
+{
+    return new SetOptionCommand(location, option_name,
+                                static_cast<Literal*>(option_value->clone()));
+}
+
+const string& SetOptionCommand::get_option_name() const
+{
+    return option_name;
+}
+
+const Literal* SetOptionCommand::get_option_value() const
+{
+    return option_value;
+}
+
+// Implementation of GrammarTerm
+GrammarTerm::GrammarTerm(const SourceLocation& location)
+    : Term(location)
+{
+    // Nothing here
+}
+
+GrammarTerm::~GrammarTerm()
+{
+    // Nothing here
+}
+
+// Implementation of ConstantGrammarTerm
+ConstantGrammarTerm::ConstantGrammarTerm(const SourceLocation& location,
+                                         SortExpr* sort_expr)
+    : GrammarTerm(location), sort_expr(sort_expr)
+{
+    // Nothing here
+}
+
+ConstantGrammarTerm::~ConstantGrammarTerm()
+{
+    delete sort_expr;
+}
+
+void ConstantGrammarTerm::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_constant_grammar_term(this);
+}
+
+ASTBase* ConstantGrammarTerm::clone() const
+{
+    return new ConstantGrammarTerm(location, static_cast<SortExpr*>(sort_expr->clone()));
+}
+
+const SortExpr* ConstantGrammarTerm::get_sort_expr() const
+{
+    return sort_expr;
+}
+
+
+// Implementation of VariableGrammarTerm
+VariableGrammarTerm::VariableGrammarTerm(const SourceLocation& location,
+                                         SortExpr* sort_expr)
+    : GrammarTerm(location), sort_expr(sort_expr)
+{
+    // Nothing here
+}
+
+VariableGrammarTerm::~VariableGrammarTerm()
+{
+    delete sort_expr;
+}
+
+void VariableGrammarTerm::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_variable_grammar_term(this);
+}
+
+ASTBase* VariableGrammarTerm::clone() const
+{
+    return new VariableGrammarTerm(location, static_cast<SortExpr*>(sort_expr->clone()));
+}
+
+const SortExpr* VariableGrammarTerm::get_sort_expr() const
+{
+    return sort_expr;
+}
+
+// Implementation of BinderFreeGrammarTerm
+BinderFreeGrammarTerm::BinderFreeGrammarTerm(const SourceLocation& location,
+                                             Term* binder_free_term)
+    : GrammarTerm(location), binder_free_term(binder_free_term)
+{
+    // Nothing here
+}
+
+BinderFreeGrammarTerm::~BinderFreeGrammarTerm()
+{
+    delete binder_free_term;
+}
+
+void BinderFreeGrammarTerm::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_binder_free_grammar_term(this);
+}
+
+ASTBase* BinderFreeGrammarTerm::clone() const
+{
+    return new BinderFreeGrammarTerm(location, static_cast<Term*>(binder_free_term->clone()));
+}
+
+const Term* BinderFreeGrammarTerm::get_binder_free_term() const
+{
+    return binder_free_term;
+}
+
+// Implementation of GroupedRuleList
+GroupedRuleList::GroupedRuleList(const SourceLocation& location,
+                                 const string& head_symbol,
+                                 SortExpr* head_symbol_sort,
+                                 const vector<GrammarTerm*>& expansion_rules)
+    : ASTBase(location), head_symbol(head_symbol), head_symbol_sort(head_symbol_sort),
+      expansion_rules(expansion_rules)
+{
+    const_expansion_rules.insert(const_expansion_rules.end(),
+                                 expansion_rules.begin(), expansion_rules.end());
+}
+
+GroupedRuleList::~GroupedRuleList()
+{
+    delete head_symbol_sort;
+    for(auto const& expansion_rule : expansion_rules) {
+        delete expansion_rule;
+    }
+}
+
+void GroupedRuleList::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_grouped_rule_list(this);
+}
+
+ASTBase* GroupedRuleList::clone() const
+{
+    vector<GrammarTerm*> cloned_expansion_rules;
+    for(auto const& expansion_rule : expansion_rules) {
+        cloned_expansion_rules.push_back(static_cast<GrammarTerm*>(expansion_rule->clone()));
+    }
+
+    return new GroupedRuleList(location, head_symbol,
+                               static_cast<SortExpr*>(head_symbol_sort->clone()),
+                               cloned_expansion_rules);
+}
+
+const string& GroupedRuleList::get_head_symbol() const
+{
+    return head_symbol;
+}
+
+const SortExpr* GroupedRuleList::get_head_symbol_sort() const
+{
+    return head_symbol_sort;
+}
+
+const vector<const GrammarTerm*>& GroupedRuleList::get_expansion_rules() const
+{
+    return const_expansion_rules;
+}
+
+
+// Implementation of Grammar
+Grammar::Grammar(const SourceLocation& location,
+                 const vector<SortedSymbol*>& grammar_nonterminals,
+                 const vector<GroupedRuleList*>& grouped_rule_lists)
+    : ASTBase(location), grammar_nonterminals(grammar_nonterminals)
+{
+    const_grammar_nonterminals.insert(const_grammar_nonterminals.end(),
+                                      grammar_nonterminals.begin(),
+                                      grammar_nonterminals.end());
+
+    for(auto const& rule_list : grouped_rule_lists) {
+        const string& head_symbol = rule_list->get_head_symbol();
+        if (this->grouped_rule_lists.find(head_symbol) != this->grouped_rule_lists.end()) {
+            ostringstream sstr;
+            sstr << "Head Symbol \"" + head_symbol + "\" is associated with more than one "
+                 << "rule list. At location: " << location.to_string() << endl;
+            throw Sygus2ParserException(sstr.str());
+        }
+        this->grouped_rule_lists[head_symbol] = rule_list;
+        this->const_grouped_rule_lists[head_symbol] = rule_list;
+    }
+}
+
+Grammar::~Grammar()
+{
+    for(auto const& nonterminal : grammar_nonterminals) {
+        delete nonterminal;
+    }
+
+    for(auto it = grouped_rule_lists.begin(); it != grouped_rule_lists.end(); ++it) {
+        delete it->second;
+    }
+}
+
+void Grammar::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_grammar(this);
+}
+
+ASTBase* Grammar::clone() const
+{
+    vector<SortedSymbol*> cloned_nonterminals;
+    vector<GroupedRuleList*> cloned_rule_lists;
+
+    for(auto const& nonterminal : grammar_nonterminals) {
+        cloned_nonterminals.push_back(static_cast<SortedSymbol*>(nonterminal->clone()));
+    }
+
+    for(auto it = grouped_rule_lists.begin(); it != grouped_rule_lists.end(); ++it) {
+        cloned_rule_lists.push_back(static_cast<GroupedRuleList*>(it->second->clone()));
+    }
+
+    return new Grammar(location, cloned_nonterminals, cloned_rule_lists);
+}
+
+const vector<const SortedSymbol*>& Grammar::get_nonterminals() const
+{
+    return const_grammar_nonterminals;
+}
+
+const unordered_map<string, const GroupedRuleList*>& Grammar::get_grouped_rule_lists() const
+{
+    return const_grouped_rule_lists;
+}
+
+// Implementation of Program
+Program::Program(const SourceLocation& location,
+                 const vector<Command*>& commands)
+    : ASTBase(location), program_commands(commands)
+{
+    const_program_commands.insert(const_program_commands.end(),
+                                  program_commands.begin(),
+                                  program_commands.end());
+}
+
+Program::~Program()
+{
+    for(auto const& command : program_commands) {
+        delete command;
+    }
+}
+
+void Program::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_program(this);
+}
+
+ASTBase* Program::clone() const
+{
+    vector<Command*> cloned_commands;
+    for(auto const& command : program_commands) {
+        cloned_commands.push_back(static_cast<Command*>(command->clone()));
+    }
+
+    return new Program(location, cloned_commands);
+}
+
+const vector<const Command*>& Program::get_commands() const
+{
+    return const_program_commands;
+}
 
 } /* end namespace */
