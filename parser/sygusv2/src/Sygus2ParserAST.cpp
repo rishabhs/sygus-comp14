@@ -46,13 +46,93 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Sygus2Bison {
 extern Sygus2Parser::Program* the_program;
-extern string* file_name;
 }
 
+typedef struct yy_buffer_state * YY_BUFFER_STATE;
 extern FILE* yyin;
 extern int yyparse();
+extern YY_BUFFER_STATE yy_scan_string(char* str);
+extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
 namespace Sygus2Parser {
+// helper functions to clone vectors
+template<typename T>
+static inline void copy_vector(const vector<T>& source, vector<T>& destination)
+{
+    destination.clear();
+    destination.insert(destination.end(), source.begin(), source.end());
+}
+
+template<typename T>
+static inline void copy_vector(const vector<T*>& source, vector<const T*>& destination)
+{
+    destination.clear();
+    destination.insert(destination.end(), source.begin(), source.end());
+}
+
+template<typename T>
+static inline void delete_pointer_vector(const vector<const T*>& to_delete)
+{
+    for (auto const& ptr : to_delete) {
+        delete ptr;
+    }
+}
+
+template<typename T>
+static inline void delete_pointer_vector(const vector<T*>& to_delete)
+{
+    for (auto const& ptr : to_delete) {
+        delete ptr;
+    }
+}
+
+template<typename T>
+static inline bool compare_ptr_vectors(const vector<T*>& v1, const vector<T*>& v2)
+{
+    if (v1.size() != v2.size()) {
+        return false;
+    }
+
+    for(size_t i = 0; i < v1.size(); ++i) {
+        if (*(v1[i]) != *(v2[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template<typename T>
+static inline bool compare_ptr_vectors(const vector<const T*>& v1, const vector<const T*>& v2)
+{
+    if (v1.size() != v2.size()) {
+        return false;
+    }
+
+    for(size_t i = 0; i < v1.size(); ++i) {
+        if (*(v1[i]) != *(v2[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template<typename T>
+static inline void clone_vector(const vector<T*>& source, vector<T*> destination)
+{
+    destination.clear();
+    for(auto const& source_ptr : source) {
+        destination.push_back(static_cast<T*>(source_ptr->clone()));
+    }
+}
+
+template<typename T>
+static inline void clone_vector(const vector<const T*>& source, vector<T*> destination)
+{
+    destination.clear();
+    for(auto const& source_ptr : source) {
+        destination.push_back(static_cast<T*>(source_ptr->clone()));
+    }
+}
 
 // Implementation of SourceLocation
 SourceLocation SourceLocation::none(-1, -1);
@@ -279,7 +359,18 @@ i32 Index::get_numeral() const
     return numeral;
 }
 
+string Index::to_string() const
+{
+    return is_symbolic ? symbol : std::to_string(numeral);
+}
+
 // Implementation of Identifier
+Identifier::Identifier(const string& symbol)
+    : ASTBase(SourceLocation::none), symbol(symbol)
+{
+    // Nothing here
+}
+
 Identifier::Identifier(const SourceLocation& location, const string& symbol)
     : ASTBase(location), symbol(symbol)
 {
@@ -289,14 +380,12 @@ Identifier::Identifier(const SourceLocation& location, const string& symbol)
 Identifier::Identifier(const SourceLocation& location, const string& symbol, const vector<Index*>& indices)
     : ASTBase(location), symbol(symbol), indices(indices)
 {
-    const_indices.insert(const_indices.end(), indices.begin(), indices.end());
+    copy_vector(indices, const_indices);
 }
 
 Identifier::~Identifier()
 {
-    for(auto const& index : indices) {
-        delete index;
-    }
+    delete_pointer_vector(indices);
 }
 
 bool Identifier::operator == (const Identifier& other) const
@@ -309,17 +398,7 @@ bool Identifier::operator == (const Identifier& other) const
         return false;
     }
 
-    if (indices.size() != other.indices.size()) {
-        return false;
-    }
-
-    for(size_t i = 0; i < indices.size(); ++i) {
-        if (*indices[i] != *other.indices[i]) {
-            return false;
-        }
-    }
-
-    return true;
+    return compare_ptr_vectors(indices, other.indices);
 }
 
 bool Identifier::operator != (const Identifier& other) const
@@ -346,11 +425,7 @@ void Identifier::accept(ASTVisitorBase* visitor) const
 ASTBase* Identifier::clone() const
 {
     vector<Index*> cloned_indices;
-
-    for(auto const& index : indices) {
-        cloned_indices.push_back(static_cast<Index*>(index->clone()));
-    }
-
+    clone_vector(indices, cloned_indices);
     return new Identifier(location, symbol, cloned_indices);
 }
 
@@ -362,6 +437,22 @@ const string& Identifier::get_symbol() const
 const vector<const Index*> Identifier::get_indices() const
 {
     return const_indices;
+}
+
+string Identifier::to_string() const
+{
+    if (indices.size() == 0) {
+        return symbol;
+    }
+
+    ostringstream sstr;
+    sstr << "(_ " << symbol;
+    for (auto const& index : indices) {
+        sstr << " " << index->to_string();
+    }
+
+    sstr << ")";
+    return sstr.str();
 }
 
 
@@ -376,8 +467,7 @@ SortExpr::SortExpr(const SourceLocation& location, Identifier* identifier,
                    const vector<SortExpr*>& param_sorts)
     : ASTBase(location), identifier(identifier), param_sorts(param_sorts)
 {
-    const_param_sorts.insert(const_param_sorts.end(),
-                             param_sorts.begin(), param_sorts.end());
+    copy_vector(param_sorts, const_param_sorts);
 }
 
 SortExpr::~SortExpr()
@@ -395,17 +485,7 @@ bool SortExpr::operator == (const SortExpr& other) const
         return false;
     }
 
-    if (param_sorts.size() != other.param_sorts.size()) {
-        return false;
-    }
-
-    for(size_t i = 0; i < param_sorts.size(); ++i) {
-        if (*(param_sorts[i]) != *(other.param_sorts[i])) {
-            return false;
-        }
-    }
-
-    return true;
+    return compare_ptr_vectors(param_sorts, other.param_sorts);
 }
 
 bool SortExpr::operator != (const SortExpr& other) const
@@ -421,10 +501,7 @@ void SortExpr::accept(ASTVisitorBase* visitor) const
 ASTBase* SortExpr::clone() const
 {
     vector<SortExpr*> cloned_params;
-
-    for(auto const& param : param_sorts) {
-        cloned_params.push_back(static_cast<SortExpr*>(param->clone()));
-    }
+    clone_vector(param_sorts, cloned_params);
 
     return new SortExpr(location, static_cast<Identifier*>(identifier->clone()), cloned_params);
 }
@@ -479,16 +556,12 @@ DatatypeConstructor::DatatypeConstructor(const SourceLocation& location,
     : ASTBase(location), constructor_name(constructor_name),
       constructor_parameters(constructor_parameters)
 {
-    const_constructor_parameters.insert(const_constructor_parameters.end(),
-                                        constructor_parameters.begin(),
-                                        constructor_parameters.end());
+    copy_vector(constructor_parameters, const_constructor_parameters);
 }
 
 DatatypeConstructor::~DatatypeConstructor()
 {
-    for(auto const& param : constructor_parameters) {
-        delete param;
-    }
+    delete_pointer_vector(const_constructor_parameters);
 }
 
 void DatatypeConstructor::accept(ASTVisitorBase* visitor) const
@@ -499,9 +572,7 @@ void DatatypeConstructor::accept(ASTVisitorBase* visitor) const
 ASTBase* DatatypeConstructor::clone() const
 {
     vector<SortedSymbol*> cloned_params;
-    for(auto const& param : constructor_parameters) {
-        cloned_params.push_back(static_cast<SortedSymbol*>(param->clone()));
-    }
+    clone_vector(constructor_parameters, cloned_params);
     return new DatatypeConstructor(location, constructor_name, cloned_params);
 }
 
@@ -522,16 +593,12 @@ DatatypeConstructorList::DatatypeConstructorList(const SourceLocation& location,
     : ASTBase(location), sort_parameter_names(sort_parameter_names),
       datatype_constructors(datatype_constructors)
 {
-    const_datatype_constructors.insert(const_datatype_constructors.end(),
-                                       datatype_constructors.begin(),
-                                       datatype_constructors.end());
+    copy_vector(datatype_constructors, const_datatype_constructors);
 }
 
 DatatypeConstructorList::~DatatypeConstructorList()
 {
-    for(auto const& constructor : datatype_constructors) {
-        delete constructor;
-    }
+    delete_pointer_vector(datatype_constructors);
 }
 
 void DatatypeConstructorList::accept(ASTVisitorBase* visitor) const
@@ -542,10 +609,7 @@ void DatatypeConstructorList::accept(ASTVisitorBase* visitor) const
 ASTBase* DatatypeConstructorList::clone() const
 {
     vector<DatatypeConstructor*> cloned_constructors;
-    for(auto const& constructor : datatype_constructors) {
-        cloned_constructors.push_back(static_cast<DatatypeConstructor*>(constructor->clone()));
-    }
-
+    clone_vector(datatype_constructors, cloned_constructors);
     return new DatatypeConstructorList(location, sort_parameter_names, cloned_constructors);
 }
 
@@ -674,16 +738,12 @@ FunctionApplicationTerm::FunctionApplicationTerm(const SourceLocation& location,
                                                  const vector<Term*>& application_arguments)
     : Term(location), identifier(identifier), application_arguments(application_arguments)
 {
-    const_application_arguments.insert(const_application_arguments.end(),
-                                       application_arguments.begin(),
-                                       application_arguments.end());
+    copy_vector(application_arguments, const_application_arguments);
 }
 
 FunctionApplicationTerm::~FunctionApplicationTerm()
 {
-    for(auto const& arg : application_arguments) {
-        delete arg;
-    }
+    delete_pointer_vector(application_arguments);
 }
 
 void FunctionApplicationTerm::accept(ASTVisitorBase* visitor) const
@@ -694,10 +754,7 @@ void FunctionApplicationTerm::accept(ASTVisitorBase* visitor) const
 ASTBase* FunctionApplicationTerm::clone() const
 {
     vector<Term*> cloned_args;
-    for(auto const& arg : application_arguments) {
-        cloned_args.push_back(static_cast<Term*>(arg->clone()));
-    }
-
+    clone_vector(application_arguments, cloned_args);
     return new FunctionApplicationTerm(location, static_cast<Identifier*>(identifier->clone()),
                                        cloned_args);
 }
@@ -712,6 +769,39 @@ const vector<const Term*>& FunctionApplicationTerm::get_application_arguments() 
     return const_application_arguments;
 }
 
+// Implementation of SortedSymbol
+SortedSymbol::SortedSymbol(const SourceLocation& location, const string& symbol,
+                           SortExpr* sort_expr)
+    : ASTBase(location), symbol(symbol), sort_expr(sort_expr)
+{
+    // Nothing here
+}
+
+SortedSymbol::~SortedSymbol()
+{
+    delete sort_expr;
+}
+
+void SortedSymbol::accept(ASTVisitorBase* visitor) const
+{
+    visitor->visit_sorted_symbol(this);
+}
+
+ASTBase* SortedSymbol::clone() const
+{
+    return new SortedSymbol(location, symbol, static_cast<SortExpr*>(sort_expr->clone()));
+}
+
+const string& SortedSymbol::get_symbol() const
+{
+    return symbol;
+}
+
+const SortExpr* SortedSymbol::get_sort_expr() const
+{
+    return sort_expr;
+}
+
 // Implementation of QuantifiedTerm
 QuantifiedTerm::QuantifiedTerm(const SourceLocation& location,
                                QuantifierKind quantifier_kind,
@@ -720,17 +810,12 @@ QuantifiedTerm::QuantifiedTerm(const SourceLocation& location,
     : Term(location), quantifier_kind(quantifier_kind),
       quantified_symbols(quantified_symbols), quantified_term(quantified_term)
 {
-    const_quantified_symbols.insert(const_quantified_symbols.end(),
-                                    quantified_symbols.begin(),
-                                    quantified_symbols.end());
+    copy_vector(quantified_symbols, const_quantified_symbols);
 }
 
 QuantifiedTerm::~QuantifiedTerm()
 {
-    for(auto const& sorted_sym : quantified_symbols) {
-        delete sorted_sym;
-    }
-
+    delete_pointer_vector(quantified_symbols);
     delete quantified_term;
 }
 
@@ -742,10 +827,7 @@ void QuantifiedTerm::accept(ASTVisitorBase* visitor) const
 ASTBase* QuantifiedTerm::clone() const
 {
     vector<SortedSymbol*> cloned_quantified_symbols;
-    for(auto const& sorted_sym : quantified_symbols) {
-        cloned_quantified_symbols.push_back(static_cast<SortedSymbol*>(sorted_sym->clone()));
-    }
-
+    clone_vector(quantified_symbols, cloned_quantified_symbols);
     return new QuantifiedTerm(location, quantifier_kind, cloned_quantified_symbols,
                               static_cast<Term*>(quantified_term->clone()));
 }
@@ -804,15 +886,12 @@ LetTerm::LetTerm(const SourceLocation& location,
                  Term* let_body)
     : Term(location), bindings(bindings), let_body(let_body)
 {
-    const_bindings.insert(const_bindings.end(), bindings.begin(), bindings.end());
+    copy_vector(bindings, const_bindings);
 }
 
 LetTerm::~LetTerm()
 {
-    for(auto const& binding : bindings) {
-        delete binding;
-    }
-
+    delete_pointer_vector(bindings);
     delete let_body;
 }
 
@@ -824,10 +903,7 @@ void LetTerm::accept(ASTVisitorBase* visitor) const
 ASTBase* LetTerm::clone() const
 {
     vector<VariableBinding*> cloned_bindings;
-    for(auto const& binding : bindings) {
-        cloned_bindings.push_back(static_cast<VariableBinding*>(binding->clone()));
-    }
-
+    clone_vector(bindings, cloned_bindings);
     return new LetTerm(location, cloned_bindings, static_cast<Term*>(let_body->clone()));
 }
 
@@ -1025,16 +1101,12 @@ SynthFunCommand::SynthFunCommand(const SourceLocation& location, const string& f
       function_parameters(function_parameters), function_range_sort(function_range_sort),
       synthesis_grammar(synthesis_grammar)
 {
-    const_function_parameters.insert(const_function_parameters.end(),
-                                     function_parameters.begin(),
-                                     function_parameters.end());
+    copy_vector(function_parameters, const_function_parameters);
 }
 
 SynthFunCommand::~SynthFunCommand()
 {
-    for(auto const& param : function_parameters) {
-        delete param;
-    }
+    delete_pointer_vector(function_parameters);
     delete function_range_sort;
     delete synthesis_grammar;
 }
@@ -1047,10 +1119,7 @@ void SynthFunCommand::accept(ASTVisitorBase* visitor) const
 ASTBase* SynthFunCommand::clone() const
 {
     vector<SortedSymbol*> cloned_params;
-    for(auto const& param : function_parameters) {
-        cloned_params.push_back(static_cast<SortedSymbol*>(param->clone()));
-    }
-
+    clone_vector(function_parameters, cloned_params);
     return new SynthFunCommand(location, function_symbol, cloned_params,
                                static_cast<SortExpr*>(function_range_sort->clone()),
                                static_cast<Grammar*>(synthesis_grammar->clone()));
@@ -1101,11 +1170,7 @@ void SynthInvCommand::accept(ASTVisitorBase* visitor) const
 ASTBase* SynthInvCommand::clone() const
 {
     vector<SortedSymbol*> cloned_params;
-
-    for(auto const& param : get_function_parameters()) {
-        cloned_params.push_back(static_cast<SortedSymbol*>(param->clone()));
-    }
-
+    clone_vector(get_function_parameters(), cloned_params);
     return new SynthInvCommand(location, get_function_symbol(), cloned_params,
                                static_cast<Grammar*>(get_synthesis_grammar()->clone()));
 }
@@ -1155,17 +1220,12 @@ DefineFunCommand::DefineFunCommand(const SourceLocation& location,
       function_parameters(function_parameters), function_range_sort(function_range_sort),
       function_body(function_body)
 {
-    const_function_parameters.insert(const_function_parameters.end(),
-                                     function_parameters.begin(),
-                                     function_parameters.end());
+    copy_vector(function_parameters, const_function_parameters);
 }
 
 DefineFunCommand::~DefineFunCommand()
 {
-    for(auto const& param : function_parameters) {
-        delete param;
-    }
-
+    delete_pointer_vector(function_parameters);
     delete function_body;
 }
 
@@ -1177,10 +1237,7 @@ void DefineFunCommand::accept(ASTVisitorBase* visitor) const
 ASTBase* DefineFunCommand::clone() const
 {
     vector<SortedSymbol*> cloned_params;
-    for(auto const& param : function_parameters) {
-        cloned_params.push_back(static_cast<SortedSymbol*>(param->clone()));
-    }
-
+    clone_vector(function_parameters, cloned_params);
     return new DefineFunCommand(location, function_symbol,cloned_params,
                                 static_cast<SortExpr*>(function_range_sort->clone()),
                                 static_cast<Term*>(function_body->clone()));
@@ -1255,23 +1312,14 @@ DeclareDatatypesCommand::DeclareDatatypesCommand(const SourceLocation& location,
     : Command(location), sort_names_and_arities(sort_names_and_arities),
       datatype_constructor_lists(constructor_lists)
 {
-    const_sort_names_and_arities.insert(const_sort_names_and_arities.end(),
-                                        sort_names_and_arities.begin(),
-                                        sort_names_and_arities.end());
-    const_datatype_constructor_lists.insert(const_datatype_constructor_lists.end(),
-                                            datatype_constructor_lists.begin(),
-                                            datatype_constructor_lists.end());
+    copy_vector(sort_names_and_arities, const_sort_names_and_arities);
+    copy_vector(datatype_constructor_lists, const_datatype_constructor_lists);
 }
 
 DeclareDatatypesCommand::~DeclareDatatypesCommand()
 {
-    for(auto const& sort_name_and_arity : sort_names_and_arities) {
-        delete sort_name_and_arity;
-    }
-
-    for(auto const& constructor_list : datatype_constructor_lists) {
-        delete constructor_list;
-    }
+    delete_pointer_vector(sort_names_and_arities);
+    delete_pointer_vector(datatype_constructor_lists);
 }
 
 void DeclareDatatypesCommand::accept(ASTVisitorBase* visitor) const
@@ -1284,13 +1332,8 @@ ASTBase* DeclareDatatypesCommand::clone() const
     vector<SortNameAndArity*> cloned_sort_names_and_arities;
     vector<DatatypeConstructorList*> cloned_constructors;
 
-    for(auto const& sort_name_and_arity : sort_names_and_arities) {
-        cloned_sort_names_and_arities.push_back(static_cast<SortNameAndArity*>(sort_name_and_arity->clone()));
-    }
-
-    for(auto const& constructor_list : datatype_constructor_lists) {
-        cloned_constructors.push_back(static_cast<DatatypeConstructorList*>(constructor_list->clone()));
-    }
+    clone_vector(sort_names_and_arities, cloned_sort_names_and_arities);
+    clone_vector(datatype_constructor_lists, cloned_constructors);
 
     return new DeclareDatatypesCommand(location, cloned_sort_names_and_arities,
                                        cloned_constructors);
@@ -1504,16 +1547,13 @@ GroupedRuleList::GroupedRuleList(const SourceLocation& location,
     : ASTBase(location), head_symbol(head_symbol), head_symbol_sort(head_symbol_sort),
       expansion_rules(expansion_rules)
 {
-    const_expansion_rules.insert(const_expansion_rules.end(),
-                                 expansion_rules.begin(), expansion_rules.end());
+    copy_vector(expansion_rules, const_expansion_rules);
 }
 
 GroupedRuleList::~GroupedRuleList()
 {
     delete head_symbol_sort;
-    for(auto const& expansion_rule : expansion_rules) {
-        delete expansion_rule;
-    }
+    delete_pointer_vector(expansion_rules);
 }
 
 void GroupedRuleList::accept(ASTVisitorBase* visitor) const
@@ -1524,10 +1564,7 @@ void GroupedRuleList::accept(ASTVisitorBase* visitor) const
 ASTBase* GroupedRuleList::clone() const
 {
     vector<GrammarTerm*> cloned_expansion_rules;
-    for(auto const& expansion_rule : expansion_rules) {
-        cloned_expansion_rules.push_back(static_cast<GrammarTerm*>(expansion_rule->clone()));
-    }
-
+    clone_vector(expansion_rules, cloned_expansion_rules);
     return new GroupedRuleList(location, head_symbol,
                                static_cast<SortExpr*>(head_symbol_sort->clone()),
                                cloned_expansion_rules);
@@ -1555,9 +1592,7 @@ Grammar::Grammar(const SourceLocation& location,
                  const vector<GroupedRuleList*>& grouped_rule_lists)
     : ASTBase(location), grammar_nonterminals(grammar_nonterminals)
 {
-    const_grammar_nonterminals.insert(const_grammar_nonterminals.end(),
-                                      grammar_nonterminals.begin(),
-                                      grammar_nonterminals.end());
+    copy_vector(grammar_nonterminals, const_grammar_nonterminals);
 
     for(auto const& rule_list : grouped_rule_lists) {
         const string& head_symbol = rule_list->get_head_symbol();
@@ -1574,10 +1609,7 @@ Grammar::Grammar(const SourceLocation& location,
 
 Grammar::~Grammar()
 {
-    for(auto const& nonterminal : grammar_nonterminals) {
-        delete nonterminal;
-    }
-
+    delete_pointer_vector(grammar_nonterminals);
     for(auto it = grouped_rule_lists.begin(); it != grouped_rule_lists.end(); ++it) {
         delete it->second;
     }
@@ -1593,10 +1625,7 @@ ASTBase* Grammar::clone() const
     vector<SortedSymbol*> cloned_nonterminals;
     vector<GroupedRuleList*> cloned_rule_lists;
 
-    for(auto const& nonterminal : grammar_nonterminals) {
-        cloned_nonterminals.push_back(static_cast<SortedSymbol*>(nonterminal->clone()));
-    }
-
+    clone_vector(grammar_nonterminals, cloned_nonterminals);
     for(auto it = grouped_rule_lists.begin(); it != grouped_rule_lists.end(); ++it) {
         cloned_rule_lists.push_back(static_cast<GroupedRuleList*>(it->second->clone()));
     }
@@ -1619,16 +1648,12 @@ Program::Program(const SourceLocation& location,
                  const vector<Command*>& commands)
     : ASTBase(location), program_commands(commands)
 {
-    const_program_commands.insert(const_program_commands.end(),
-                                  program_commands.begin(),
-                                  program_commands.end());
+    copy_vector(program_commands, const_program_commands);
 }
 
 Program::~Program()
 {
-    for(auto const& command : program_commands) {
-        delete command;
-    }
+    delete_pointer_vector(program_commands);
 }
 
 void Program::accept(ASTVisitorBase* visitor) const
@@ -1639,16 +1664,322 @@ void Program::accept(ASTVisitorBase* visitor) const
 ASTBase* Program::clone() const
 {
     vector<Command*> cloned_commands;
-    for(auto const& command : program_commands) {
-        cloned_commands.push_back(static_cast<Command*>(command->clone()));
-    }
-
+    clone_vector(program_commands, cloned_commands);
     return new Program(location, cloned_commands);
 }
 
 const vector<const Command*>& Program::get_commands() const
 {
     return const_program_commands;
+}
+
+// Implementation of Sygus2Parser
+static inline void do_parse()
+{
+    if(yyparse() != 0) {
+        fclose(yyin);
+        throw Sygus2ParserException("Error parsing input file.");
+    }
+}
+
+Program* Sygus2Parser::parse(const string& file_name)
+{
+    Sygus2Bison::the_program = nullptr;
+
+    yyin = fopen(file_name.c_str(), "r");
+    if (yyin == NULL) {
+        throw Sygus2ParserException("Could not open input file \"" + file_name + "\"");
+    }
+    do_parse();
+    fclose(yyin);
+    return Sygus2Bison::the_program;
+}
+
+Program* Sygus2Parser::parse(istream& input_stream)
+{
+    Sygus2Bison::the_program = nullptr;
+    ostringstream contents;
+    contents << input_stream.rdbuf();
+    return parse(contents.str());
+}
+
+Program* Sygus2Parser::parse(FILE* handle)
+{
+    Sygus2Bison::the_program = nullptr;
+    yyin = handle;
+    do_parse();
+    return Sygus2Bison::the_program;
+}
+
+Program* Sygus2Parser::parse_string(const string& input_string)
+{
+    Sygus2Bison::the_program = nullptr;
+    auto buffer_handle = yy_scan_string(const_cast<char*>(input_string.c_str()));
+    if(yyparse() != 0) {
+        yy_delete_buffer(buffer_handle);
+        throw Sygus2ParserException("Error parsing string input.");
+    }
+    yy_delete_buffer(buffer_handle);
+    return Sygus2Bison::the_program;
+}
+
+Program* Sygus2Parser::parse(char* buffer)
+{
+    Sygus2Bison::the_program = nullptr;
+    auto buffer_handle = yy_scan_string(buffer);
+    if(yyparse() != 0) {
+        yy_delete_buffer(buffer_handle);
+        throw Sygus2ParserException("Error parsing input buffer");
+    }
+    yy_delete_buffer(buffer_handle);
+    return Sygus2Bison::the_program;
+}
+
+// Implementation of ASTVisitorBase
+ASTVisitorBase::ASTVisitorBase(const string& name)
+    : name(name)
+{
+    // Nothing here
+}
+
+ASTVisitorBase::~ASTVisitorBase()
+{
+    // Nothing here
+}
+
+const string& ASTVisitorBase::get_name() const
+{
+    return name;
+}
+
+void ASTVisitorBase::visit_index(const Index* index)
+{
+    // Nothing here
+}
+
+void ASTVisitorBase::visit_identifier(const Identifier* identifier)
+{
+    for (auto const& index : identifier->get_indices()) {
+        index->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_sort_expr(const SortExpr* sort_expr)
+{
+    sort_expr->get_identifier()->accept(this);
+    for(auto const& param_sort : sort_expr->get_param_sorts()) {
+        param_sort->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_sort_name_and_arity(const SortNameAndArity* sort_name_and_arity)
+{
+    // Nothing here
+}
+
+void ASTVisitorBase::visit_datatype_constructor(const DatatypeConstructor* datatype_constructor)
+{
+    for(auto const& constructor_parameter : datatype_constructor->get_constructor_parameters()) {
+        constructor_parameter->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_datatype_constructor_list(const DatatypeConstructorList* datatype_constructor_list)
+{
+    for(auto const& datatype_constructor : datatype_constructor_list->get_datatype_constructors()) {
+        datatype_constructor->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_literal(const Literal* literal)
+{
+    // Nothing here
+}
+
+void ASTVisitorBase::visit_literal_term(const LiteralTerm* literal_term)
+{
+    literal_term->get_literal()->accept(this);
+}
+
+void ASTVisitorBase::visit_identifier_term(const IdentifierTerm* identifier_term)
+{
+    identifier_term->get_identifier()->accept(this);
+}
+
+void ASTVisitorBase::visit_function_application_term(const FunctionApplicationTerm* function_application_term)
+{
+    function_application_term->get_identifier()->accept(this);
+    for(auto const& arg_term : function_application_term->get_application_arguments()) {
+        arg_term->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_sorted_symbol(const SortedSymbol* sorted_symbol)
+{
+    sorted_symbol->get_sort_expr()->accept(this);
+}
+
+void ASTVisitorBase::visit_quantified_term(const QuantifiedTerm* quantified_term)
+{
+    for(auto const& quantified_symbol : quantified_term->get_quantified_symbols()) {
+        quantified_symbol->accept(this);
+    }
+
+    quantified_term->get_quantified_term()->accept(this);
+}
+
+void ASTVisitorBase::visit_variable_binding(const VariableBinding* variable_binding)
+{
+    variable_binding->get_binding()->accept(this);
+}
+
+void ASTVisitorBase::visit_let_term(const LetTerm* let_term)
+{
+    for(auto const& binding : let_term->get_bindings()) {
+        binding->accept(this);
+    }
+
+    let_term->get_let_body()->accept(this);
+}
+
+void ASTVisitorBase::visit_check_synth_command(const CheckSynthCommand* check_synth_command)
+{
+    // Nothing here
+}
+
+void ASTVisitorBase::visit_constraint_command(const ConstraintCommand* constraint_command)
+{
+    constraint_command->get_constraint_term()->accept(this);
+}
+
+void ASTVisitorBase::visit_declare_var_command(const DeclareVarCommand* declare_var_command)
+{
+    declare_var_command->get_sort_expr()->accept(this);
+}
+
+void ASTVisitorBase::visit_inv_constraint_command(const InvConstraintCommand* inv_constraint_command)
+{
+    // Nothing here
+}
+
+void ASTVisitorBase::visit_set_feature_command(const SetFeatureCommand* set_feature_command)
+{
+    // Nothing here
+}
+
+void ASTVisitorBase::visit_synth_fun_command(const SynthFunCommand* synth_fun_command)
+{
+    for(auto const& param : synth_fun_command->get_function_parameters()) {
+        param->accept(this);
+    }
+
+    synth_fun_command->get_function_range_sort()->accept(this);
+
+    auto grammar = synth_fun_command->get_synthesis_grammar();
+    if (grammar != nullptr) {
+        synth_fun_command->get_synthesis_grammar()->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_synth_inv_command(const SynthInvCommand* synth_inv_command)
+{
+    for(auto const& param : synth_inv_command->get_function_parameters()) {
+        param->accept(this);
+    }
+
+    auto grammar = synth_inv_command->get_synthesis_grammar();
+    if (grammar != nullptr) {
+        synth_inv_command->get_synthesis_grammar()->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_declare_sort_command(const DeclareSortCommand* declare_sort_command)
+{
+    // Nothing here
+}
+
+void ASTVisitorBase::visit_define_fun_command(const DefineFunCommand* define_fun_command)
+{
+    for(auto const& param : define_fun_command->get_function_parameters()) {
+        param->accept(this);
+    }
+    define_fun_command->get_function_range_sort()->accept(this);
+    define_fun_command->get_function_body()->accept(this);
+}
+
+void ASTVisitorBase::visit_define_sort_command(const DefineSortCommand* define_sort_command)
+{
+    define_sort_command->get_sort_expr()->accept(this);
+}
+
+void ASTVisitorBase::visit_declare_datatypes_command(const DeclareDatatypesCommand* declare_datatypes_command)
+{
+    for(auto const& sort_name_and_arity : declare_datatypes_command->get_sort_names_and_arities()) {
+        sort_name_and_arity->accept(this);
+    }
+
+    for(auto const& datatype_constructor_list : declare_datatypes_command->get_datatype_constructor_lists()) {
+        datatype_constructor_list->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_declare_datatype_command(const DeclareDatatypeCommand* declare_datatype_command)
+{
+    declare_datatype_command->get_datatype_constructor_list()->accept(this);
+}
+
+void ASTVisitorBase::visit_set_logic_command(const SetLogicCommand* set_logic_command)
+{
+    // Nothing here
+}
+
+void ASTVisitorBase::visit_set_option_command(const SetOptionCommand* set_option_command)
+{
+    set_option_command->get_option_value()->accept(this);
+}
+
+void ASTVisitorBase::visit_constant_grammar_term(const ConstantGrammarTerm* constant_grammar_term)
+{
+    constant_grammar_term->get_sort_expr()->accept(this);
+}
+
+void ASTVisitorBase::visit_variable_grammar_term(const VariableGrammarTerm* variable_grammar_term)
+{
+    variable_grammar_term->get_sort_expr()->accept(this);
+}
+
+void ASTVisitorBase::visit_binder_free_grammar_term(const BinderFreeGrammarTerm* binder_free_term)
+{
+    binder_free_term->get_binder_free_term()->accept(this);
+}
+
+void ASTVisitorBase::visit_grouped_rule_list(const GroupedRuleList* grouped_rule_list)
+{
+    grouped_rule_list->get_head_symbol_sort()->accept(this);
+    for (auto const& expansion : grouped_rule_list->get_expansion_rules()) {
+        expansion->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_grammar(const Grammar* grammar)
+{
+    for(auto const& nonterminal : grammar->get_nonterminals()) {
+        nonterminal->accept(this);
+    }
+
+    auto const start = grammar->get_grouped_rule_lists().begin();
+    auto const end = grammar->get_grouped_rule_lists().end();
+
+    for(auto it = start; it != end; ++it) {
+        it->second->accept(this);
+    }
+}
+
+void ASTVisitorBase::visit_program(const Program* program)
+{
+    for(auto const& command : program->get_commands()) {
+        command->accept(this);
+    }
 }
 
 } /* end namespace */

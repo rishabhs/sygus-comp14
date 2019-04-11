@@ -120,6 +120,7 @@ public:
     bool is_numeral() const;
     const string& get_symbol() const;
     i32 get_numeral() const;
+    string to_string() const;
 };
 
 class Identifier : public ASTBase
@@ -130,6 +131,7 @@ private:
     vector<const Index*> const_indices;
 
 public:
+    Identifier(const string& symbol);
     Identifier(const SourceLocation& location, const string& symbol);
     Identifier(const SourceLocation& location, const string& symbol, const vector<Index*>& indices);
     Identifier(const Identifier& other);
@@ -152,6 +154,7 @@ public:
     // accessors
     const string& get_symbol() const;
     const vector<const Index*> get_indices() const;
+    string to_string() const;
 };
 
 
@@ -825,34 +828,30 @@ public:
 // Class definition for the sygus 2.0 parser
 class Sygus2Parser
 {
-private:
-    Program* TheProgram;
-    SymbolTable* TheSymbolTable;
-
-    // type-state variable :-(
-    bool ParseComplete;
-
 public:
-    Sygus2Parser();
-    ~Sygus2Parser();
+    Sygus2Parser() = delete;
+    Sygus2Parser(const Sygus2Parser& other) = delete;
+    Sygus2Parser(Sygus2Parser&& other) = delete;
+    Sygus2Parser& operator = (const Sygus2Parser& other) = delete;
+    Sygus2Parser& operator = (Sygus2Parser&& other) = delete;
 
     // The main parse action
-    Program* parse(const string& file_name);
-
-    // Accessors
-    Program* GetProgram() const;
-    SymbolTable* GetSymbolTable() const;
+    static Program* parse(const string& file_name);
+    static Program* parse(istream& input_stream);
+    static Program* parse(FILE* handle);
+    static Program* parse_string(const string& input_string);
+    static Program* parse(char* buffer);
 };
 
 class ASTVisitorBase
 {
 private:
-    string Name;
+    string name;
 public:
-    ASTVisitorBase(const string& Name);
+    ASTVisitorBase(const string& name);
     virtual ~ASTVisitorBase();
 
-    const string& GetName() const;
+    const string& get_name() const;
 
     virtual void visit_index(const Index* index);
     virtual void visit_identifier(const Identifier* identifier);
@@ -864,6 +863,7 @@ public:
     virtual void visit_literal_term(const LiteralTerm* literal_term);
     virtual void visit_identifier_term(const IdentifierTerm* identifier_term);
     virtual void visit_function_application_term(const FunctionApplicationTerm* function_application_term);
+    virtual void visit_sorted_symbol(const SortedSymbol* sorted_symbol);
     virtual void visit_quantified_term(const QuantifiedTerm* quantified_term);
     virtual void visit_variable_binding(const VariableBinding* variable_binding);
     virtual void visit_let_term(const LetTerm* let_term);
@@ -890,45 +890,6 @@ public:
 
     virtual void visit_program(const Program* program);
 };
-
-
-// // Class definition for the synthlib2 parser
-// class SynthLib2Parser
-// {
-// private:
-//     Program* TheProgram;
-//     SymbolTable* TheSymbolTable;
-
-//     // type-state variable :-(
-//     bool ParseComplete;
-
-// public:
-//     SynthLib2Parser();
-//     ~SynthLib2Parser();
-
-//     // The main parse action
-//     void operator () (const string& Filename, bool Pedantic = false);
-//     void operator () (FILE* Handle, bool Pedantic = false);
-
-//     // Accessors
-//     Program* GetProgram() const;
-//     SymbolTable* GetSymbolTable() const;
-// };
-
-// // General vector of AST cloner
-// template<typename T>
-// static inline vector<T> CloneVector(const vector<T>& Vec)
-// {
-//     const u32 NumElems = Vec.size();
-//     vector<T> Retval(NumElems);
-
-//     for(u32 i = 0; i < NumElems; ++i) {
-//         Retval[i] = static_cast<T>(Vec[i]->Clone());
-//     }
-//     return Retval;
-// }
-
-
 } /* End namespace */
 
 #endif /* __SYNTH_LIB2_PARSER_IFACE_H */

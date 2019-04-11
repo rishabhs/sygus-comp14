@@ -34,14 +34,101 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#if !defined __SYNTHLIB2_PARSER_SYMBOL_TABLE_HPP
-#define __SYNTHLIB2_PARSER_SYMBOL_TABLE_HPP
+#if !defined __SYGUS2_PARSER_SYMBOL_TABLE_HPP
+#define __SYGUS2_PARSER_SYMBOL_TABLE_HPP
 
-#include "Sygus2ParserFwd.hpp"
-#include "Sygus2ParserExceptions.hpp"
-#include "Sygus2ParserIFace.hpp"
+#include "include/Sygus2ParserFwd.hpp"
+#include "include/Sygus2ParserExceptions.hpp"
+#include "include/Sygus2ParserIFace.hpp"
 
-namespace SynthLib2Parser {
+namespace Sygus2Parser {
+enum class SymbolTableEntryKind
+    {
+     Variable,
+     Function,
+     Sort,
+     GrammarSymbol,
+    };
+
+enum class VariableKind
+    {
+     Universal,
+     Parameter,
+     Quantified,
+     LetBound
+    };
+
+enum class FunctionKind
+    {
+     Universal,
+     SynthFun,
+     SynthInv,
+     UserDefined
+    };
+
+enum class SortKind
+    {
+     Primitive,
+     UserDefined,
+     Uninterpreted
+    };
+
+class SymbolTableEntry
+{
+private:
+    SymbolTableEntryKind kind;
+    Identifier identifier;
+
+    SymbolTableEntry() = delete;
+    SymbolTableEntry(const SymbolTableEntry& other) = delete;
+    SymbolTableEntry(SymbolTableEntry&& other) = delete;
+    SymbolTableEntry& operator = (const SymbolTableEntry& other) = delete;
+    SymbolTableEntry& operator = (SymbolTableEntry&& other) = delete;
+
+protected:
+    SymbolTableEntry(SymbolTableEntryKind kind, const Identifier& identifier);
+
+public:
+    SymbolTableEntryKind get_kind() const;
+    const Identifier& get_identifier() const;
+};
+
+class FunctionDescriptor : SymbolTableEntry
+{
+private:
+    FunctionKind kind;
+    vector<SortDescriptor*> argument_sorts;
+    vector<string> argument_names;
+    SortDescriptor* range_sort;
+    Term* function_body;
+    Grammar* synthesis_grammar;
+
+public:
+};
+
+class SortDescriptor : SymbolTableEntry
+{
+private:
+    SortKind kind;
+    u32 sort_arity;
+    vector<SortDescriptor*> sort_parameters;
+
+public:
+    // for non-parametric sorts, user-defined or primitive.
+    SortDescriptor(const Identifier& identifier, SortKind kind);
+    // for uninterpreted sorts
+    SortDescriptor(const Identifier& identifier, SortKind kind, u32 sort_arity);
+    // for parametric sorts, user-defined or primitive.
+    SortDescriptor(const Identifier& identifier, SortKind kind, const vector<SortDescriptor*>& sort_parameters);
+
+    ~SortDescriptor();
+
+    const Identifier& get_identifier() const;
+    SortKind get_kind() const;
+    u32 get_arity() const;
+    const vector<SortDescriptor*>& get_sort_parameters() const;
+    bool is_parametric() const;
+};
 
 
     // definitions for the symbol table and auxiliary structures
@@ -150,4 +237,4 @@ namespace SynthLib2Parser {
 
 } /* end namespace */
 
-#endif /* __SYNTHLIB2_PARSER_SYMBOL_TABLE_HPP */
+#endif /* __SYGUS2_PARSER_SYMBOL_TABLE_HPP */

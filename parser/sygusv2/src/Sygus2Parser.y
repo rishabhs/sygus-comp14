@@ -47,7 +47,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     namespace Sygus2Bison {
         Program* the_program = NULL;
-        string* file_name = NULL;
     }
 
     long yylinenum = 1;
