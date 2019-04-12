@@ -44,34 +44,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Sygus2Parser {
 
-class SymbolTableKey;
-class SymbolTableEntry;
-class FunctionDescriptor;
-class VariableDescriptor;
-class SortDescriptor;
-class GrammarSymbolDescriptor;
-
-typedef shared_ptr<SymbolTableEntry> SymbolTableEntrySPtr;
-typedef shared_ptr<FunctionDescriptor> FunctionDescriptorSPtr;
-typedef shared_ptr<VariableDescriptor> VariableDescriptorSPtr;
-typedef shared_ptr<SortDescriptor> SortDescriptorSPtr;
-typedef shared_ptr<GrammarSymbolDescriptor> GrammarSymbolDescriptorSPtr;
-
-typedef shared_ptr<const SymbolTableEntry> SymbolTableEntryCSPtr;
-typedef shared_ptr<const FunctionDescriptor> FunctionDescriptorCSPtr;
-typedef shared_ptr<const VariableDescriptor> VariableDescriptorCSPtr;
-typedef shared_ptr<const SortDescriptor> SortDescriptorCSPtr;
-typedef shared_ptr<const GrammarSymbolDescriptor> GrammarSymbolDescriptorCSPtr;
-
 class SymbolTableKey : public Hashable<SymbolTableKey>, public Equatable<SymbolTableKey>
 {
 private:
     Identifier identifier;
-    vector<const SortDescriptor*> argument_sorts;
+    vector<SortDescriptorCSPtr> argument_sorts;
 
 public:
     SymbolTableKey(const Identifier& identifier);
-    SymbolTableKey(const Identifier& identifier, const vector<const SortDescriptor*>& argument_sorts);
+    SymbolTableKey(const Identifier& identifier, const vector<SortDescriptorCSPtr>& argument_sorts);
 
     SymbolTableKey(const SymbolTableKey& other);
     SymbolTableKey(SymbolTableKey&& other);
@@ -85,7 +66,7 @@ public:
 
     // accessors
     const Identifier& get_identifier() const;
-    const vector<const SortDescriptor*>& get_argument_sorts() const;
+    const vector<SortDescriptorCSPtr>& get_argument_sorts() const;
 };
 
 enum class SymbolTableEntryKind
@@ -118,7 +99,7 @@ enum class SortKind
      Uninterpreted
     };
 
-class SymbolTableEntry : public Downcastable<SymbolTableEntry>
+class SymbolTableEntry : public Downcastable<SymbolTableEntry>, public RefCountable<SymbolTableEntry>
 {
 private:
     SymbolTableEntryKind kind;
@@ -138,6 +119,9 @@ public:
     const Identifier& get_identifier() const;
 };
 
+typedef ManagedPointer<SymbolTableEntry> SymbolTableEntrySPtr;
+typedef ManagedConstPointer<SymbolTableEntry> SymbolTableEntryCSPtr;
+
 class FunctionDescriptor : public SymbolTableEntry,
                            public Equatable<FunctionDescriptor>,
                            public Hashable<FunctionDescriptor>
@@ -147,8 +131,8 @@ private:
     vector<SortDescriptorCSPtr> argument_sorts;
     vector<string> argument_names;
     SortDescriptorCSPtr range_sort;
-    Term* function_body;
-    Grammar* synthesis_grammar;
+    TermCSPtr function_body;
+    GrammarCSPtr synthesis_grammar;
 
 public:
     // For user defined functions
@@ -164,14 +148,14 @@ public:
                        const vector<SortDescriptorCSPtr>& argument_sorts,
                        const vector<string>& argument_names,
                        SortDescriptorCSPtr range_sort,
-                       Grammar* synthesis_grammar,
+                       GrammarCSPtr synthesis_grammar,
                        FunctionKind kind = FunctionKind::SynthFun);
 
     // For invariants to be synthesized
     FunctionDescriptor(const Identifier& identifier,
                        const vector<SortDescriptorCSPtr>& argument_sorts,
                        const vector<string>& argument_names,
-                       Grammar* synthesis_grammar,
+                       GrammarCSPtr synthesis_grammar,
                        FunctionKind = FunctionKind::SynthInv);
 
     virtual ~FunctionDescriptor();
@@ -184,10 +168,13 @@ public:
     const vector<SortDescriptorCSPtr>& get_argument_sorts() const;
     const vector<string>& get_argument_names() const;
     SortDescriptorCSPtr get_range_sort() const;
-    const Term* get_function_body() const;
-    const Grammar* get_synthesis_grammar() const;
+    TermCSPtr get_function_body() const;
+    GrammarCSPtr get_synthesis_grammar() const;
     u32 get_arity() const;
 };
+
+typedef ManagedPointer<FunctionDescriptor> FunctionDescriptorSPtr;
+typedef ManagedConstPointer<FunctionDescriptor> FunctionDescriptorCSPtr;
 
 class SortDescriptor : public SymbolTableEntry,
                        public Equatable<SortDescriptor>
@@ -218,6 +205,9 @@ public:
     bool is_parametric() const;
 };
 
+typedef ManagedPointer<SortDescriptor> SortDescriptorSPtr;
+typedef ManagedConstPointer<SortDescriptor> SortDescriptorCSPtr;
+
 class VariableDescriptor : public SymbolTableEntry
 {
 private:
@@ -226,21 +216,78 @@ private:
 
 public:
     VariableDescriptor(const Identifier& identifier, VariableKind kind,
-                       const SortDescriptor* sort_descriptor);
+                       SortDescriptorCSPtr sort_descriptor);
     virtual ~VariableDescriptor();
 
     // accessors
     VariableKind get_kind() const;
-    const SortDescriptor* get_sort_descriptor() const;
+    SortDescriptorCSPtr get_sort_descriptor() const;
 };
+
+typedef ManagedPointer<VariableDescriptor> VariableDescriptorSPtr;
+typedef ManagedConstPointer<VariableDescriptor> VariableDescriptorCSPtr;
 
 class GrammarSymbolDescriptor : public SymbolTableEntry
 {
 private:
-    const SortDescriptor* sort_descriptor;
+    SortDescriptorCSPtr sort_descriptor;
 
 public:
-    GrammarSymbolDescriptor(const Identifier& identifier, const SortDescriptor* sort_descriptor);
+    GrammarSymbolDescriptor(const Identifier& identifier, SortDescriptorCSPtr sort_descriptor);
+    virtual ~GrammarSymbolDescriptor();
+
+    // accessors
+    SortDescriptorCSPtr get_sort_descriptor() const;
+};
+
+typedef ManagedPointer<GrammarSymbolDescriptor> GrammarSymbolDescriptorSPtr;
+typedef ManagedConstPointer<GrammarSymbolDescriptor> GrammarSymbolDescriptorCSPtr;
+
+class SymbolTable;
+
+class SymbolTableScope : public RefCountable<SymbolTableScope>
+{
+    friend class SymbolTable;
+
+private:
+    unordered_map<SymbolTableKey, SymbolTableEntrySPtr,
+                  Hasher<SymbolTableKey>, Equals<SymbolTableKey>> mappings;
+
+    void add_mapping(SymbolTableKey key, SymbolTableEntrySPtr entry);
+
+public:
+    SymbolTableScope();
+    SymbolTableScope(const SymbolTableScope& other);
+    SymbolTableScope(SymbolTableScope&& other);
+
+    virtual ~SymbolTableScope();
+
+    // For sort names, variable names and grammar symbols
+    SymbolTableEntryCSPtr lookup(SymbolTableKey key) const;
+};
+
+typedef ManagedPointer<SymbolTableScope> SymbolTableScopeSPtr;
+typedef ManagedConstPointer<SymbolTableScope> SymbolTableScopeCSPtr;
+
+class SymbolTable : public RefCountable<SymbolTable>
+{
+private:
+    stack<SymbolTableScopeSPtr> scope_stack;
+
+public:
+    SymbolTable();
+    virtual ~SymbolTable();
+
+    void push_scope();
+    SymbolTableScopeSPtr pop_scope();
+
+    SymbolTableEntryCSPtr lookup(const Identifier& identifier) const;
+    SortDescriptorCSPtr lookup_sort(const Identifier& identifier) const;
+    VariableDescriptorCSPtr lookup_variable(const Identifier& identifier) const;
+    GrammarSymbolDescriptorCSPtr lookup_grammar_symbol(const Identifier& identifier) const;
+    FunctionDescriptorCSPtr lookup_function(const Identifier& identifier) const;
+    FunctionDescriptorCSPtr lookup_function(const Identifier& identifier,
+                                            const vector<SortDescriptorCSPtr>& argument_sorts) const;
 };
 
 } /* end namespace */
