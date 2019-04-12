@@ -37,11 +37,57 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined __SYGUS2_PARSER_SYMBOL_TABLE_HPP
 #define __SYGUS2_PARSER_SYMBOL_TABLE_HPP
 
-#include "include/Sygus2ParserFwd.hpp"
-#include "include/Sygus2ParserExceptions.hpp"
-#include "include/Sygus2ParserIFace.hpp"
+#include "BaseTypes.hpp"
+#include "Sygus2ParserFwd.hpp"
+#include <memory>
+#include <unordered_map>
 
 namespace Sygus2Parser {
+
+class SymbolTableKey;
+class SymbolTableEntry;
+class FunctionDescriptor;
+class VariableDescriptor;
+class SortDescriptor;
+class GrammarSymbolDescriptor;
+
+typedef shared_ptr<SymbolTableEntry> SymbolTableEntrySPtr;
+typedef shared_ptr<FunctionDescriptor> FunctionDescriptorSPtr;
+typedef shared_ptr<VariableDescriptor> VariableDescriptorSPtr;
+typedef shared_ptr<SortDescriptor> SortDescriptorSPtr;
+typedef shared_ptr<GrammarSymbolDescriptor> GrammarSymbolDescriptorSPtr;
+
+typedef shared_ptr<const SymbolTableEntry> SymbolTableEntryCSPtr;
+typedef shared_ptr<const FunctionDescriptor> FunctionDescriptorCSPtr;
+typedef shared_ptr<const VariableDescriptor> VariableDescriptorCSPtr;
+typedef shared_ptr<const SortDescriptor> SortDescriptorCSPtr;
+typedef shared_ptr<const GrammarSymbolDescriptor> GrammarSymbolDescriptorCSPtr;
+
+class SymbolTableKey : public Hashable<SymbolTableKey>, public Equatable<SymbolTableKey>
+{
+private:
+    Identifier identifier;
+    vector<const SortDescriptor*> argument_sorts;
+
+public:
+    SymbolTableKey(const Identifier& identifier);
+    SymbolTableKey(const Identifier& identifier, const vector<const SortDescriptor*>& argument_sorts);
+
+    SymbolTableKey(const SymbolTableKey& other);
+    SymbolTableKey(SymbolTableKey&& other);
+    ~SymbolTableKey();
+
+    SymbolTableKey& operator = (const SymbolTableKey& other);
+    SymbolTableKey& operator = (SymbolTableKey&& other);
+
+    bool equals_(const SymbolTableKey& other) const;
+    u64 compute_hash_() const;
+
+    // accessors
+    const Identifier& get_identifier() const;
+    const vector<const SortDescriptor*>& get_argument_sorts() const;
+};
+
 enum class SymbolTableEntryKind
     {
      Variable,
@@ -60,7 +106,6 @@ enum class VariableKind
 
 enum class FunctionKind
     {
-     Universal,
      SynthFun,
      SynthInv,
      UserDefined
@@ -73,7 +118,7 @@ enum class SortKind
      Uninterpreted
     };
 
-class SymbolTableEntry
+class SymbolTableEntry : public Downcastable<SymbolTableEntry>
 {
 private:
     SymbolTableEntryKind kind;
@@ -93,25 +138,65 @@ public:
     const Identifier& get_identifier() const;
 };
 
-class FunctionDescriptor : SymbolTableEntry
+class FunctionDescriptor : public SymbolTableEntry,
+                           public Equatable<FunctionDescriptor>,
+                           public Hashable<FunctionDescriptor>
 {
 private:
     FunctionKind kind;
-    vector<SortDescriptor*> argument_sorts;
+    vector<SortDescriptorCSPtr> argument_sorts;
     vector<string> argument_names;
-    SortDescriptor* range_sort;
+    SortDescriptorCSPtr range_sort;
     Term* function_body;
     Grammar* synthesis_grammar;
 
 public:
+    // For user defined functions
+    FunctionDescriptor(const Identifier& identifier,
+                       const vector<SortDescriptorCSPtr>& argument_sorts,
+                       const vector<string>& argument_names,
+                       SortDescriptorCSPtr range_sort,
+                       Term* function_body,
+                       FunctionKind kind = FunctionKind::UserDefined);
+
+    // For functions to be synthesized
+    FunctionDescriptor(const Identifier& identifier,
+                       const vector<SortDescriptorCSPtr>& argument_sorts,
+                       const vector<string>& argument_names,
+                       SortDescriptorCSPtr range_sort,
+                       Grammar* synthesis_grammar,
+                       FunctionKind kind = FunctionKind::SynthFun);
+
+    // For invariants to be synthesized
+    FunctionDescriptor(const Identifier& identifier,
+                       const vector<SortDescriptorCSPtr>& argument_sorts,
+                       const vector<string>& argument_names,
+                       Grammar* synthesis_grammar,
+                       FunctionKind = FunctionKind::SynthInv);
+
+    virtual ~FunctionDescriptor();
+
+    bool equals_(const FunctionDescriptor& other) const;
+    u64 compute_hash_() const;
+
+    // accessors
+    FunctionKind get_kind() const;
+    const vector<SortDescriptorCSPtr>& get_argument_sorts() const;
+    const vector<string>& get_argument_names() const;
+    SortDescriptorCSPtr get_range_sort() const;
+    const Term* get_function_body() const;
+    const Grammar* get_synthesis_grammar() const;
+    u32 get_arity() const;
 };
 
-class SortDescriptor : SymbolTableEntry
+class SortDescriptor : public SymbolTableEntry,
+                       public Equatable<SortDescriptor>
+                       public Hashable<SortDescriptor>
 {
 private:
     SortKind kind;
     u32 sort_arity;
-    vector<SortDescriptor*> sort_parameters;
+    vector<SortDescriptorCSPtr> sort_parameters;
 
 public:
     // for non-parametric sorts, user-defined or primitive.
@@ -123,117 +208,40 @@ public:
 
     ~SortDescriptor();
 
+    bool equals_(const SortDescriptor& other) const;
+    u64 compute_hash_() const;
+
     const Identifier& get_identifier() const;
     SortKind get_kind() const;
     u32 get_arity() const;
-    const vector<SortDescriptor*>& get_sort_parameters() const;
+    const vector<SortDescriptorCSPtr>& get_sort_parameters() const;
     bool is_parametric() const;
 };
 
+class VariableDescriptor : public SymbolTableEntry
+{
+private:
+    VariableKind kind;
+    SortDescriptorCSPtr sort_descriptor;
 
-    // definitions for the symbol table and auxiliary structures
-    // A symbol table entry
-    enum SymtabEntryKind {
-        STENTRY_QVARIABLE,
-        STENTRY_BVARIABLE,
-        STENTRY_ARG,
-        STENTRY_USER_FUNCTION,
-        STENTRY_THEORY_FUNCTION,
-        STENTRY_SYNTH_FUNCTION,
-        STENTRY_UNINTERP_FUNCTION,
-        STENTRY_SORT
-    };
+public:
+    VariableDescriptor(const Identifier& identifier, VariableKind kind,
+                       const SortDescriptor* sort_descriptor);
+    virtual ~VariableDescriptor();
 
-    class SymbolTableEntry
-    {
-    private:
-        SymtabEntryKind STEKind;
-        const SortExpr* STESort;
-        // This field is valid only for functions
-        FunDefCmd* FunDef;
-        // This field is valid only for let bound variables
-        Term* LetBoundTerm;
+    // accessors
+    VariableKind get_kind() const;
+    const SortDescriptor* get_sort_descriptor() const;
+};
 
-    public:
-        // For QVARS, ARGS, SORTS, THEORY FUNCTIONS and SYNTH_FUNCTIONS
-        SymbolTableEntry(SymtabEntryKind STEKind, const SortExpr* STESort);
-        // For USER_FUNCTIONs
-        SymbolTableEntry(FunDefCmd* FunDef);
-        // for BVARS
-        SymbolTableEntry(Term* LetBoundTerm, const SortExpr* TermSort);
-        virtual ~SymbolTableEntry();
+class GrammarSymbolDescriptor : public SymbolTableEntry
+{
+private:
+    const SortDescriptor* sort_descriptor;
 
-        // accessors
-        SymtabEntryKind GetKind() const;
-        const SortExpr* GetSort() const;
-        FunDefCmd* GetFunDef() const;
-        Term* GetLetBoundTerm() const;
-
-        // Cloner
-        SymbolTableEntry* Clone() const;
-    };
-
-    // Scopes for symbol tables
-    class SymbolTableScope
-    {
-    private:
-        unordered_map<string, SymbolTableEntry*> Bindings;
-
-    public:
-        SymbolTableScope();
-        virtual ~SymbolTableScope();
-
-        SymbolTableEntry* Lookup(const string& Identifier) const;
-        void Bind(const string& Identifier, SymbolTableEntry* STE);
-        void CheckedBind(const string& Identifier, SymbolTableEntry* STE);
-
-        // Cloning
-        SymbolTableScope* Clone() const;
-    };
-
-    // Finally, the class for the symbol table
-    class SymbolTable
-    {
-    private:
-        vector<SymbolTableScope*> Scopes;
-
-        // Utility functions for name mangling
-        inline string MangleName(const string& Name, const vector<const SortExpr*>& ArgSorts) const;
-        inline string MangleSortName(const string& Name) const;
-
-    public:
-        SymbolTable();
-        ~SymbolTable();
-
-        void Push();
-        void Push(SymbolTableScope* Scope);
-        SymbolTableScope* Pop();
-
-        const SymbolTableEntry* Lookup(const string& Identifier) const;
-        const SymbolTableEntry* LookupSort(const string& SortName) const;
-        const SymbolTableEntry* LookupSortRecursive(const string& SortName) const;
-        const SymbolTableEntry* LookupVariable(const string& VarName) const;
-        const SymbolTableEntry* LookupFun(const string& FunName,
-                                          const vector<const SortExpr*>& ArgSorts) const;
-
-        void BindSort(const string& Name, SortExpr* Sort);
-        void BindVariable(const string& Name, SortExpr* Sort);
-        void BindLetVariable(const string& Name, Term* LetBoundTerm);
-        void BindFormal(const string& Name, const SortExpr* Sort);
-        void BindTheoryFun(const string& Name,
-                           const vector<const SortExpr*>& ArgSorts,
-                           const SortExpr* RetSort);
-        void BindUserFun(FunDefCmd* FunDef);
-        void BindSynthFun(const string& Name,
-                          const vector<const SortExpr*>& ArgSorts,
-                          const SortExpr* RetSort);
-        void BindUninterpFun(const string& Name,
-                             const vector<const SortExpr*>& ArgSorts,
-                             const SortExpr* RetSort);
-
-        // Utility function for recursively looking up named sorts
-        const SortExpr* ResolveSort(const SortExpr* TheSort) const;
-    };
+public:
+    GrammarSymbolDescriptor(const Identifier& identifier, const SortDescriptor* sort_descriptor);
+};
 
 } /* end namespace */
 

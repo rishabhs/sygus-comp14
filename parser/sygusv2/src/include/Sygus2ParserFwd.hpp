@@ -38,79 +38,12 @@
 #define __SYGUS2_PARSER_FWD_HPP
 
 #include "Sygus2ParserCommon.hpp"
+#include <memory>
 
 namespace Sygus2Parser {
-
-// class representing the location
-class SourceLocation;
-
-// Base class for all AST nodes
-class ASTBase;
-
-// Base class for all commands
-class ASTCmd;
-
-// Commands
-class CheckSynthCmd;
-class ConstraintCmd;
-class DeclareVarCmd;
-class InvConstraintCmd;
-class SetFeatureCmd;
-class SynthFunCmd;
-class SynthInvCmd;
-class DeclareDatatypeCmd;
-class DeclareDatatypesCmd;
-class DeclareSortCmd;
-class DefineFunCmd;
-class SetLogicCmd;
-class SetOptionCmd;
-
-// Base class for all sort exprs
-class SortExpr;
-
-// Identifiers
-class Identifier;
-
-// Indices
-class Index;
-
-// Base class for all terms
-class Term;
-
-class FunTerm;
-class LiteralTerm;
-class SymbolTerm;
-class LetTerm;
-class QuantifiedTerm;
-
-// Sorted symbol
-class SortedSymbol;
-class VariableBinding;
-
-// Base class for all GTerms
-class GTerm;
-
-class ConstantGTerm;
-class VariableGTerm;
-class BFGTerm;
-
-class GrammarRule;
-class Grammar;
-
-// Literals
-class Literal;
-
-// Visitors
-class ASTVisitorBase;
-
-// Symbol tables
-class SymbolTable;
-class SymbolTableScope;
-class SymbolTableEntry;
-
 // printing
-extern ostream& operator << (ostream& out, const ASTBase& ast);
-extern ostream& operator << (ostream& out, const SourceLocation& location);
+// extern ostream& operator << (ostream& out, const ASTBase& ast);
+// extern ostream& operator << (ostream& out, const SourceLocation& location);
 
 } /* end namespace */
 

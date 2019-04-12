@@ -36,9 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "include/Sygus2ParserIFace.hpp"
 #include "include/Sygus2ParserExceptions.hpp"
- // #include "include/SymbolTable.hpp"
- // #include "include/LogicSymbols.hpp"
- // #include "include/SymtabBuilder.hpp"
 #include <algorithm>
 #include <boost/functional/hash.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -55,39 +52,19 @@ extern YY_BUFFER_STATE yy_scan_string(char* str);
 extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
 namespace Sygus2Parser {
+
 // helper functions to clone vectors
 template<typename T>
-static inline void copy_vector(const vector<T>& source, vector<T>& destination)
+static inline void copy_vector(const vector<ManagedPointer<T>>& source,
+                               vector<ManagedConstPointer<T>>& destination)
 {
     destination.clear();
     destination.insert(destination.end(), source.begin(), source.end());
 }
 
 template<typename T>
-static inline void copy_vector(const vector<T*>& source, vector<const T*>& destination)
-{
-    destination.clear();
-    destination.insert(destination.end(), source.begin(), source.end());
-}
-
-template<typename T>
-static inline void delete_pointer_vector(const vector<const T*>& to_delete)
-{
-    for (auto const& ptr : to_delete) {
-        delete ptr;
-    }
-}
-
-template<typename T>
-static inline void delete_pointer_vector(const vector<T*>& to_delete)
-{
-    for (auto const& ptr : to_delete) {
-        delete ptr;
-    }
-}
-
-template<typename T>
-static inline bool compare_ptr_vectors(const vector<T*>& v1, const vector<T*>& v2)
+static inline bool compare_ptr_vectors(const vector<ManagedPointer<T>>& v1,
+                                       const vector<ManagedPointer<T>>& v2)
 {
     if (v1.size() != v2.size()) {
         return false;
@@ -102,7 +79,8 @@ static inline bool compare_ptr_vectors(const vector<T*>& v1, const vector<T*>& v
 }
 
 template<typename T>
-static inline bool compare_ptr_vectors(const vector<const T*>& v1, const vector<const T*>& v2)
+static inline bool compare_ptr_vectors(const vector<ManagedConstPointer<T>>& v1,
+                                       const vector<ManagedConstPointer<T>>& v2)
 {
     if (v1.size() != v2.size()) {
         return false;
@@ -117,20 +95,22 @@ static inline bool compare_ptr_vectors(const vector<const T*>& v1, const vector<
 }
 
 template<typename T>
-static inline void clone_vector(const vector<T*>& source, vector<T*> destination)
+static inline void clone_vector(const vector<ManagedPointer<T>>& source,
+                                vector<ManagedPointer<T>>& destination)
 {
     destination.clear();
     for(auto const& source_ptr : source) {
-        destination.push_back(static_cast<T*>(source_ptr->clone()));
+        destination.push_back(source_ptr->clone()->template static_as<T>());
     }
 }
 
 template<typename T>
-static inline void clone_vector(const vector<const T*>& source, vector<T*> destination)
+static inline void clone_vector(const vector<ManagedConstPointer<T>>& source,
+                                vector<ManagedPointer<T>>& destination)
 {
     destination.clear();
     for(auto const& source_ptr : source) {
-        destination.push_back(static_cast<T*>(source_ptr->clone()));
+        destination.push_back(source_ptr->clone()->template static_as<T>());
     }
 }
 
@@ -161,23 +141,14 @@ SourceLocation::~SourceLocation()
     // Nothing here
 }
 
-bool SourceLocation::operator == (const SourceLocation& other) const
+bool SourceLocation::equals_(const SourceLocation& other) const
 {
-    if (&other == this) {
-        return true;
-    }
-
     return line == other.line && column == other.column;
 }
 
-bool SourceLocation::operator != (const SourceLocation& other) const
+u64 SourceLocation::compute_hash_() const
 {
-    return !(*this == other);
-}
-
-i64 SourceLocation::get_hash_code() const
-{
-    return (((i64)line * 317) ^ column);
+    return (((u64)line * 317) ^ column);
 }
 
 SourceLocation& SourceLocation::operator = (const SourceLocation& other)
@@ -269,12 +240,8 @@ Index::~Index()
     // Nothing here
 }
 
-bool Index::operator == (const Index& other) const
+bool Index::equals_(const Index& other) const
 {
-    if (&other == this) {
-        return true;
-    }
-
     if (is_symbolic != other.is_symbolic) {
         return false;
     }
@@ -282,12 +249,7 @@ bool Index::operator == (const Index& other) const
     return is_symbolic ? symbol == other.symbol : numeral == other.numeral;
 }
 
-bool Index::operator != (const Index& other) const
-{
-    return !(*this == other);
-}
-
-i64 Index::get_hash_code() const
+u64 Index::compute_hash_() const
 {
     std::hash<string> string_hasher;
     if (is_symbolic) {
@@ -330,7 +292,7 @@ void Index::accept(ASTVisitorBase* visitor) const
     visitor->visit_index(this);
 }
 
-ASTBase* Index::clone() const
+ASTBaseSPtr Index::clone() const
 {
     if (is_symbolic) {
         return new Index(location, symbol);
@@ -377,7 +339,7 @@ Identifier::Identifier(const SourceLocation& location, const string& symbol)
     // Nothing here
 }
 
-Identifier::Identifier(const SourceLocation& location, const string& symbol, const vector<Index*>& indices)
+Identifier::Identifier(const SourceLocation& location, const string& symbol, const vector<IndexSPtr>& indices)
     : ASTBase(location), symbol(symbol), indices(indices)
 {
     copy_vector(indices, const_indices);
@@ -385,15 +347,11 @@ Identifier::Identifier(const SourceLocation& location, const string& symbol, con
 
 Identifier::~Identifier()
 {
-    delete_pointer_vector(indices);
+    // Nothing here
 }
 
-bool Identifier::operator == (const Identifier& other) const
+bool Identifier::equals_(const Identifier& other) const
 {
-    if (&other == this) {
-        return true;
-    }
-
     if (symbol != other.symbol) {
         return false;
     }
@@ -401,18 +359,13 @@ bool Identifier::operator == (const Identifier& other) const
     return compare_ptr_vectors(indices, other.indices);
 }
 
-bool Identifier::operator != (const Identifier& other) const
-{
-    return !(*this == other);
-}
-
-i64 Identifier::get_hash_code() const
+u64 Identifier::compute_hash_() const
 {
     std::hash<string> string_hasher;
     auto hash = string_hasher(symbol);
 
     for(auto const& index : indices) {
-        hash = (hash * 317) ^ index->get_hash_code();
+        hash = (hash * 317) ^ index->get_hash();
     }
     return hash;
 }
@@ -422,9 +375,9 @@ void Identifier::accept(ASTVisitorBase* visitor) const
     visitor->visit_identifier(this);
 }
 
-ASTBase* Identifier::clone() const
+ASTBaseSPtr Identifier::clone() const
 {
-    vector<Index*> cloned_indices;
+    vector<IndexSPtr> cloned_indices;
     clone_vector(indices, cloned_indices);
     return new Identifier(location, symbol, cloned_indices);
 }
@@ -434,7 +387,7 @@ const string& Identifier::get_symbol() const
     return symbol;
 }
 
-const vector<const Index*> Identifier::get_indices() const
+const vector<IndexCSPtr> Identifier::get_indices() const
 {
     return const_indices;
 }
@@ -457,14 +410,14 @@ string Identifier::to_string() const
 
 
 // Implementation of SortExpr
-SortExpr::SortExpr(const SourceLocation& location, Identifier* identifier)
+SortExpr::SortExpr(const SourceLocation& location, IdentifierSPtr identifier)
     : ASTBase(location), identifier(identifier)
 {
     // Nothing here
 }
 
-SortExpr::SortExpr(const SourceLocation& location, Identifier* identifier,
-                   const vector<SortExpr*>& param_sorts)
+SortExpr::SortExpr(const SourceLocation& location, IdentifierSPtr identifier,
+                   const vector<SortExprSPtr>& param_sorts)
     : ASTBase(location), identifier(identifier), param_sorts(param_sorts)
 {
     copy_vector(param_sorts, const_param_sorts);
@@ -498,20 +451,20 @@ void SortExpr::accept(ASTVisitorBase* visitor) const
     visitor->visit_sort_expr(this);
 }
 
-ASTBase* SortExpr::clone() const
+ASTBaseSPtr SortExpr::clone() const
 {
-    vector<SortExpr*> cloned_params;
+    vector<SortExprSPtr> cloned_params;
     clone_vector(param_sorts, cloned_params);
 
-    return new SortExpr(location, static_cast<Identifier*>(identifier->clone()), cloned_params);
+    return new SortExpr(location, identifier->clone()->static_as<Identifier>(), cloned_params);
 }
 
-const Identifier* SortExpr::get_identifier() const
+IdentifierCSPtr SortExpr::get_identifier() const
 {
     return identifier;
 }
 
-const vector<const SortExpr*>& SortExpr::get_param_sorts() const
+const vector<SortExprCSPtr>& SortExpr::get_param_sorts() const
 {
     return const_param_sorts;
 }
@@ -534,7 +487,7 @@ void SortNameAndArity::accept(ASTVisitorBase* visitor) const
     visitor->visit_sort_name_and_arity(this);
 }
 
-ASTBase* SortNameAndArity::clone() const
+ASTBaseSPtr SortNameAndArity::clone() const
 {
     return new SortNameAndArity(location, sort_name, sort_arity);
 }
@@ -552,7 +505,7 @@ u32 SortNameAndArity::get_sort_arity() const
 // Implementation of DatatypeConstructor
 DatatypeConstructor::DatatypeConstructor(const SourceLocation& location,
                                          const string& constructor_name,
-                                         const vector<SortedSymbol*>& constructor_parameters)
+                                         const vector<SortedSymbolSPtr>& constructor_parameters)
     : ASTBase(location), constructor_name(constructor_name),
       constructor_parameters(constructor_parameters)
 {
@@ -561,7 +514,7 @@ DatatypeConstructor::DatatypeConstructor(const SourceLocation& location,
 
 DatatypeConstructor::~DatatypeConstructor()
 {
-    delete_pointer_vector(const_constructor_parameters);
+    // Nothing here
 }
 
 void DatatypeConstructor::accept(ASTVisitorBase* visitor) const
@@ -569,9 +522,9 @@ void DatatypeConstructor::accept(ASTVisitorBase* visitor) const
     return visitor->visit_datatype_constructor(this);
 }
 
-ASTBase* DatatypeConstructor::clone() const
+ASTBaseSPtr DatatypeConstructor::clone() const
 {
-    vector<SortedSymbol*> cloned_params;
+    vector<SortedSymbolSPtr> cloned_params;
     clone_vector(constructor_parameters, cloned_params);
     return new DatatypeConstructor(location, constructor_name, cloned_params);
 }
@@ -581,7 +534,7 @@ const string& DatatypeConstructor::get_constructor_name() const
     return constructor_name;
 }
 
-const vector<const SortedSymbol*>& DatatypeConstructor::get_constructor_parameters() const
+const vector<SortedSymbolCSPtr>& DatatypeConstructor::get_constructor_parameters() const
 {
     return const_constructor_parameters;
 }
@@ -589,7 +542,7 @@ const vector<const SortedSymbol*>& DatatypeConstructor::get_constructor_paramete
 // Implementation of DatatypeConstructorList
 DatatypeConstructorList::DatatypeConstructorList(const SourceLocation& location,
                                                  const vector<string>& sort_parameter_names,
-                                                 const vector<DatatypeConstructor*>& datatype_constructors)
+                                                 const vector<DatatypeConstructorSPtr>& datatype_constructors)
     : ASTBase(location), sort_parameter_names(sort_parameter_names),
       datatype_constructors(datatype_constructors)
 {
@@ -598,7 +551,7 @@ DatatypeConstructorList::DatatypeConstructorList(const SourceLocation& location,
 
 DatatypeConstructorList::~DatatypeConstructorList()
 {
-    delete_pointer_vector(datatype_constructors);
+    // Nothing here
 }
 
 void DatatypeConstructorList::accept(ASTVisitorBase* visitor) const
@@ -606,9 +559,9 @@ void DatatypeConstructorList::accept(ASTVisitorBase* visitor) const
     visitor->visit_datatype_constructor_list(this);
 }
 
-ASTBase* DatatypeConstructorList::clone() const
+ASTBaseSPtr DatatypeConstructorList::clone() const
 {
-    vector<DatatypeConstructor*> cloned_constructors;
+    vector<DatatypeConstructorSPtr> cloned_constructors;
     clone_vector(datatype_constructors, cloned_constructors);
     return new DatatypeConstructorList(location, sort_parameter_names, cloned_constructors);
 }
@@ -618,7 +571,7 @@ const vector<string>& DatatypeConstructorList::get_sort_parameter_names() const
     return sort_parameter_names;
 }
 
-const vector<const DatatypeConstructor*>& DatatypeConstructorList::get_datatype_constructors() const
+const vector<DatatypeConstructorCSPtr>& DatatypeConstructorList::get_datatype_constructors() const
 {
     return const_datatype_constructors;
 }
@@ -642,7 +595,7 @@ void Literal::accept(ASTVisitorBase* visitor) const
     visitor->visit_literal(this);
 }
 
-ASTBase* Literal::clone() const
+ASTBaseSPtr Literal::clone() const
 {
     return new Literal(location, literal_string, literal_kind);
 }
@@ -669,17 +622,17 @@ Term::~Term()
     // Nothing here
 }
 
-const SortExpr* Term::get_sort() const
+SortExprCSPtr Term::get_sort() const
 {
     return sort;
 }
 
-void Term::set_sort(SortExpr* sort) const
+void Term::set_sort(SortExprSPtr sort) const
 {
     this->sort = sort;
 }
 
-IdentifierTerm::IdentifierTerm(const SourceLocation& location, Identifier* identifier)
+IdentifierTerm::IdentifierTerm(const SourceLocation& location, IdentifierSPtr identifier)
     : Term(location), identifier(identifier)
 {
     // Nothing here
@@ -687,7 +640,7 @@ IdentifierTerm::IdentifierTerm(const SourceLocation& location, Identifier* ident
 
 IdentifierTerm::~IdentifierTerm()
 {
-    delete identifier;
+    // Nothing here
 }
 
 void IdentifierTerm::accept(ASTVisitorBase* visitor) const
@@ -695,18 +648,18 @@ void IdentifierTerm::accept(ASTVisitorBase* visitor) const
     visitor->visit_identifier_term(this);
 }
 
-ASTBase* IdentifierTerm::clone() const
+ASTBaseSPtr IdentifierTerm::clone() const
 {
-    return new IdentifierTerm(location, static_cast<Identifier*>(identifier->clone()));
+    return new IdentifierTerm(location, identifier->clone()->static_as<Identifier>());
 }
 
-const Identifier* IdentifierTerm::get_identifier() const
+IdentifierCSPtr IdentifierTerm::get_identifier() const
 {
     return identifier;
 }
 
 // Implementation of LiteralTerm
-LiteralTerm::LiteralTerm(const SourceLocation& location, Literal* literal)
+LiteralTerm::LiteralTerm(const SourceLocation& location, LiteralSPtr literal)
     : Term(location), literal(literal)
 {
     // Nothing here
@@ -722,20 +675,20 @@ void LiteralTerm::accept(ASTVisitorBase* visitor) const
     visitor->visit_literal_term(this);
 }
 
-ASTBase* LiteralTerm::clone() const
+ASTBaseSPtr LiteralTerm::clone() const
 {
-    return new LiteralTerm(location, static_cast<Literal*>(literal->clone()));
+    return new LiteralTerm(location, literal->clone()->static_as<Literal>());
 }
 
-const Literal* LiteralTerm::get_literal() const
+LiteralCSPtr LiteralTerm::get_literal() const
 {
     return literal;
 }
 
 // Implementation of FunctionApplicationTerm
 FunctionApplicationTerm::FunctionApplicationTerm(const SourceLocation& location,
-                                                 Identifier* identifier,
-                                                 const vector<Term*>& application_arguments)
+                                                 IdentifierSPtr identifier,
+                                                 const vector<TermSPtr>& application_arguments)
     : Term(location), identifier(identifier), application_arguments(application_arguments)
 {
     copy_vector(application_arguments, const_application_arguments);
@@ -743,7 +696,7 @@ FunctionApplicationTerm::FunctionApplicationTerm(const SourceLocation& location,
 
 FunctionApplicationTerm::~FunctionApplicationTerm()
 {
-    delete_pointer_vector(application_arguments);
+    // Nothing here
 }
 
 void FunctionApplicationTerm::accept(ASTVisitorBase* visitor) const
@@ -751,27 +704,26 @@ void FunctionApplicationTerm::accept(ASTVisitorBase* visitor) const
     visitor->visit_function_application_term(this);
 }
 
-ASTBase* FunctionApplicationTerm::clone() const
+ASTBaseSPtr FunctionApplicationTerm::clone() const
 {
-    vector<Term*> cloned_args;
+    vector<TermSPtr> cloned_args;
     clone_vector(application_arguments, cloned_args);
-    return new FunctionApplicationTerm(location, static_cast<Identifier*>(identifier->clone()),
-                                       cloned_args);
+    return new FunctionApplicationTerm(location, identifier->clone()->static_as<Identifier>(), cloned_args);
 }
 
-const Identifier* FunctionApplicationTerm::get_identifier() const
+IdentifierCSPtr FunctionApplicationTerm::get_identifier() const
 {
     return identifier;
 }
 
-const vector<const Term*>& FunctionApplicationTerm::get_application_arguments() const
+const vector<TermCSPtr>& FunctionApplicationTerm::get_application_arguments() const
 {
     return const_application_arguments;
 }
 
 // Implementation of SortedSymbol
 SortedSymbol::SortedSymbol(const SourceLocation& location, const string& symbol,
-                           SortExpr* sort_expr)
+                           SortExprSPtr sort_expr)
     : ASTBase(location), symbol(symbol), sort_expr(sort_expr)
 {
     // Nothing here
@@ -779,7 +731,7 @@ SortedSymbol::SortedSymbol(const SourceLocation& location, const string& symbol,
 
 SortedSymbol::~SortedSymbol()
 {
-    delete sort_expr;
+    // Nothing here
 }
 
 void SortedSymbol::accept(ASTVisitorBase* visitor) const
@@ -787,9 +739,9 @@ void SortedSymbol::accept(ASTVisitorBase* visitor) const
     visitor->visit_sorted_symbol(this);
 }
 
-ASTBase* SortedSymbol::clone() const
+ASTBaseSPtr SortedSymbol::clone() const
 {
-    return new SortedSymbol(location, symbol, static_cast<SortExpr*>(sort_expr->clone()));
+    return new SortedSymbol(location, symbol, sort_expr->clone()->static_as<SortExpr>());
 }
 
 const string& SortedSymbol::get_symbol() const
@@ -797,7 +749,7 @@ const string& SortedSymbol::get_symbol() const
     return symbol;
 }
 
-const SortExpr* SortedSymbol::get_sort_expr() const
+SortExprCSPtr SortedSymbol::get_sort_expr() const
 {
     return sort_expr;
 }
@@ -805,8 +757,8 @@ const SortExpr* SortedSymbol::get_sort_expr() const
 // Implementation of QuantifiedTerm
 QuantifiedTerm::QuantifiedTerm(const SourceLocation& location,
                                QuantifierKind quantifier_kind,
-                               const vector<SortedSymbol*> quantified_symbols,
-                               Term* quantified_term)
+                               const vector<SortedSymbolSPtr> quantified_symbols,
+                               TermSPtr quantified_term)
     : Term(location), quantifier_kind(quantifier_kind),
       quantified_symbols(quantified_symbols), quantified_term(quantified_term)
 {
@@ -815,8 +767,7 @@ QuantifiedTerm::QuantifiedTerm(const SourceLocation& location,
 
 QuantifiedTerm::~QuantifiedTerm()
 {
-    delete_pointer_vector(quantified_symbols);
-    delete quantified_term;
+    // Nothing here
 }
 
 void QuantifiedTerm::accept(ASTVisitorBase* visitor) const
@@ -824,12 +775,12 @@ void QuantifiedTerm::accept(ASTVisitorBase* visitor) const
     visitor->visit_quantified_term(this);
 }
 
-ASTBase* QuantifiedTerm::clone() const
+ASTBaseSPtr QuantifiedTerm::clone() const
 {
-    vector<SortedSymbol*> cloned_quantified_symbols;
+    vector<SortedSymbolSPtr> cloned_quantified_symbols;
     clone_vector(quantified_symbols, cloned_quantified_symbols);
     return new QuantifiedTerm(location, quantifier_kind, cloned_quantified_symbols,
-                              static_cast<Term*>(quantified_term->clone()));
+                              quantified_term->clone()->static_as<Term>());
 }
 
 QuantifierKind QuantifiedTerm::get_quantifier_kind() const
@@ -837,19 +788,19 @@ QuantifierKind QuantifiedTerm::get_quantifier_kind() const
     return quantifier_kind;
 }
 
-const vector<const SortedSymbol*>& QuantifiedTerm::get_quantified_symbols() const
+const vector<SortedSymbolCSPtr>& QuantifiedTerm::get_quantified_symbols() const
 {
     return const_quantified_symbols;
 }
 
-const Term* QuantifiedTerm::get_quantified_term() const
+TermCSPtr QuantifiedTerm::get_quantified_term() const
 {
     return quantified_term;
 }
 
 // Implementation of VariableBinding
 VariableBinding::VariableBinding(const SourceLocation& location,
-                                 const string& symbol, Term* binding)
+                                 const string& symbol, TermSPtr binding)
     : ASTBase(location), symbol(symbol), binding(binding)
 {
     // Nothing here
@@ -857,7 +808,7 @@ VariableBinding::VariableBinding(const SourceLocation& location,
 
 VariableBinding::~VariableBinding()
 {
-    delete binding;
+    // Nothing here
 }
 
 void VariableBinding::accept(ASTVisitorBase* visitor) const
@@ -865,9 +816,9 @@ void VariableBinding::accept(ASTVisitorBase* visitor) const
     visitor->visit_variable_binding(this);
 }
 
-ASTBase* VariableBinding::clone() const
+ASTBaseSPtr VariableBinding::clone() const
 {
-    return new VariableBinding(location, symbol, static_cast<Term*>(binding->clone()));
+    return new VariableBinding(location, symbol, binding->clone()->static_as<Term>());
 }
 
 const string& VariableBinding::get_symbol() const
@@ -875,15 +826,15 @@ const string& VariableBinding::get_symbol() const
     return symbol;
 }
 
-const Term* VariableBinding::get_binding() const
+TermCSPtr VariableBinding::get_binding() const
 {
     return binding;
 }
 
 // Implementation of LetTerm
 LetTerm::LetTerm(const SourceLocation& location,
-                 const vector<VariableBinding*>& bindings,
-                 Term* let_body)
+                 const vector<VariableBindingSPtr>& bindings,
+                 TermSPtr let_body)
     : Term(location), bindings(bindings), let_body(let_body)
 {
     copy_vector(bindings, const_bindings);
@@ -891,8 +842,7 @@ LetTerm::LetTerm(const SourceLocation& location,
 
 LetTerm::~LetTerm()
 {
-    delete_pointer_vector(bindings);
-    delete let_body;
+    // Nothing here
 }
 
 void LetTerm::accept(ASTVisitorBase* visitor) const
@@ -900,19 +850,19 @@ void LetTerm::accept(ASTVisitorBase* visitor) const
     visitor->visit_let_term(this);
 }
 
-ASTBase* LetTerm::clone() const
+ASTBaseSPtr LetTerm::clone() const
 {
-    vector<VariableBinding*> cloned_bindings;
+    vector<VariableBindingSPtr> cloned_bindings;
     clone_vector(bindings, cloned_bindings);
-    return new LetTerm(location, cloned_bindings, static_cast<Term*>(let_body->clone()));
+    return new LetTerm(location, cloned_bindings, let_body->clone()->static_as<Term>());
 }
 
-const vector<const VariableBinding*>& LetTerm::get_bindings() const
+const vector<VariableBindingCSPtr>& LetTerm::get_bindings() const
 {
     return const_bindings;
 }
 
-const Term* LetTerm::get_let_body() const
+TermCSPtr LetTerm::get_let_body() const
 {
     return let_body;
 }
@@ -941,14 +891,14 @@ void CheckSynthCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_check_synth_command(this);
 }
 
-ASTBase* CheckSynthCommand::clone() const
+ASTBaseSPtr CheckSynthCommand::clone() const
 {
     return new CheckSynthCommand(location);
 }
 
 // Implementation of ConstraintCommand
 ConstraintCommand::ConstraintCommand(const SourceLocation& location,
-                                     Term* constraint_term)
+                                     TermSPtr constraint_term)
     : Command(location), constraint_term(constraint_term)
 {
     // Nothing here
@@ -956,7 +906,7 @@ ConstraintCommand::ConstraintCommand(const SourceLocation& location,
 
 ConstraintCommand::~ConstraintCommand()
 {
-    delete constraint_term;
+    // Nothing here
 }
 
 void ConstraintCommand::accept(ASTVisitorBase* visitor) const
@@ -964,19 +914,19 @@ void ConstraintCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_constraint_command(this);
 }
 
-ASTBase* ConstraintCommand::clone() const
+ASTBaseSPtr ConstraintCommand::clone() const
 {
-    return new ConstraintCommand(location, static_cast<Term*>(constraint_term->clone()));
+    return new ConstraintCommand(location, constraint_term->clone()->static_as<Term>());
 }
 
-const Term* ConstraintCommand::get_constraint_term() const
+TermCSPtr ConstraintCommand::get_constraint_term() const
 {
     return constraint_term;
 }
 
 // Implementation of DeclareVarCommand
 DeclareVarCommand::DeclareVarCommand(const SourceLocation& location, const string& symbol,
-                                     SortExpr* sort_expr)
+                                     SortExprSPtr sort_expr)
     : Command(location), symbol(symbol), sort_expr(sort_expr)
 {
     // Nothing here
@@ -984,7 +934,7 @@ DeclareVarCommand::DeclareVarCommand(const SourceLocation& location, const strin
 
 DeclareVarCommand::~DeclareVarCommand()
 {
-    delete sort_expr;
+    // Nothing here
 }
 
 void DeclareVarCommand::accept(ASTVisitorBase* visitor) const
@@ -992,9 +942,9 @@ void DeclareVarCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_declare_var_command(this);
 }
 
-ASTBase* DeclareVarCommand::clone() const
+ASTBaseSPtr DeclareVarCommand::clone() const
 {
-    return new DeclareVarCommand(location, symbol, static_cast<SortExpr*>(sort_expr->clone()));
+    return new DeclareVarCommand(location, symbol, sort_expr->clone()->static_as<SortExpr>());
 }
 
 const string& DeclareVarCommand::get_symbol() const
@@ -1002,7 +952,7 @@ const string& DeclareVarCommand::get_symbol() const
     return symbol;
 }
 
-const SortExpr* DeclareVarCommand::get_sort_expr() const
+SortExprCSPtr DeclareVarCommand::get_sort_expr() const
 {
     return sort_expr;
 }
@@ -1032,7 +982,7 @@ void InvConstraintCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_inv_constraint_command(this);
 }
 
-ASTBase* InvConstraintCommand::clone() const
+ASTBaseSPtr InvConstraintCommand::clone() const
 {
     return new InvConstraintCommand(location, inv_fun_symbol, precondition_symbol,
                                     transition_relation_symbol, postcondition_symbol);
@@ -1077,7 +1027,7 @@ void SetFeatureCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_set_feature_command(this);
 }
 
-ASTBase* SetFeatureCommand::clone() const
+ASTBaseSPtr SetFeatureCommand::clone() const
 {
     return new SetFeatureCommand(location, feature_name, value);
 }
@@ -1094,9 +1044,9 @@ bool SetFeatureCommand::get_value() const
 
 // Implementation of SynthFunCommand
 SynthFunCommand::SynthFunCommand(const SourceLocation& location, const string& function_symbol,
-                                 const vector<SortedSymbol*>& function_parameters,
-                                 SortExpr* function_range_sort,
-                                 Grammar* synthesis_grammar)
+                                 const vector<SortedSymbolSPtr>& function_parameters,
+                                 SortExprSPtr function_range_sort,
+                                 GrammarSPtr synthesis_grammar)
     : Command(location), function_symbol(function_symbol),
       function_parameters(function_parameters), function_range_sort(function_range_sort),
       synthesis_grammar(synthesis_grammar)
@@ -1106,9 +1056,7 @@ SynthFunCommand::SynthFunCommand(const SourceLocation& location, const string& f
 
 SynthFunCommand::~SynthFunCommand()
 {
-    delete_pointer_vector(function_parameters);
-    delete function_range_sort;
-    delete synthesis_grammar;
+    // Nothing here
 }
 
 void SynthFunCommand::accept(ASTVisitorBase* visitor) const
@@ -1116,13 +1064,13 @@ void SynthFunCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_synth_fun_command(this);
 }
 
-ASTBase* SynthFunCommand::clone() const
+ASTBaseSPtr SynthFunCommand::clone() const
 {
-    vector<SortedSymbol*> cloned_params;
+    vector<SortedSymbolSPtr> cloned_params;
     clone_vector(function_parameters, cloned_params);
     return new SynthFunCommand(location, function_symbol, cloned_params,
-                               static_cast<SortExpr*>(function_range_sort->clone()),
-                               static_cast<Grammar*>(synthesis_grammar->clone()));
+                               function_range_sort->clone()->static_as<SortExpr>(),
+                               synthesis_grammar->clone()->static_as<Grammar>());
 }
 
 const string& SynthFunCommand::get_function_symbol() const
@@ -1130,17 +1078,17 @@ const string& SynthFunCommand::get_function_symbol() const
     return function_symbol;
 }
 
-const vector<const SortedSymbol*>& SynthFunCommand::get_function_parameters() const
+const vector<SortedSymbolCSPtr>& SynthFunCommand::get_function_parameters() const
 {
     return const_function_parameters;
 }
 
-const SortExpr* SynthFunCommand::get_function_range_sort() const
+SortExprCSPtr SynthFunCommand::get_function_range_sort() const
 {
     return function_range_sort;
 }
 
-const Grammar* SynthFunCommand::get_synthesis_grammar() const
+GrammarCSPtr SynthFunCommand::get_synthesis_grammar() const
 {
     return synthesis_grammar;
 }
@@ -1148,8 +1096,8 @@ const Grammar* SynthFunCommand::get_synthesis_grammar() const
 // Implementation of SynthInvCommand
 SynthInvCommand::SynthInvCommand(const SourceLocation& location,
                                  const string& function_symbol,
-                                 const vector<SortedSymbol*>& function_parameters,
-                                 Grammar* synthesis_grammar)
+                                 const vector<SortedSymbolSPtr>& function_parameters,
+                                 GrammarSPtr synthesis_grammar)
     : SynthFunCommand(location, function_symbol, function_parameters,
                       new SortExpr(location, new Identifier(location, "Bool")),
                       synthesis_grammar)
@@ -1167,12 +1115,12 @@ void SynthInvCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_synth_inv_command(this);
 }
 
-ASTBase* SynthInvCommand::clone() const
+ASTBaseSPtr SynthInvCommand::clone() const
 {
-    vector<SortedSymbol*> cloned_params;
+    vector<SortedSymbolSPtr> cloned_params;
     clone_vector(get_function_parameters(), cloned_params);
     return new SynthInvCommand(location, get_function_symbol(), cloned_params,
-                               static_cast<Grammar*>(get_synthesis_grammar()->clone()));
+                               get_synthesis_grammar()->clone()->static_as<Grammar>());
 }
 
 
@@ -1195,7 +1143,7 @@ void DeclareSortCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_declare_sort_command(this);
 }
 
-ASTBase* DeclareSortCommand::clone() const
+ASTBaseSPtr DeclareSortCommand::clone() const
 {
     return new DeclareSortCommand(location, sort_name, sort_arity);
 }
@@ -1213,9 +1161,9 @@ u32 DeclareSortCommand::get_sort_arity() const
 // Implementation of DefineFunCommand
 DefineFunCommand::DefineFunCommand(const SourceLocation& location,
                                    const string& function_symbol,
-                                   const vector<SortedSymbol*>& function_parameters,
-                                   SortExpr* function_range_sort,
-                                   Term* function_body)
+                                   const vector<SortedSymbolSPtr>& function_parameters,
+                                   SortExprSPtr function_range_sort,
+                                   TermSPtr function_body)
     : Command(location), function_symbol(function_symbol),
       function_parameters(function_parameters), function_range_sort(function_range_sort),
       function_body(function_body)
@@ -1225,8 +1173,7 @@ DefineFunCommand::DefineFunCommand(const SourceLocation& location,
 
 DefineFunCommand::~DefineFunCommand()
 {
-    delete_pointer_vector(function_parameters);
-    delete function_body;
+    // Nothing here
 }
 
 void DefineFunCommand::accept(ASTVisitorBase* visitor) const
@@ -1234,13 +1181,13 @@ void DefineFunCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_define_fun_command(this);
 }
 
-ASTBase* DefineFunCommand::clone() const
+ASTBaseSPtr DefineFunCommand::clone() const
 {
-    vector<SortedSymbol*> cloned_params;
+    vector<SortedSymbolSPtr> cloned_params;
     clone_vector(function_parameters, cloned_params);
     return new DefineFunCommand(location, function_symbol,cloned_params,
-                                static_cast<SortExpr*>(function_range_sort->clone()),
-                                static_cast<Term*>(function_body->clone()));
+                                function_range_sort->clone()->static_as<SortExpr>(),
+                                function_body->clone()->static_as<Term>());
 }
 
 const string& DefineFunCommand::get_function_symbol() const
@@ -1248,17 +1195,17 @@ const string& DefineFunCommand::get_function_symbol() const
     return function_symbol;
 }
 
-const vector<const SortedSymbol*>& DefineFunCommand::get_function_parameters() const
+const vector<SortedSymbolCSPtr>& DefineFunCommand::get_function_parameters() const
 {
     return const_function_parameters;
 }
 
-const SortExpr* DefineFunCommand::get_function_range_sort() const
+SortExprCSPtr DefineFunCommand::get_function_range_sort() const
 {
     return function_range_sort;
 }
 
-const Term* DefineFunCommand::get_function_body() const
+TermCSPtr DefineFunCommand::get_function_body() const
 {
     return function_body;
 }
@@ -1267,7 +1214,7 @@ const Term* DefineFunCommand::get_function_body() const
 DefineSortCommand::DefineSortCommand(const SourceLocation& location,
                                      const string& sort_name,
                                      const vector<string>& sort_parameters,
-                                     SortExpr* sort_expr)
+                                     SortExprSPtr sort_expr)
     : Command(location), sort_name(sort_name), sort_parameters(sort_parameters),
       sort_expr(sort_expr)
 {
@@ -1276,7 +1223,7 @@ DefineSortCommand::DefineSortCommand(const SourceLocation& location,
 
 DefineSortCommand::~DefineSortCommand()
 {
-    delete sort_expr;
+    // Nothing here
 }
 
 void DefineSortCommand::accept(ASTVisitorBase* visitor) const
@@ -1284,10 +1231,10 @@ void DefineSortCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_define_sort_command(this);
 }
 
-ASTBase* DefineSortCommand::clone() const
+ASTBaseSPtr DefineSortCommand::clone() const
 {
     return new DefineSortCommand(location, sort_name, sort_parameters,
-                                 static_cast<SortExpr*>(sort_expr->clone()));
+                                 sort_expr->clone()->static_as<SortExpr>());
 }
 
 const string& DefineSortCommand::get_sort_name() const
@@ -1295,7 +1242,7 @@ const string& DefineSortCommand::get_sort_name() const
     return sort_name;
 }
 
-const SortExpr* DefineSortCommand::get_sort_expr() const
+SortExprCSPtr DefineSortCommand::get_sort_expr() const
 {
     return sort_expr;
 }
@@ -1307,8 +1254,8 @@ const vector<string>& DefineSortCommand::get_sort_parameters() const
 
 // Implementation of DeclareDatatypesCommand
 DeclareDatatypesCommand::DeclareDatatypesCommand(const SourceLocation& location,
-                                                 const vector<SortNameAndArity*>& sort_names_and_arities,
-                                                 const vector<DatatypeConstructorList*>& constructor_lists)
+                                                 const vector<SortNameAndAritySPtr>& sort_names_and_arities,
+                                                 const vector<DatatypeConstructorListSPtr>& constructor_lists)
     : Command(location), sort_names_and_arities(sort_names_and_arities),
       datatype_constructor_lists(constructor_lists)
 {
@@ -1318,8 +1265,7 @@ DeclareDatatypesCommand::DeclareDatatypesCommand(const SourceLocation& location,
 
 DeclareDatatypesCommand::~DeclareDatatypesCommand()
 {
-    delete_pointer_vector(sort_names_and_arities);
-    delete_pointer_vector(datatype_constructor_lists);
+    // Nothing here
 }
 
 void DeclareDatatypesCommand::accept(ASTVisitorBase* visitor) const
@@ -1327,10 +1273,10 @@ void DeclareDatatypesCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_declare_datatypes_command(this);
 }
 
-ASTBase* DeclareDatatypesCommand::clone() const
+ASTBaseSPtr DeclareDatatypesCommand::clone() const
 {
-    vector<SortNameAndArity*> cloned_sort_names_and_arities;
-    vector<DatatypeConstructorList*> cloned_constructors;
+    vector<SortNameAndAritySPtr> cloned_sort_names_and_arities;
+    vector<DatatypeConstructorListSPtr> cloned_constructors;
 
     clone_vector(sort_names_and_arities, cloned_sort_names_and_arities);
     clone_vector(datatype_constructor_lists, cloned_constructors);
@@ -1339,12 +1285,12 @@ ASTBase* DeclareDatatypesCommand::clone() const
                                        cloned_constructors);
 }
 
-const vector<const SortNameAndArity*>& DeclareDatatypesCommand::get_sort_names_and_arities() const
+const vector<SortNameAndArityCSPtr>& DeclareDatatypesCommand::get_sort_names_and_arities() const
 {
     return const_sort_names_and_arities;
 }
 
-const vector<const DatatypeConstructorList*>& DeclareDatatypesCommand::get_datatype_constructor_lists() const
+const vector<DatatypeConstructorListCSPtr>& DeclareDatatypesCommand::get_datatype_constructor_lists() const
 {
     return const_datatype_constructor_lists;
 }
@@ -1352,7 +1298,7 @@ const vector<const DatatypeConstructorList*>& DeclareDatatypesCommand::get_datat
 // Implementation of DeclareDatatypeCommand
 DeclareDatatypeCommand::DeclareDatatypeCommand(const SourceLocation& location,
                                                const string& datatype_name,
-                                               DatatypeConstructorList* constructor_list)
+                                               DatatypeConstructorListSPtr constructor_list)
     : Command(location), datatype_name(datatype_name),
       datatype_constructor_list(constructor_list)
 {
@@ -1361,7 +1307,7 @@ DeclareDatatypeCommand::DeclareDatatypeCommand(const SourceLocation& location,
 
 DeclareDatatypeCommand::~DeclareDatatypeCommand()
 {
-    delete datatype_constructor_list;
+    // Nothing here
 }
 
 void DeclareDatatypeCommand::accept(ASTVisitorBase* visitor) const
@@ -1369,13 +1315,13 @@ void DeclareDatatypeCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_declare_datatype_command(this);
 }
 
-ASTBase* DeclareDatatypeCommand::clone() const
+ASTBaseSPtr DeclareDatatypeCommand::clone() const
 {
     return new DeclareDatatypeCommand(location, datatype_name,
-                                      static_cast<DatatypeConstructorList*>(datatype_constructor_list->clone()));
+                                      datatype_constructor_list->clone()->static_as<DatatypeConstructorList>());
 }
 
-const DatatypeConstructorList* DeclareDatatypeCommand::get_datatype_constructor_list() const
+DatatypeConstructorListCSPtr DeclareDatatypeCommand::get_datatype_constructor_list() const
 {
     return datatype_constructor_list;
 }
@@ -1397,7 +1343,7 @@ void SetLogicCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_set_logic_command(this);
 }
 
-ASTBase* SetLogicCommand::clone() const
+ASTBaseSPtr SetLogicCommand::clone() const
 {
     return new SetLogicCommand(location, logic_name);
 }
@@ -1410,7 +1356,7 @@ const string& SetLogicCommand::get_logic_name() const
 // Implementation of SetOptionCommand
 SetOptionCommand::SetOptionCommand(const SourceLocation& location,
                                    const string& option_name,
-                                   Literal* option_value)
+                                   LiteralSPtr option_value)
     : Command(location), option_name(option_name), option_value(option_value)
 {
     // Nothing here
@@ -1426,10 +1372,10 @@ void SetOptionCommand::accept(ASTVisitorBase* visitor) const
     visitor->visit_set_option_command(this);
 }
 
-ASTBase* SetOptionCommand::clone() const
+ASTBaseSPtr SetOptionCommand::clone() const
 {
     return new SetOptionCommand(location, option_name,
-                                static_cast<Literal*>(option_value->clone()));
+                                option_value->clone()->static_as<Literal>());
 }
 
 const string& SetOptionCommand::get_option_name() const
@@ -1437,7 +1383,7 @@ const string& SetOptionCommand::get_option_name() const
     return option_name;
 }
 
-const Literal* SetOptionCommand::get_option_value() const
+LiteralCSPtr SetOptionCommand::get_option_value() const
 {
     return option_value;
 }
@@ -1456,7 +1402,7 @@ GrammarTerm::~GrammarTerm()
 
 // Implementation of ConstantGrammarTerm
 ConstantGrammarTerm::ConstantGrammarTerm(const SourceLocation& location,
-                                         SortExpr* sort_expr)
+                                         SortExprSPtr sort_expr)
     : GrammarTerm(location), sort_expr(sort_expr)
 {
     // Nothing here
@@ -1464,7 +1410,7 @@ ConstantGrammarTerm::ConstantGrammarTerm(const SourceLocation& location,
 
 ConstantGrammarTerm::~ConstantGrammarTerm()
 {
-    delete sort_expr;
+    // Nothing here
 }
 
 void ConstantGrammarTerm::accept(ASTVisitorBase* visitor) const
@@ -1472,12 +1418,12 @@ void ConstantGrammarTerm::accept(ASTVisitorBase* visitor) const
     visitor->visit_constant_grammar_term(this);
 }
 
-ASTBase* ConstantGrammarTerm::clone() const
+ASTBaseSPtr ConstantGrammarTerm::clone() const
 {
-    return new ConstantGrammarTerm(location, static_cast<SortExpr*>(sort_expr->clone()));
+    return new ConstantGrammarTerm(location, sort_expr->clone()->static_as<SortExpr>());
 }
 
-const SortExpr* ConstantGrammarTerm::get_sort_expr() const
+SortExprCSPtr ConstantGrammarTerm::get_sort_expr() const
 {
     return sort_expr;
 }
@@ -1485,7 +1431,7 @@ const SortExpr* ConstantGrammarTerm::get_sort_expr() const
 
 // Implementation of VariableGrammarTerm
 VariableGrammarTerm::VariableGrammarTerm(const SourceLocation& location,
-                                         SortExpr* sort_expr)
+                                         SortExprSPtr sort_expr)
     : GrammarTerm(location), sort_expr(sort_expr)
 {
     // Nothing here
@@ -1493,7 +1439,7 @@ VariableGrammarTerm::VariableGrammarTerm(const SourceLocation& location,
 
 VariableGrammarTerm::~VariableGrammarTerm()
 {
-    delete sort_expr;
+    // Nothing here
 }
 
 void VariableGrammarTerm::accept(ASTVisitorBase* visitor) const
@@ -1501,19 +1447,19 @@ void VariableGrammarTerm::accept(ASTVisitorBase* visitor) const
     visitor->visit_variable_grammar_term(this);
 }
 
-ASTBase* VariableGrammarTerm::clone() const
+ASTBaseSPtr VariableGrammarTerm::clone() const
 {
-    return new VariableGrammarTerm(location, static_cast<SortExpr*>(sort_expr->clone()));
+    return new VariableGrammarTerm(location, sort_expr->clone()->static_as<SortExpr>());
 }
 
-const SortExpr* VariableGrammarTerm::get_sort_expr() const
+SortExprCSPtr VariableGrammarTerm::get_sort_expr() const
 {
     return sort_expr;
 }
 
 // Implementation of BinderFreeGrammarTerm
 BinderFreeGrammarTerm::BinderFreeGrammarTerm(const SourceLocation& location,
-                                             Term* binder_free_term)
+                                             TermSPtr binder_free_term)
     : GrammarTerm(location), binder_free_term(binder_free_term)
 {
     // Nothing here
@@ -1521,7 +1467,7 @@ BinderFreeGrammarTerm::BinderFreeGrammarTerm(const SourceLocation& location,
 
 BinderFreeGrammarTerm::~BinderFreeGrammarTerm()
 {
-    delete binder_free_term;
+    // Nothing here
 }
 
 void BinderFreeGrammarTerm::accept(ASTVisitorBase* visitor) const
@@ -1529,12 +1475,12 @@ void BinderFreeGrammarTerm::accept(ASTVisitorBase* visitor) const
     visitor->visit_binder_free_grammar_term(this);
 }
 
-ASTBase* BinderFreeGrammarTerm::clone() const
+ASTBaseSPtr BinderFreeGrammarTerm::clone() const
 {
-    return new BinderFreeGrammarTerm(location, static_cast<Term*>(binder_free_term->clone()));
+    return new BinderFreeGrammarTerm(location, binder_free_term->clone()->static_as<Term>());
 }
 
-const Term* BinderFreeGrammarTerm::get_binder_free_term() const
+TermCSPtr BinderFreeGrammarTerm::get_binder_free_term() const
 {
     return binder_free_term;
 }
@@ -1542,8 +1488,8 @@ const Term* BinderFreeGrammarTerm::get_binder_free_term() const
 // Implementation of GroupedRuleList
 GroupedRuleList::GroupedRuleList(const SourceLocation& location,
                                  const string& head_symbol,
-                                 SortExpr* head_symbol_sort,
-                                 const vector<GrammarTerm*>& expansion_rules)
+                                 SortExprSPtr head_symbol_sort,
+                                 const vector<GrammarTermSPtr>& expansion_rules)
     : ASTBase(location), head_symbol(head_symbol), head_symbol_sort(head_symbol_sort),
       expansion_rules(expansion_rules)
 {
@@ -1552,8 +1498,7 @@ GroupedRuleList::GroupedRuleList(const SourceLocation& location,
 
 GroupedRuleList::~GroupedRuleList()
 {
-    delete head_symbol_sort;
-    delete_pointer_vector(expansion_rules);
+    // Nothing here
 }
 
 void GroupedRuleList::accept(ASTVisitorBase* visitor) const
@@ -1561,12 +1506,12 @@ void GroupedRuleList::accept(ASTVisitorBase* visitor) const
     visitor->visit_grouped_rule_list(this);
 }
 
-ASTBase* GroupedRuleList::clone() const
+ASTBaseSPtr GroupedRuleList::clone() const
 {
-    vector<GrammarTerm*> cloned_expansion_rules;
+    vector<GrammarTermSPtr> cloned_expansion_rules;
     clone_vector(expansion_rules, cloned_expansion_rules);
     return new GroupedRuleList(location, head_symbol,
-                               static_cast<SortExpr*>(head_symbol_sort->clone()),
+                               head_symbol_sort->clone()->static_as<SortExpr>(),
                                cloned_expansion_rules);
 }
 
@@ -1575,12 +1520,12 @@ const string& GroupedRuleList::get_head_symbol() const
     return head_symbol;
 }
 
-const SortExpr* GroupedRuleList::get_head_symbol_sort() const
+SortExprCSPtr GroupedRuleList::get_head_symbol_sort() const
 {
     return head_symbol_sort;
 }
 
-const vector<const GrammarTerm*>& GroupedRuleList::get_expansion_rules() const
+const vector<GrammarTermCSPtr>& GroupedRuleList::get_expansion_rules() const
 {
     return const_expansion_rules;
 }
@@ -1588,8 +1533,8 @@ const vector<const GrammarTerm*>& GroupedRuleList::get_expansion_rules() const
 
 // Implementation of Grammar
 Grammar::Grammar(const SourceLocation& location,
-                 const vector<SortedSymbol*>& grammar_nonterminals,
-                 const vector<GroupedRuleList*>& grouped_rule_lists)
+                 const vector<SortedSymbolSPtr>& grammar_nonterminals,
+                 const vector<GroupedRuleListSPtr>& grouped_rule_lists)
     : ASTBase(location), grammar_nonterminals(grammar_nonterminals)
 {
     copy_vector(grammar_nonterminals, const_grammar_nonterminals);
@@ -1609,10 +1554,7 @@ Grammar::Grammar(const SourceLocation& location,
 
 Grammar::~Grammar()
 {
-    delete_pointer_vector(grammar_nonterminals);
-    for(auto it = grouped_rule_lists.begin(); it != grouped_rule_lists.end(); ++it) {
-        delete it->second;
-    }
+    // Nothing here
 }
 
 void Grammar::accept(ASTVisitorBase* visitor) const
@@ -1620,32 +1562,32 @@ void Grammar::accept(ASTVisitorBase* visitor) const
     visitor->visit_grammar(this);
 }
 
-ASTBase* Grammar::clone() const
+ASTBaseSPtr Grammar::clone() const
 {
-    vector<SortedSymbol*> cloned_nonterminals;
-    vector<GroupedRuleList*> cloned_rule_lists;
+    vector<SortedSymbolSPtr> cloned_nonterminals;
+    vector<GroupedRuleListSPtr> cloned_rule_lists;
 
     clone_vector(grammar_nonterminals, cloned_nonterminals);
     for(auto it = grouped_rule_lists.begin(); it != grouped_rule_lists.end(); ++it) {
-        cloned_rule_lists.push_back(static_cast<GroupedRuleList*>(it->second->clone()));
+        cloned_rule_lists.push_back(it->second->clone()->static_as<GroupedRuleList>());
     }
 
     return new Grammar(location, cloned_nonterminals, cloned_rule_lists);
 }
 
-const vector<const SortedSymbol*>& Grammar::get_nonterminals() const
+const vector<SortedSymbolCSPtr>& Grammar::get_nonterminals() const
 {
     return const_grammar_nonterminals;
 }
 
-const unordered_map<string, const GroupedRuleList*>& Grammar::get_grouped_rule_lists() const
+const unordered_map<string, GroupedRuleListCSPtr>& Grammar::get_grouped_rule_lists() const
 {
     return const_grouped_rule_lists;
 }
 
 // Implementation of Program
 Program::Program(const SourceLocation& location,
-                 const vector<Command*>& commands)
+                 const vector<CommandSPtr>& commands)
     : ASTBase(location), program_commands(commands)
 {
     copy_vector(program_commands, const_program_commands);
@@ -1653,7 +1595,7 @@ Program::Program(const SourceLocation& location,
 
 Program::~Program()
 {
-    delete_pointer_vector(program_commands);
+    // Nothing here
 }
 
 void Program::accept(ASTVisitorBase* visitor) const
@@ -1661,14 +1603,14 @@ void Program::accept(ASTVisitorBase* visitor) const
     visitor->visit_program(this);
 }
 
-ASTBase* Program::clone() const
+ASTBaseSPtr Program::clone() const
 {
-    vector<Command*> cloned_commands;
+    vector<CommandSPtr> cloned_commands;
     clone_vector(program_commands, cloned_commands);
     return new Program(location, cloned_commands);
 }
 
-const vector<const Command*>& Program::get_commands() const
+const vector<CommandCSPtr>& Program::get_commands() const
 {
     return const_program_commands;
 }
@@ -1682,7 +1624,7 @@ static inline void do_parse()
     }
 }
 
-Program* Sygus2Parser::parse(const string& file_name)
+ProgramSPtr Sygus2Parser::parse(const string& file_name)
 {
     Sygus2Bison::the_program = nullptr;
 
@@ -1695,7 +1637,7 @@ Program* Sygus2Parser::parse(const string& file_name)
     return Sygus2Bison::the_program;
 }
 
-Program* Sygus2Parser::parse(istream& input_stream)
+ProgramSPtr Sygus2Parser::parse(istream& input_stream)
 {
     Sygus2Bison::the_program = nullptr;
     ostringstream contents;
@@ -1703,7 +1645,7 @@ Program* Sygus2Parser::parse(istream& input_stream)
     return parse(contents.str());
 }
 
-Program* Sygus2Parser::parse(FILE* handle)
+ProgramSPtr Sygus2Parser::parse(FILE* handle)
 {
     Sygus2Bison::the_program = nullptr;
     yyin = handle;
@@ -1711,7 +1653,7 @@ Program* Sygus2Parser::parse(FILE* handle)
     return Sygus2Bison::the_program;
 }
 
-Program* Sygus2Parser::parse_string(const string& input_string)
+ProgramSPtr Sygus2Parser::parse_string(const string& input_string)
 {
     Sygus2Bison::the_program = nullptr;
     auto buffer_handle = yy_scan_string(const_cast<char*>(input_string.c_str()));
@@ -1723,7 +1665,7 @@ Program* Sygus2Parser::parse_string(const string& input_string)
     return Sygus2Bison::the_program;
 }
 
-Program* Sygus2Parser::parse(char* buffer)
+ProgramSPtr Sygus2Parser::parse(char* buffer)
 {
     Sygus2Bison::the_program = nullptr;
     auto buffer_handle = yy_scan_string(buffer);

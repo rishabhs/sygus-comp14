@@ -76,41 +76,41 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     vector<string>* symbol_list;
 
     Command* the_command;
-    vector<Command*>* command_list;
+    vector<CommandSPtr>* command_list;
 
     SortedSymbol* the_sorted_symbol;
-    vector<SortedSymbol*>* sorted_symbol_list;
+    vector<SortedSymbolSPtr>* sorted_symbol_list;
 
     Identifier* the_identifier;
 
     SortExpr* the_sort_expr;
-    vector<SortExpr*>* sort_expr_list;
+    vector<SortExprSPtr>* sort_expr_list;
 
     SortNameAndArity* sort_name_and_arity;
-    vector<SortNameAndArity*>* sort_name_and_arity_list;
+    vector<SortNameAndAritySPtr>* sort_name_and_arity_list;
 
     DatatypeConstructor* datatype_constructor;
-    vector<DatatypeConstructor*>* datatype_constructor_list;
+    vector<DatatypeConstructorSPtr>* datatype_constructor_list;
 
     DatatypeConstructorList* datatype_constructors;
-    vector<DatatypeConstructorList*>* datatype_constructors_list;
+    vector<DatatypeConstructorListSPtr>* datatype_constructors_list;
 
     Index* the_index;
-    vector<Index*>* index_list;
+    vector<IndexSPtr>* index_list;
 
     Term* the_term;
-    vector<Term*>* term_list;
+    vector<TermSPtr>* term_list;
 
     VariableBinding* the_binding;
-    vector<VariableBinding*>* binding_list;
+    vector<VariableBindingSPtr>* binding_list;
 
     GroupedRuleList* the_grouped_rule_list;
-    vector<GroupedRuleList*>* grouped_rule_list_list;
+    vector<GroupedRuleListSPtr>* grouped_rule_list_list;
 
     Grammar* the_grammar;
 
     GrammarTerm* the_grammar_term;
-    vector<GrammarTerm*>* grammar_term_list;
+    vector<GrammarTermSPtr>* grammar_term_list;
 
     Literal* the_literal;
 }
@@ -198,7 +198,7 @@ CommandStar : CommandStar Command
             }
             | /* empty */
             {
-                $$ = new vector<Command*>();
+                $$ = new vector<CommandSPtr>();
             }
 
 Command : CheckSynthCommand
@@ -324,7 +324,7 @@ SortNameAndArityPlus : SortNameAndArityPlus SortNameAndArity
                      }
                      | SortNameAndArity
                      {
-                         $$ = new vector<SortNameAndArity*>();
+                         $$ = new vector<SortNameAndAritySPtr>();
                          $$->push_back($1);
                      }
 
@@ -345,7 +345,7 @@ DatatypeConstructorListPlus : DatatypeConstructorListPlus DatatypeConstructorLis
                             }
                             | DatatypeConstructorList
                             {
-                                $$ = new vector<DatatypeConstructorList*>();
+                                $$ = new vector<DatatypeConstructorListSPtr>();
                                 $$->push_back($1);
                             }
 
@@ -379,7 +379,7 @@ ConstructorDefinitionPlus : ConstructorDefinitionPlus ConstructorDefinition
                           }
                           | ConstructorDefinition
                           {
-                              $$ = new vector<DatatypeConstructor*>();
+                              $$ = new vector<DatatypeConstructorSPtr>();
                               $$->push_back($1);
                           }
 
@@ -444,7 +444,7 @@ SortExprPlus : SortExprPlus SortExpr
              }
              | SortExpr
              {
-                 $$ = new vector<SortExpr*>();
+                 $$ = new vector<SortExprSPtr>();
                  $$->push_back($1);
              }
 
@@ -460,7 +460,7 @@ IndexPlus : IndexPlus Index
           }
           | Index
           {
-              $$ = new vector<Index*>();
+              $$ = new vector<IndexSPtr>();
               $$->push_back($1);
           }
 
@@ -514,7 +514,7 @@ TermPlus : TermPlus Term
          }
          | Term
          {
-             $$ = new vector<Term*>();
+             $$ = new vector<TermSPtr>();
              $$->push_back($1);
          }
 
@@ -525,7 +525,7 @@ SortedSymbolPlus : SortedSymbolPlus SortedSymbol
                  }
                  | SortedSymbol
                  {
-                     $$ = new vector<SortedSymbol*>();
+                     $$ = new vector<SortedSymbolSPtr>();
                      $$->push_back($1);
                  }
 
@@ -536,7 +536,7 @@ SortedSymbolStar : SortedSymbolStar SortedSymbol
                  }
                  | /* empty */
                  {
-                     $$ = new vector<SortedSymbol*>();
+                     $$ = new vector<SortedSymbolSPtr>();
                  }
 
 SortedSymbol : TK_LPAREN Symbol SortExpr TK_RPAREN
@@ -552,7 +552,7 @@ BindingPlus : BindingPlus Binding
             }
             | Binding
             {
-                $$ = new vector<VariableBinding*>();
+                $$ = new vector<VariableBindingSPtr>();
                 $$->push_back($1);
             }
 
@@ -616,7 +616,7 @@ GroupedRuleListPlus : GroupedRuleListPlus GroupedRuleList
                     }
                     | GroupedRuleList
                     {
-                        $$ = new vector<GroupedRuleList*>();
+                        $$ = new vector<GroupedRuleListSPtr>();
                         $$->push_back($1);
                     }
 
@@ -634,7 +634,7 @@ GTermPlus : GTermPlus GTerm
           }
           | GTerm
           {
-              $$ = new vector<GrammarTerm*>();
+              $$ = new vector<GrammarTermSPtr>();
               $$->push_back($1);
           }
 
@@ -672,5 +672,5 @@ BFTermPlus : BFTermPlus BFTerm
            }
            | BFTerm
            {
-               $$ = new vector<Term*>();
+               $$ = new vector<TermSPtr>();
            }

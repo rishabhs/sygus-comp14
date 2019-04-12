@@ -42,11 +42,15 @@
 #include <vector>
 #include <functional>
 #include "Sygus2ParserCommon.hpp"
+#include "BaseTypes.hpp"
+#include "RefCountable.hpp"
+#include "ManagedPointer.hpp"
 #include "Sygus2ParserFwd.hpp"
 
 namespace Sygus2Parser {
 
-class SourceLocation
+class SourceLocation : public Equatable<SourceLocation>,
+                       public Hashable<SourceLocation>
 {
 private:
     i32 line;
@@ -59,12 +63,11 @@ public:
 
     ~SourceLocation();
 
-    bool operator == (const SourceLocation& other) const;
-    bool operator != (const SourceLocation& other) const;
+    bool equals_(const SourceLocation& other) const;
 
     SourceLocation& operator = (const SourceLocation& Other);
     SourceLocation& operator = (SourceLocation&& other);
-    i64 get_hash_code() const;
+    u64 compute_hash_() const;
 
     i32 get_line() const;
     i32 get_column() const;
@@ -73,7 +76,12 @@ public:
     static SourceLocation none;
 };
 
-class ASTBase
+class ASTBase;
+class ASTVisitorBase;
+typedef ManagedPointer<ASTBase> ASTBaseSPtr;
+typedef ManagedConstPointer<ASTBase> ASTBaseCSPtr;
+
+class ASTBase : public RefCountable<ASTBase>, public Downcastable<ASTBase>
 {
 protected:
     SourceLocation location;
@@ -87,10 +95,11 @@ public:
 
     // Abstract methods
     virtual void accept(ASTVisitorBase* visitor) const = 0;
-    virtual ASTBase* clone() const = 0;
+    virtual ASTBaseSPtr clone() const = 0;
 };
 
-class Index : public ASTBase
+
+class Index : public ASTBase, public Equatable<Index>, public Hashable<Index>
 {
 private:
     string symbol;
@@ -106,11 +115,10 @@ public:
     virtual ~Index();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    bool operator == (const Index& other) const;
-    bool operator != (const Index& other) const;
-    i64 get_hash_code() const;
+    bool equals_(const Index& other) const;
+    u64 compute_hash_() const;
 
     Index& operator = (const Index& other);
     Index& operator = (Index&& other);
@@ -123,62 +131,70 @@ public:
     string to_string() const;
 };
 
-class Identifier : public ASTBase
+typedef ManagedPointer<Index> IndexSPtr;
+typedef ManagedConstPointer<Index> IndexCSPtr;
+
+class Identifier : public ASTBase, public Equatable<Identifier>, public Hashable<Identifier>
 {
 private:
     string symbol;
-    vector<Index*> indices;
-    vector<const Index*> const_indices;
+    vector<IndexSPtr> indices;
+    vector<IndexCSPtr> const_indices;
 
 public:
     Identifier(const string& symbol);
     Identifier(const SourceLocation& location, const string& symbol);
-    Identifier(const SourceLocation& location, const string& symbol, const vector<Index*>& indices);
+    Identifier(const SourceLocation& location, const string& symbol, const vector<IndexSPtr>& indices);
     Identifier(const Identifier& other);
     Identifier(Identifier&& other);
 
     virtual ~Identifier();
 
-    bool operator == (const Identifier& other) const;
-    bool operator != (const Identifier& other) const;
-    i64 get_hash_code() const;
+    bool equals_(const Identifier& other) const;
+    u64 compute_hash_() const;
 
     Identifier& operator = (const Identifier& other);
     Identifier& operator = (Identifier&& other);
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     bool is_indexed() const;
 
     // accessors
     const string& get_symbol() const;
-    const vector<const Index*> get_indices() const;
+    const vector<IndexCSPtr> get_indices() const;
     string to_string() const;
 };
 
+typedef ManagedPointer<Identifier> IdentifierSPtr;
+typedef ManagedConstPointer<Identifier> IdentifierCSPtr;
+
+class SortExpr;
+typedef ManagedPointer<SortExpr> SortExprSPtr;
+typedef ManagedConstPointer<SortExpr> SortExprCSPtr;
 
 class SortExpr : public ASTBase
 {
 private:
-    Identifier* identifier;
-    vector<SortExpr*> param_sorts;
-    vector<const SortExpr*> const_param_sorts;
+    IdentifierSPtr identifier;
+    vector<SortExprSPtr> param_sorts;
+    vector<SortExprCSPtr> const_param_sorts;
 
 public:
-    SortExpr(const SourceLocation& location, Identifier* identifier);
-    SortExpr(const SourceLocation& location, Identifier* identifier,
-             const vector<SortExpr*>& param_sorts);
+    SortExpr(const SourceLocation& location, IdentifierSPtr identifier);
+    SortExpr(const SourceLocation& location, IdentifierSPtr identifier,
+             const vector<SortExprSPtr>& param_sorts);
     virtual ~SortExpr();
 
     bool operator == (const SortExpr& other) const;
     bool operator != (const SortExpr& other) const;
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const Identifier* get_identifier() const;
-    const vector<const SortExpr*>& get_param_sorts() const;
+    IdentifierCSPtr get_identifier() const;
+    const vector<SortExprCSPtr>& get_param_sorts() const;
 };
 
 class SortNameAndArity : public ASTBase
@@ -193,51 +209,81 @@ public:
     virtual ~SortNameAndArity();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_sort_name() const;
     u32 get_sort_arity() const;
 };
 
+typedef ManagedPointer<SortNameAndArity> SortNameAndAritySPtr;
+typedef ManagedConstPointer<SortNameAndArity> SortNameAndArityCSPtr;
+
+class SortedSymbol : public ASTBase
+{
+private:
+    string symbol;
+    SortExprSPtr sort_expr;
+
+public:
+    SortedSymbol(const SourceLocation& location, const string& symbol,
+                 SortExprSPtr sort_expr);
+    virtual ~SortedSymbol();
+
+    virtual void accept(ASTVisitorBase* visitor) const override;
+    virtual ASTBaseSPtr clone() const override;
+
+    const string& get_symbol() const;
+    SortExprCSPtr get_sort_expr() const;
+};
+
+typedef ManagedPointer<SortedSymbol> SortedSymbolSPtr;
+typedef ManagedConstPointer<SortedSymbol> SortedSymbolCSPtr;
+
 class DatatypeConstructor : public ASTBase
 {
 private:
     string constructor_name;
-    vector<SortedSymbol*> constructor_parameters;
-    vector<const SortedSymbol*> const_constructor_parameters;
+    vector<SortedSymbolSPtr> constructor_parameters;
+    vector<SortedSymbolCSPtr> const_constructor_parameters;
 
 public:
     DatatypeConstructor(const SourceLocation& location,
                         const string& constructor_name,
-                        const vector<SortedSymbol*>& constructor_parameters);
+                        const vector<SortedSymbolSPtr>& constructor_parameters);
     virtual ~DatatypeConstructor();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_constructor_name() const;
-    const vector<const SortedSymbol*>& get_constructor_parameters() const;
+    const vector<SortedSymbolCSPtr>& get_constructor_parameters() const;
 };
+
+typedef ManagedPointer<DatatypeConstructor> DatatypeConstructorSPtr;
+typedef ManagedConstPointer<DatatypeConstructor> DatatypeConstructorCSPtr;
 
 class DatatypeConstructorList : public ASTBase
 {
 private:
     vector<string> sort_parameter_names;
-    vector<DatatypeConstructor*> datatype_constructors;
-    vector<const DatatypeConstructor*> const_datatype_constructors;
+    vector<DatatypeConstructorSPtr> datatype_constructors;
+    vector<DatatypeConstructorCSPtr> const_datatype_constructors;
 
 public:
     DatatypeConstructorList(const SourceLocation& location,
                             const vector<string>& sort_parameter_names,
-                            const vector<DatatypeConstructor*>& datatype_constructors);
+                            const vector<DatatypeConstructorSPtr>& datatype_constructors);
     virtual ~DatatypeConstructorList();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const vector<string>& get_sort_parameter_names() const;
-    const vector<const DatatypeConstructor*>& get_datatype_constructors() const;
+    const vector<DatatypeConstructorCSPtr>& get_datatype_constructors() const;
 };
+
+typedef ManagedPointer<DatatypeConstructorList> DatatypeConstructorListSPtr;
+typedef ManagedConstPointer<DatatypeConstructorList> DatatypeConstructorListCSPtr;
 
 enum class LiteralKind
     {
@@ -261,73 +307,88 @@ public:
     virtual ~Literal();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_literal_string() const;
     LiteralKind get_literal_kind() const;
 };
 
+typedef ManagedPointer<Literal> LiteralSPtr;
+typedef ManagedConstPointer<Literal> LiteralCSPtr;
+
 class Term : public ASTBase
 {
 protected:
-    mutable SortExpr* sort;
+    mutable SortExprSPtr sort;
     Term(const SourceLocation& location);
 
 public:
     virtual ~Term();
-    void set_sort(SortExpr* sort) const;
-    const SortExpr* get_sort() const;
+    void set_sort(SortExprSPtr sort) const;
+    SortExprCSPtr get_sort() const;
 };
+
+typedef ManagedPointer<Term> TermSPtr;
+typedef ManagedConstPointer<Term> TermCSPtr;
 
 class IdentifierTerm : public Term
 {
 private:
-    Identifier* identifier;
+    IdentifierSPtr identifier;
 
 public:
-    IdentifierTerm(const SourceLocation& location, Identifier* identifier);
+    IdentifierTerm(const SourceLocation& location, IdentifierSPtr identifier);
     virtual ~IdentifierTerm();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const Identifier* get_identifier() const;
+    IdentifierCSPtr get_identifier() const;
 };
+
+typedef ManagedPointer<IdentifierTerm> IdentifierTermSPtr;
+typedef ManagedConstPointer<IdentifierTerm> IdentifierTermCSPtr;
 
 class LiteralTerm : public Term
 {
 private:
-    Literal* literal;
+    LiteralSPtr literal;
 
 public:
-    LiteralTerm(const SourceLocation& location, Literal* literal);
+    LiteralTerm(const SourceLocation& location, LiteralSPtr literal);
     virtual ~LiteralTerm();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const Literal* get_literal() const;
+    LiteralCSPtr get_literal() const;
 };
+
+typedef ManagedPointer<LiteralTerm> LiteralTermSPtr;
+typedef ManagedConstPointer<LiteralTerm> LiteralTermCSPtr;
 
 class FunctionApplicationTerm : public Term
 {
 protected:
-    Identifier* identifier;
-    vector<Term*> application_arguments;
-    vector<const Term*> const_application_arguments;
+    IdentifierSPtr identifier;
+    vector<TermSPtr> application_arguments;
+    vector<TermCSPtr> const_application_arguments;
 
 public:
     FunctionApplicationTerm(const SourceLocation& location,
-                            Identifier* identifier,
-                            const vector<Term*>& application_arguments);
+                            IdentifierSPtr identifier,
+                            const vector<TermSPtr>& application_arguments);
     virtual ~FunctionApplicationTerm();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const Identifier* get_identifier() const;
-    const vector<const Term*>& get_application_arguments() const;
+    IdentifierCSPtr get_identifier() const;
+    const vector<TermCSPtr>& get_application_arguments() const;
 };
+
+typedef ManagedPointer<FunctionApplicationTerm> FunctionApplicationTermSPtr;
+typedef ManagedConstPointer<FunctionApplicationTerm> FunctionApplicationTermCSPtr;
 
 enum class QuantifierKind
     {
@@ -335,83 +396,72 @@ enum class QuantifierKind
      Exists
     };
 
-class SortedSymbol : public ASTBase
-{
-private:
-    string symbol;
-    SortExpr* sort_expr;
-
-public:
-    SortedSymbol(const SourceLocation& location, const string& symbol,
-                 SortExpr* sort_expr);
-    virtual ~SortedSymbol();
-
-    virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
-
-    const string& get_symbol() const;
-    const SortExpr* get_sort_expr() const;
-};
-
 class QuantifiedTerm : public Term
 {
 private:
     QuantifierKind quantifier_kind;
-    vector<SortedSymbol*> quantified_symbols;
-    vector<const SortedSymbol*> const_quantified_symbols;
-    Term* quantified_term;
+    vector<SortedSymbolSPtr> quantified_symbols;
+    vector<SortedSymbolCSPtr> const_quantified_symbols;
+    TermSPtr quantified_term;
 
 public:
     QuantifiedTerm(const SourceLocation& location,
                    QuantifierKind quantifier_kind,
-                   const vector<SortedSymbol*> quantified_symbols,
-                   Term* quantified_term);
+                   const vector<SortedSymbolSPtr> quantified_symbols,
+                   TermSPtr quantified_term);
     virtual ~QuantifiedTerm();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     QuantifierKind get_quantifier_kind() const;
-    const vector<const SortedSymbol*>& get_quantified_symbols() const;
-    const Term* get_quantified_term() const;
+    const vector<SortedSymbolCSPtr>& get_quantified_symbols() const;
+    TermCSPtr get_quantified_term() const;
 };
+
+typedef ManagedPointer<QuantifiedTerm> QuantifiedTermSPtr;
+typedef ManagedConstPointer<QuantifiedTerm> QuantifiedTermCSPtr;
 
 class VariableBinding : public ASTBase
 {
 private:
-    const string& symbol;
-    Term* binding;
+    string symbol;
+    TermSPtr binding;
 
 public:
     VariableBinding(const SourceLocation& location,
                     const string& symbol,
-                    Term* binding);
+                    TermSPtr binding);
     virtual ~VariableBinding();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_symbol() const;
-    const Term* get_binding() const;
+    TermCSPtr get_binding() const;
 };
+
+typedef ManagedPointer<VariableBinding> VariableBindingSPtr;
+typedef ManagedConstPointer<VariableBinding> VariableBindingCSPtr;
 
 class LetTerm : public Term
 {
 private:
-    vector<VariableBinding*> bindings;
-    vector<const VariableBinding*> const_bindings;
-    Term* let_body;
+    vector<VariableBindingSPtr> bindings;
+    vector<VariableBindingCSPtr> const_bindings;
+    TermSPtr let_body;
 
 public:
-    LetTerm(const SourceLocation& location, const vector<VariableBinding*>& bindings,
-            Term* let_body);
+    LetTerm(const SourceLocation& location,
+            const vector<VariableBindingSPtr>& bindings,
+            TermSPtr let_body);
     virtual ~LetTerm();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const vector<const VariableBinding*>& get_bindings() const;
-    const Term* get_let_body() const;
+    const vector<VariableBindingCSPtr>& get_bindings() const;
+    TermCSPtr get_let_body() const;
 };
 
 class Command : public ASTBase
@@ -428,6 +478,9 @@ protected:
     Command(const SourceLocation& location);
 };
 
+typedef ManagedPointer<Command> CommandSPtr;
+typedef ManagedConstPointer<Command> CommandCSPtr;
+
 class CheckSynthCommand : public Command
 {
 public:
@@ -435,43 +488,52 @@ public:
     virtual ~CheckSynthCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 };
+
+typedef ManagedPointer<CheckSynthCommand> CheckSynthCommandSPtr;
+typedef ManagedConstPointer<CheckSynthCommand> CheckSynthCommandCSPtr;
 
 class ConstraintCommand : public Command
 {
 private:
-    Term* constraint_term;
+    TermSPtr constraint_term;
 
 public:
     ConstraintCommand(const SourceLocation& location,
-                      Term* constraint_term);
+                      TermSPtr constraint_term);
     virtual ~ConstraintCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const Term* get_constraint_term() const;
+    TermCSPtr get_constraint_term() const;
 };
+
+typedef ManagedPointer<ConstraintCommand> ConstraintCommandSPtr;
+typedef ManagedConstPointer<ConstraintCommand> ConstraintCommandCSPtr;
 
 class DeclareVarCommand : public Command
 {
 private:
     string symbol;
-    SortExpr* sort_expr;
+    SortExprSPtr sort_expr;
 
 public:
     DeclareVarCommand(const SourceLocation& location,
                       const string& symbol,
-                      SortExpr* sort_expr);
+                      SortExprSPtr sort_expr);
     virtual ~DeclareVarCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_symbol() const;
-    const SortExpr* get_sort_expr() const;
+    SortExprCSPtr get_sort_expr() const;
 };
+
+typedef ManagedPointer<DeclareVarCommand> DeclareVarCommandSPtr;
+typedef ManagedConstPointer<DeclareVarCommand> DeclareVarCommandCSPtr;
 
 class InvConstraintCommand : public Command
 {
@@ -491,13 +553,16 @@ public:
     virtual ~InvConstraintCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_inv_fun_symbol() const;
     const string& get_precondition_symbol() const;
     const string& get_transition_relation_symbol() const;
     const string& get_postcondition_symbol() const;
 };
+
+typedef ManagedPointer<InvConstraintCommand> InvConstraintCommandSPtr;
+typedef ManagedConstPointer<InvConstraintCommand> InvConstraintCommandCSPtr;
 
 class SetFeatureCommand : public Command
 {
@@ -513,51 +578,64 @@ public:
     virtual ~SetFeatureCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_feature_name() const;
     bool get_value() const;
 };
 
+typedef ManagedPointer<SetFeatureCommand> SetFeatureCommandSPtr;
+typedef ManagedConstPointer<SetFeatureCommand> SetFeatureCommandCSPtr;
+
+class Grammar;
+typedef ManagedPointer<Grammar> GrammarSPtr;
+typedef ManagedConstPointer<Grammar> GrammarCSPtr;
+
 class SynthFunCommand : public Command
 {
 private:
-    const string& function_symbol;
-    vector<SortedSymbol*> function_parameters;
-    SortExpr* function_range_sort;
-    Grammar* synthesis_grammar;
+    string function_symbol;
+    vector<SortedSymbolSPtr> function_parameters;
+    SortExprSPtr function_range_sort;
+    GrammarSPtr synthesis_grammar;
 
-    vector<const SortedSymbol*> const_function_parameters;
+    vector<SortedSymbolCSPtr> const_function_parameters;
 
 public:
     SynthFunCommand(const SourceLocation& location,
                     const string& function_symbol,
-                    const vector<SortedSymbol*>& function_parameters,
-                    SortExpr* function_range_sort,
-                    Grammar* synthesis_grammar);
+                    const vector<SortedSymbolSPtr>& function_parameters,
+                    SortExprSPtr function_range_sort,
+                    GrammarSPtr synthesis_grammar);
     virtual ~SynthFunCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_function_symbol() const;
-    const vector<const SortedSymbol*>& get_function_parameters() const;
-    const SortExpr* get_function_range_sort() const;
-    const Grammar* get_synthesis_grammar() const;
+    const vector<SortedSymbolCSPtr>& get_function_parameters() const;
+    SortExprCSPtr get_function_range_sort() const;
+    GrammarCSPtr get_synthesis_grammar() const;
 };
+
+typedef ManagedPointer<SynthFunCommand> SynthFunCommandSPtr;
+typedef ManagedConstPointer<SynthFunCommand> SynthFunCommandCSPtr;
 
 class SynthInvCommand : public SynthFunCommand
 {
 public:
     SynthInvCommand(const SourceLocation& location,
                     const string& function_symbol,
-                    const vector<SortedSymbol*>& function_parameters,
-                    Grammar* synthesis_grammar);
+                    const vector<SortedSymbolSPtr>& function_parameters,
+                    GrammarSPtr synthesis_grammar);
     virtual ~SynthInvCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 };
+
+typedef ManagedPointer<SynthInvCommand> SynthInvCommandSPtr;
+typedef ManagedConstPointer<SynthInvCommand> SynthInvCommandCSPtr;
 
 class DeclareSortCommand : public Command
 {
@@ -572,101 +650,116 @@ public:
     virtual ~DeclareSortCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_sort_name() const;
     u32 get_sort_arity() const;
 };
 
+typedef ManagedPointer<DeclareSortCommand> DeclareSortCommandSPtr;
+typedef ManagedConstPointer<DeclareSortCommand> DeclareSortCommandCSPtr;
+
 class DefineFunCommand : public Command
 {
 private:
     string function_symbol;
-    vector<SortedSymbol*> function_parameters;
-    SortExpr* function_range_sort;
-    Term* function_body;
+    vector<SortedSymbolSPtr> function_parameters;
+    SortExprSPtr function_range_sort;
+    TermSPtr function_body;
 
-    vector<const SortedSymbol*> const_function_parameters;
+    vector<SortedSymbolCSPtr> const_function_parameters;
 
 public:
     DefineFunCommand(const SourceLocation& location,
                      const string& function_symbol,
-                     const vector<SortedSymbol*>& function_parameters,
-                     SortExpr* function_range_sort,
-                     Term* function_body);
+                     const vector<SortedSymbolSPtr>& function_parameters,
+                     SortExprSPtr function_range_sort,
+                     TermSPtr function_body);
     virtual ~DefineFunCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_function_symbol() const;
-    const vector<const SortedSymbol*>& get_function_parameters() const;
-    const SortExpr* get_function_range_sort() const;
-    const Term* get_function_body() const;
+    const vector<SortedSymbolCSPtr>& get_function_parameters() const;
+    SortExprCSPtr get_function_range_sort() const;
+    TermCSPtr get_function_body() const;
 };
+
+typedef ManagedPointer<DefineFunCommand> DefineFunCommandSPtr;
+typedef ManagedConstPointer<DefineFunCommand> DefineFunCommandCSPtr;
 
 class DefineSortCommand : public Command
 {
 private:
     string sort_name;
     vector<string> sort_parameters;
-    SortExpr* sort_expr;
+    SortExprSPtr sort_expr;
 
 public:
     DefineSortCommand(const SourceLocation& location,
                       const string& sort_name,
                       const vector<string>& sort_parameters,
-                      SortExpr* sort_expr);
+                      SortExprSPtr sort_expr);
     virtual ~DefineSortCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_sort_name() const;
-    const SortExpr* get_sort_expr() const;
+    SortExprCSPtr get_sort_expr() const;
     const vector<string>& get_sort_parameters() const;
 };
+
+typedef ManagedPointer<DefineSortCommand> DefineSortCommandSPtr;
+typedef ManagedConstPointer<DefineSortCommand> DefineSortCommandCSPtr;
 
 class DeclareDatatypesCommand : public Command
 {
 private:
-    vector<SortNameAndArity*> sort_names_and_arities;
-    vector<DatatypeConstructorList*> datatype_constructor_lists;
+    vector<SortNameAndAritySPtr> sort_names_and_arities;
+    vector<DatatypeConstructorListSPtr> datatype_constructor_lists;
 
-    vector<const SortNameAndArity*> const_sort_names_and_arities;
-    vector<const DatatypeConstructorList*> const_datatype_constructor_lists;
+    vector<SortNameAndArityCSPtr> const_sort_names_and_arities;
+    vector<DatatypeConstructorListCSPtr> const_datatype_constructor_lists;
 
 public:
     DeclareDatatypesCommand(const SourceLocation& location,
-                            const vector<SortNameAndArity*>& sort_names_and_arities,
-                            const vector<DatatypeConstructorList*>& constructor_lists);
+                            const vector<SortNameAndAritySPtr>& sort_names_and_arities,
+                            const vector<DatatypeConstructorListSPtr>& constructor_lists);
     virtual ~DeclareDatatypesCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const vector<const SortNameAndArity*>& get_sort_names_and_arities() const;
-    const vector<const DatatypeConstructorList*>& get_datatype_constructor_lists() const;
+    const vector<SortNameAndArityCSPtr>& get_sort_names_and_arities() const;
+    const vector<DatatypeConstructorListCSPtr>& get_datatype_constructor_lists() const;
 };
+
+typedef ManagedPointer<DeclareDatatypesCommand> DeclareDatatypesCommandSPtr;
+typedef ManagedConstPointer<DeclareDatatypesCommand> DeclareDatatypesCommandCSPtr;
 
 class DeclareDatatypeCommand : public Command
 {
 private:
     string datatype_name;
-    DatatypeConstructorList* datatype_constructor_list;
+    DatatypeConstructorListSPtr datatype_constructor_list;
 
 public:
     DeclareDatatypeCommand(const SourceLocation& location,
                            const string& datatype_sort_name,
-                           DatatypeConstructorList* datatype_constructor_list);
+                           DatatypeConstructorListSPtr datatype_constructor_list);
     virtual ~DeclareDatatypeCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_datatype_name() const;
-    const DatatypeConstructorList* get_datatype_constructor_list() const;
+    DatatypeConstructorListCSPtr get_datatype_constructor_list() const;
 };
+
+typedef ManagedPointer<DeclareDatatypeCommand> DeclareDatatypeCommandSPtr;
+typedef ManagedConstPointer<DeclareDatatypeCommand> DeclareDatatypeCommandCSPtr;
 
 class SetLogicCommand : public Command
 {
@@ -678,29 +771,35 @@ public:
     virtual ~SetLogicCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_logic_name() const;
 };
+
+typedef ManagedPointer<SetLogicCommand> SetLogicCommandSPtr;
+typedef ManagedConstPointer<SetLogicCommand> SetLogicCommandCSPtr;
 
 class SetOptionCommand : public Command
 {
 private:
     string option_name;
-    Literal* option_value;
+    LiteralSPtr option_value;
 
 public:
     SetOptionCommand(const SourceLocation& location,
                      const string& option_name,
-                     Literal* option_value);
+                     LiteralSPtr option_value);
     virtual ~SetOptionCommand();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_option_name() const;
-    const Literal* get_option_value() const;
+    LiteralCSPtr get_option_value() const;
 };
+
+typedef ManagedPointer<SetOptionCommand> SetOptionCommandSPtr;
+typedef ManagedConstPointer<SetOptionCommand> SetOptionCommandCSPtr;
 
 class GrammarTerm : public Term
 {
@@ -719,111 +818,132 @@ public:
     virtual ~GrammarTerm();
 };
 
+typedef ManagedPointer<GrammarTerm> GrammarTermSPtr;
+typedef ManagedConstPointer<GrammarTerm> GrammarTermCSPtr;
+
 class ConstantGrammarTerm : public GrammarTerm
 {
 private:
-    SortExpr* sort_expr;
+    SortExprSPtr sort_expr;
 
 public:
-    ConstantGrammarTerm(const SourceLocation& location, SortExpr* sort_expr);
+    ConstantGrammarTerm(const SourceLocation& location, SortExprSPtr sort_expr);
     virtual ~ConstantGrammarTerm();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const SortExpr* get_sort_expr() const;
+    SortExprCSPtr get_sort_expr() const;
 };
+
+typedef ManagedPointer<ConstantGrammarTerm> ConstantGrammarTermSPtr;
+typedef ManagedConstPointer<ConstantGrammarTerm> ConstantGrammarTermCSPtr;
 
 class VariableGrammarTerm : public GrammarTerm
 {
 private:
-    SortExpr* sort_expr;
+    SortExprSPtr sort_expr;
 
 public:
-    VariableGrammarTerm(const SourceLocation& location, SortExpr* sort_expr);
+    VariableGrammarTerm(const SourceLocation& location, SortExprSPtr sort_expr);
     virtual ~VariableGrammarTerm();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const SortExpr* get_sort_expr() const;
+    SortExprCSPtr get_sort_expr() const;
 };
+
+typedef ManagedPointer<VariableGrammarTerm> VariableGrammarTermSPtr;
+typedef ManagedConstPointer<VariableGrammarTerm> VariableGrammarTermCSPtr;
 
 class BinderFreeGrammarTerm : public GrammarTerm
 {
 private:
-    Term* binder_free_term;
+    TermSPtr binder_free_term;
 
 public:
-    BinderFreeGrammarTerm(const SourceLocation& location, Term* binder_free_term);
+    BinderFreeGrammarTerm(const SourceLocation& location, TermSPtr binder_free_term);
     virtual ~BinderFreeGrammarTerm();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const Term* get_binder_free_term() const;
+    TermCSPtr get_binder_free_term() const;
 };
+
+typedef ManagedPointer<BinderFreeGrammarTerm> BinderFreeGrammarTermSPtr;
+typedef ManagedConstPointer<BinderFreeGrammarTerm> BinderFreeGrammarTermCSPtr;
 
 class GroupedRuleList : public ASTBase
 {
 private:
     string head_symbol;
-    SortExpr* head_symbol_sort;
-    vector<GrammarTerm*> expansion_rules;
-    vector<const GrammarTerm*> const_expansion_rules;
+    SortExprSPtr head_symbol_sort;
+    vector<GrammarTermSPtr> expansion_rules;
+    vector<GrammarTermCSPtr> const_expansion_rules;
 
 public:
     GroupedRuleList(const SourceLocation& location,
                     const string& head_symbol,
-                    SortExpr* head_symbol_sort,
-                    const vector<GrammarTerm*>& expansion_rules);
+                    SortExprSPtr head_symbol_sort,
+                    const vector<GrammarTermSPtr>& expansion_rules);
     virtual ~GroupedRuleList();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
     const string& get_head_symbol() const;
-    const SortExpr* get_head_symbol_sort() const;
-    const vector<const GrammarTerm*>& get_expansion_rules() const;
+    SortExprCSPtr get_head_symbol_sort() const;
+    const vector<GrammarTermCSPtr>& get_expansion_rules() const;
 };
+
+typedef ManagedPointer<GroupedRuleList> GroupedRuleListSPtr;
+typedef ManagedConstPointer<GroupedRuleList> GroupedRuleListCSPtr;
 
 class Grammar : public ASTBase
 {
 private:
-    vector<SortedSymbol*> grammar_nonterminals;
-    vector<const SortedSymbol*> const_grammar_nonterminals;
-    unordered_map<string, GroupedRuleList*> grouped_rule_lists;
-    unordered_map<string, const GroupedRuleList*> const_grouped_rule_lists;
+    vector<SortedSymbolSPtr> grammar_nonterminals;
+    vector<SortedSymbolCSPtr> const_grammar_nonterminals;
+    unordered_map<string, GroupedRuleListSPtr> grouped_rule_lists;
+    unordered_map<string, GroupedRuleListCSPtr> const_grouped_rule_lists;
 
 public:
     Grammar(const SourceLocation& location,
-            const vector<SortedSymbol*>& grammar_nonterminals,
-            const vector<GroupedRuleList*>& grouped_rule_lists);
+            const vector<SortedSymbolSPtr>& grammar_nonterminals,
+            const vector<GroupedRuleListSPtr>& grouped_rule_lists);
     virtual ~Grammar();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const vector<const SortedSymbol*>& get_nonterminals() const;
-    const unordered_map<string, const GroupedRuleList*>& get_grouped_rule_lists() const;
+    const vector<SortedSymbolCSPtr>& get_nonterminals() const;
+    const unordered_map<string, GroupedRuleListCSPtr>& get_grouped_rule_lists() const;
 };
+
+typedef ManagedPointer<Grammar> GrammarSPtr;
+typedef ManagedConstPointer<Grammar> GrammarCSPtr;
 
 class Program : public ASTBase
 {
 private:
-    vector<Command*> program_commands;
-    vector<const Command*> const_program_commands;
+    vector<CommandSPtr> program_commands;
+    vector<CommandCSPtr> const_program_commands;
 
 public:
     Program(const SourceLocation& location,
-            const vector<Command*>& commands);
+            const vector<CommandSPtr>& commands);
     virtual ~Program();
 
     virtual void accept(ASTVisitorBase* visitor) const override;
-    virtual ASTBase* clone() const override;
+    virtual ASTBaseSPtr clone() const override;
 
-    const vector<const Command*>& get_commands() const;
+    const vector<CommandCSPtr>& get_commands() const;
 };
+
+typedef ManagedPointer<Program> ProgramSPtr;
+typedef ManagedConstPointer<Program> ProgramCSPtr;
 
 // Class definition for the sygus 2.0 parser
 class Sygus2Parser
@@ -836,11 +956,11 @@ public:
     Sygus2Parser& operator = (Sygus2Parser&& other) = delete;
 
     // The main parse action
-    static Program* parse(const string& file_name);
-    static Program* parse(istream& input_stream);
-    static Program* parse(FILE* handle);
-    static Program* parse_string(const string& input_string);
-    static Program* parse(char* buffer);
+    static ProgramSPtr parse(const string& file_name);
+    static ProgramSPtr parse(istream& input_stream);
+    static ProgramSPtr parse(FILE* handle);
+    static ProgramSPtr parse_string(const string& input_string);
+    static ProgramSPtr parse(char* buffer);
 };
 
 class ASTVisitorBase
