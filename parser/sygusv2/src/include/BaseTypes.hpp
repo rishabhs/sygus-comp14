@@ -39,6 +39,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <type_traits>
 
+#include "Sygus2ParserCommon.hpp"
+
 namespace Sygus2Parser {
 namespace detail_ {
 
@@ -163,9 +165,10 @@ class Hasher
 {
     static_assert(std::is_base_of<detail_::HashableEBC, T>::value,
                   "Hasher can only be instantiated with classes extending Hashable.");
-    inline u64 operator() (const T& obj)
+public:
+    inline u64 operator () (const T& obj) const
     {
-        return obj->get_hash();
+        return obj.get_hash();
     }
 };
 
@@ -174,7 +177,8 @@ class Equals
 {
     static_assert(std::is_base_of<detail_::EquatableEBC, T>::value,
                   "Equals can only be instantiated with classes extending Equatable.");
-    inline bool operator() (const T& obj1, const T& obj2)
+public:
+    inline bool operator () (const T& obj1, const T& obj2) const
     {
         return obj1 == obj2;;
     }

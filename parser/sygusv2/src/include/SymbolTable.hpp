@@ -37,12 +37,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined __SYGUS2_PARSER_SYMBOL_TABLE_HPP
 #define __SYGUS2_PARSER_SYMBOL_TABLE_HPP
 
-#include "BaseTypes.hpp"
-#include "Sygus2ParserFwd.hpp"
-#include <memory>
 #include <unordered_map>
 
+#include "Sygus2ParserCommon.hpp"
+#include "BaseTypes.hpp"
+#include "Sygus2ParserIFace.hpp"
+
 namespace Sygus2Parser {
+
+using namespace std;
+
+class SortDescriptor;
+typedef ManagedPointer<SortDescriptor> SortDescriptorSPtr;
+typedef ManagedConstPointer<SortDescriptor> SortDescriptorCSPtr;
 
 class SymbolTableKey : public Hashable<SymbolTableKey>, public Equatable<SymbolTableKey>
 {
@@ -63,6 +70,8 @@ public:
 
     bool equals_(const SymbolTableKey& other) const;
     u64 compute_hash_() const;
+
+    string to_string() const;
 
     // accessors
     const Identifier& get_identifier() const;
@@ -89,7 +98,9 @@ enum class FunctionKind
     {
      SynthFun,
      SynthInv,
-     UserDefined
+     UserDefined,
+     Uninterpreted,
+     Theory,
     };
 
 enum class SortKind
@@ -101,8 +112,8 @@ enum class SortKind
 
 class SymbolTableEntry : public Downcastable<SymbolTableEntry>, public RefCountable<SymbolTableEntry>
 {
-private:
-    SymbolTableEntryKind kind;
+protected:
+    SymbolTableEntryKind entry_kind;
     Identifier identifier;
 
     SymbolTableEntry() = delete;
@@ -110,12 +121,10 @@ private:
     SymbolTableEntry(SymbolTableEntry&& other) = delete;
     SymbolTableEntry& operator = (const SymbolTableEntry& other) = delete;
     SymbolTableEntry& operator = (SymbolTableEntry&& other) = delete;
-
-protected:
     SymbolTableEntry(SymbolTableEntryKind kind, const Identifier& identifier);
 
 public:
-    SymbolTableEntryKind get_kind() const;
+    SymbolTableEntryKind get_entry_kind() const;
     const Identifier& get_identifier() const;
 };
 
@@ -140,7 +149,7 @@ public:
                        const vector<SortDescriptorCSPtr>& argument_sorts,
                        const vector<string>& argument_names,
                        SortDescriptorCSPtr range_sort,
-                       Term* function_body,
+                       TermCSPtr function_body,
                        FunctionKind kind = FunctionKind::UserDefined);
 
     // For functions to be synthesized
@@ -157,6 +166,12 @@ public:
                        const vector<string>& argument_names,
                        GrammarCSPtr synthesis_grammar,
                        FunctionKind = FunctionKind::SynthInv);
+
+    // For universally quantified (uninterpreted) functions, or theory functions
+    FunctionDescriptor(const Identifier& identifier,
+                       const vector<SortDescriptorCSPtr>& argument_sorts,
+                       SortDescriptorCSPtr range_sort,
+                       FunctionKind kind);
 
     virtual ~FunctionDescriptor();
 
@@ -177,7 +192,7 @@ typedef ManagedPointer<FunctionDescriptor> FunctionDescriptorSPtr;
 typedef ManagedConstPointer<FunctionDescriptor> FunctionDescriptorCSPtr;
 
 class SortDescriptor : public SymbolTableEntry,
-                       public Equatable<SortDescriptor>
+                       public Equatable<SortDescriptor>,
                        public Hashable<SortDescriptor>
 {
 private:
@@ -191,22 +206,21 @@ public:
     // for uninterpreted sorts
     SortDescriptor(const Identifier& identifier, SortKind kind, u32 sort_arity);
     // for parametric sorts, user-defined or primitive.
-    SortDescriptor(const Identifier& identifier, SortKind kind, const vector<SortDescriptor*>& sort_parameters);
+    SortDescriptor(const Identifier& identifier, SortKind kind,
+                   const vector<SortDescriptorCSPtr>& sort_parameters);
 
     ~SortDescriptor();
 
     bool equals_(const SortDescriptor& other) const;
     u64 compute_hash_() const;
+    string to_string() const;
 
-    const Identifier& get_identifier() const;
     SortKind get_kind() const;
     u32 get_arity() const;
     const vector<SortDescriptorCSPtr>& get_sort_parameters() const;
     bool is_parametric() const;
+    bool is_instantiated() const;
 };
-
-typedef ManagedPointer<SortDescriptor> SortDescriptorSPtr;
-typedef ManagedConstPointer<SortDescriptor> SortDescriptorCSPtr;
 
 class VariableDescriptor : public SymbolTableEntry
 {
@@ -253,7 +267,7 @@ private:
     unordered_map<SymbolTableKey, SymbolTableEntrySPtr,
                   Hasher<SymbolTableKey>, Equals<SymbolTableKey>> mappings;
 
-    void add_mapping(SymbolTableKey key, SymbolTableEntrySPtr entry);
+    void add_mapping(const SymbolTableKey& key, SymbolTableEntrySPtr entry);
 
 public:
     SymbolTableScope();
@@ -263,7 +277,7 @@ public:
     virtual ~SymbolTableScope();
 
     // For sort names, variable names and grammar symbols
-    SymbolTableEntryCSPtr lookup(SymbolTableKey key) const;
+    SymbolTableEntryCSPtr lookup(const SymbolTableKey& key) const;
 };
 
 typedef ManagedPointer<SymbolTableScope> SymbolTableScopeSPtr;
@@ -272,22 +286,36 @@ typedef ManagedConstPointer<SymbolTableScope> SymbolTableScopeCSPtr;
 class SymbolTable : public RefCountable<SymbolTable>
 {
 private:
-    stack<SymbolTableScopeSPtr> scope_stack;
+    vector<SymbolTableScopeSPtr> scope_stack;
+
+    SymbolTableEntryCSPtr lookup(const SymbolTableKey& key, bool in_current_scope_only) const;
 
 public:
     SymbolTable();
     virtual ~SymbolTable();
 
-    void push_scope();
+    SymbolTableScopeSPtr push_scope(SymbolTableScopeSPtr scope_to_push = SymbolTableScopeSPtr::null_pointer);
     SymbolTableScopeSPtr pop_scope();
 
-    SymbolTableEntryCSPtr lookup(const Identifier& identifier) const;
-    SortDescriptorCSPtr lookup_sort(const Identifier& identifier) const;
-    VariableDescriptorCSPtr lookup_variable(const Identifier& identifier) const;
-    GrammarSymbolDescriptorCSPtr lookup_grammar_symbol(const Identifier& identifier) const;
-    FunctionDescriptorCSPtr lookup_function(const Identifier& identifier) const;
+    SymbolTableEntryCSPtr lookup(const Identifier& identifier,
+                                 bool in_current_scope_only = false) const;
+    SortDescriptorCSPtr lookup_sort(const Identifier& identifier,
+                                    bool in_current_scope_only = false) const;
+    SortDescriptorCSPtr lookup_sort(SortExprCSPtr sort_expr) const;
+    VariableDescriptorCSPtr lookup_variable(const Identifier& identifier,
+                                            bool in_current_scope_only = false) const;
+    GrammarSymbolDescriptorCSPtr lookup_grammar_symbol(const Identifier& identifier,
+                                                       bool in_current_scope_only = false) const;
     FunctionDescriptorCSPtr lookup_function(const Identifier& identifier,
-                                            const vector<SortDescriptorCSPtr>& argument_sorts) const;
+                                            bool in_current_scope_only = false) const;
+    FunctionDescriptorCSPtr lookup_function(const Identifier& identifier,
+                                            const vector<SortDescriptorCSPtr>& argument_sorts,
+                                            bool in_current_scope_only = false) const;
+
+    void add_sort(SortDescriptorSPtr sort_descriptor);
+    void add_function(FunctionDescriptorSPtr function_descriptor);
+    void add_variable(VariableDescriptorSPtr variable_descriptor);
+    void add_grammar_symbol(GrammarSymbolDescriptorSPtr grammar_symbol_descriptor);
 };
 
 } /* end namespace */

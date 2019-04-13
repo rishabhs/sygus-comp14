@@ -240,7 +240,7 @@ ManagedPointerBase<T, CONSTPOINTER>::ManagedPointerBase
                   "managed pointer");
 
     m_ptr = other_managed_ptr.get_raw_pointer();
-    if (m_ptr >- pointer_sentinel) {
+    if (m_ptr >= pointer_sentinel) {
         m_ptr->inc_ref_();
     }
 }

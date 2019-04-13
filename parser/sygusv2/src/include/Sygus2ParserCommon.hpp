@@ -37,32 +37,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined __SYGUS2_PARSER_COMMON_HPP
 #define __SYGUS2_PARSER_COMMON_HPP
 
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <fstream>
-#include <vector>
-#include <map>
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
-#include <inttypes.h>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
+#include <cstdint>
 
-using namespace std;
+namespace Sygus2Parser {
 
 // useful typedefs
-typedef int8_t i8;
-typedef uint8_t u8;
-typedef int16_t i16;
-typedef uint16_t u16;
-typedef int32_t i32;
-typedef uint32_t u32;
-typedef int64_t i64;
-typedef uint64_t u64;
+typedef std::int8_t i8;
+typedef std::uint8_t u8;
+typedef std::int16_t i16;
+typedef std::uint16_t u16;
+typedef std::int32_t i32;
+typedef std::uint32_t u32;
+typedef std::int64_t i64;
+typedef std::uint64_t u64;
+
+} /* end namespace Sygus2Parser */
 
 #endif /* __SYGUS2_PARSER_COMMON_HPP */

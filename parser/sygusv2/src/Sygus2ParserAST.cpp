@@ -34,12 +34,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "include/Sygus2ParserIFace.hpp"
-#include "include/Sygus2ParserExceptions.hpp"
 #include <algorithm>
 #include <boost/functional/hash.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
+
+#include "include/Sygus2ParserIFace.hpp"
+#include "include/Sygus2ParserExceptions.hpp"
 
 namespace Sygus2Bison {
 extern Sygus2Parser::Program* the_program;
@@ -428,7 +429,7 @@ SortExpr::~SortExpr()
     // Nothing here
 }
 
-bool SortExpr::operator == (const SortExpr& other) const
+bool SortExpr::equals_(const SortExpr& other) const
 {
     if (&other == this) {
         return true;
@@ -441,9 +442,16 @@ bool SortExpr::operator == (const SortExpr& other) const
     return compare_ptr_vectors(param_sorts, other.param_sorts);
 }
 
-bool SortExpr::operator != (const SortExpr& other) const
+u64 SortExpr::compute_hash_() const
 {
-    return !(*this == other);
+    Hasher<Identifier> identifier_hasher;
+    u64 result = identifier_hasher(*identifier);
+
+    for (auto const& param_sort : param_sorts) {
+        result = (result * 1001933) ^ param_sort->get_hash();
+    }
+
+    return result;
 }
 
 void SortExpr::accept(ASTVisitorBase* visitor) const

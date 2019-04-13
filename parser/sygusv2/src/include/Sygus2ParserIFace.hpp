@@ -41,13 +41,16 @@
 #include <utility>
 #include <vector>
 #include <functional>
+#include <unordered_map>
+
 #include "Sygus2ParserCommon.hpp"
 #include "BaseTypes.hpp"
 #include "RefCountable.hpp"
 #include "ManagedPointer.hpp"
-#include "Sygus2ParserFwd.hpp"
 
 namespace Sygus2Parser {
+
+using namespace std;
 
 class SourceLocation : public Equatable<SourceLocation>,
                        public Hashable<SourceLocation>
@@ -174,7 +177,9 @@ class SortExpr;
 typedef ManagedPointer<SortExpr> SortExprSPtr;
 typedef ManagedConstPointer<SortExpr> SortExprCSPtr;
 
-class SortExpr : public ASTBase
+class SortExpr : public ASTBase,
+                 public Equatable<SortExpr>,
+                 public Hashable<SortExpr>
 {
 private:
     IdentifierSPtr identifier;
@@ -187,8 +192,8 @@ public:
              const vector<SortExprSPtr>& param_sorts);
     virtual ~SortExpr();
 
-    bool operator == (const SortExpr& other) const;
-    bool operator != (const SortExpr& other) const;
+    bool equals_(const SortExpr& other) const;
+    u64 compute_hash_() const;
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBaseSPtr clone() const override;
