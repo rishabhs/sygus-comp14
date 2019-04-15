@@ -110,34 +110,34 @@ namespace SynthLib2Parser {
         vector<const SortExpr*> IntOpVec(1);
         IntOpVec[0] = new IntSortExpr();
 
-        SymTab->BindTheoryFun("bvand", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvor", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvxor", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvxnor", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvnand", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvnor", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvadd", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvsub", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvmul", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvudiv", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvsdiv", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvshl", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvashr", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvlshr", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvurem", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvsrem", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvsmod", BinOpVec, BVS);
-        SymTab->BindTheoryFun("bvugt", BinOpVec, BS);
-        SymTab->BindTheoryFun("bvuge", BinOpVec, BS);
-        SymTab->BindTheoryFun("bvsgt", BinOpVec, BS);
-        SymTab->BindTheoryFun("bvsge", BinOpVec, BS);
-        SymTab->BindTheoryFun("bvule", BinOpVec, BS);
-        SymTab->BindTheoryFun("bvult", BinOpVec, BS);
-        SymTab->BindTheoryFun("bvsle", BinOpVec, BS);
-        SymTab->BindTheoryFun("bvslt", BinOpVec, BS);
-        SymTab->BindTheoryFun("bvcomp", BinOpVec, BS);
-        SymTab->BindTheoryFun("bvneg", UnOpVec, BVS);
-        SymTab->BindTheoryFun("bvnot", UnOpVec, BVS);
+        SymTab->BindTheoryFun("bvand", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvor", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvxor", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvxnor", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvnand", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvnor", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvadd", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvsub", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvmul", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvudiv", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvsdiv", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvshl", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvashr", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvlshr", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvurem", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvsrem", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvsmod", BinOpVec, BVS); //
+        SymTab->BindTheoryFun("bvugt", BinOpVec, BS); //
+        SymTab->BindTheoryFun("bvuge", BinOpVec, BS); //
+        SymTab->BindTheoryFun("bvsgt", BinOpVec, BS); //
+        SymTab->BindTheoryFun("bvsge", BinOpVec, BS); //
+        SymTab->BindTheoryFun("bvule", BinOpVec, BS); //
+        SymTab->BindTheoryFun("bvult", BinOpVec, BS); //
+        SymTab->BindTheoryFun("bvsle", BinOpVec, BS); //
+        SymTab->BindTheoryFun("bvslt", BinOpVec, BS); //
+        SymTab->BindTheoryFun("bvcomp", BinOpVec, BS); //
+        SymTab->BindTheoryFun("bvneg", UnOpVec, BVS); //
+        SymTab->BindTheoryFun("bvnot", UnOpVec, BVS); //
         SymTab->BindTheoryFun("bv2nat", UnOpVec, IntOpVec[0]);
 
         //  This causes problems. Disabled for now.

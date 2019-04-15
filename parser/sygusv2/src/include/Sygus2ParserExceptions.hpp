@@ -42,34 +42,48 @@
 #include <iostream>
 #include <sstream>
 
+#include "SourceLocation.hpp"
+
 using namespace std;
 
 namespace Sygus2Parser {
+
+// forward declaration
+class SourceLocation;
 
 class Sygus2ParserException : public exception
 {
 protected:
     string exception_info;
+    SourceLocation location;
 
 public:
     Sygus2ParserException();
     Sygus2ParserException(const string& exception_info);
+    Sygus2ParserException(const string& exception_info, const SourceLocation& location);
     virtual ~Sygus2ParserException() noexcept (true);
     virtual const char* what() const throw() override;
     const string& get_exception_info() const;
+    const SourceLocation& get_location() const;
 };
 
 class SymbolTableException : public Sygus2ParserException
 {
 public:
     SymbolTableException(const string& exception_info);
+    SymbolTableException(const string& exception_info,
+                         const SourceLocation& location);
     virtual ~SymbolTableException() noexcept (true);
 };
 
 class MalformedLiteralException : public Sygus2ParserException
 {
 public:
-    MalformedLiteralException(const string& literal_string, const string& suffix);
+    MalformedLiteralException(const string& literal_string,
+                              const string& suffix);
+    MalformedLiteralException(const string& literal_string,
+                              const string& suffix,
+                              const SourceLocation& location);
     virtual ~MalformedLiteralException() noexcept (true);
 };
 
@@ -77,6 +91,8 @@ class UnsupportedFeatureException : public Sygus2ParserException
 {
 public:
     UnsupportedFeatureException(const string& exception_info);
+    UnsupportedFeatureException(const string& exception_info,
+                                const SourceLocation& location);
     virtual ~UnsupportedFeatureException() noexcept (true);
 };
 

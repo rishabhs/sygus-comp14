@@ -34,8 +34,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <algorithm>
+
 #include "include/SymbolTable.hpp"
 #include "include/Sygus2ParserExceptions.hpp"
+#include "include/TheoryManager.hpp"
 
 namespace Sygus2Parser {
 
@@ -309,24 +312,8 @@ u32 FunctionDescriptor::get_arity() const
     return (u32)argument_sorts.size();
 }
 
-SortDescriptor::SortDescriptor(const Identifier& identifier, SortKind kind)
-    : SymbolTableEntry(SymbolTableEntryKind::Sort, identifier), kind(kind)
-{
-    // Nothing here
-}
-
-
-SortDescriptor::SortDescriptor(const Identifier& identifier, SortKind kind, u32 sort_arity)
-    : SymbolTableEntry(SymbolTableEntryKind::Sort, identifier),
-      kind(kind), sort_arity(sort_arity)
-{
-    // Nothing here
-}
-
-SortDescriptor::SortDescriptor(const Identifier& identifier, SortKind kind,
-                               const vector<SortDescriptorCSPtr>& sort_parameters)
-    : SymbolTableEntry(SymbolTableEntryKind::Sort, identifier),
-      kind(kind), sort_arity(sort_parameters.size()), sort_parameters(sort_parameters)
+SortDescriptor::SortDescriptor(const Identifier& identifier)
+    : SymbolTableEntry(SymbolTableEntryKind::Sort, identifier)
 {
     // Nothing here
 }
@@ -336,14 +323,164 @@ SortDescriptor::~SortDescriptor()
     // Nothing here
 }
 
+SortDescriptorCSPtr SortDescriptor::create_primitive_sort(const Identifier& identifier)
+{
+    auto result = new SortDescriptor(identifier);
+    result->kind = SortKind::Primitive;
+    result->sort_arity = -1;
+    result->alias_target = nullptr;
+    return result;
+}
+
+SortDescriptorCSPtr SortDescriptor::create_uninterpreted_sort(const Identifier& identifier,
+                                                              u32 sort_arity)
+{
+    auto result = new SortDescriptor(identifier);
+    result->kind = SortKind::Uninterpreted;
+    result->sort_arity = sort_arity;
+    result->alias_target = nullptr;
+    return result;
+}
+
+bool SortDescriptor::check_unbound_placeholders(const vector<SortDescriptorCSPtr>& allowed_placeholders,
+                                                vector<SortDescriptorCSPtr>& unbound_placeholders) const
+{
+    auto const& placeholders = get_placeholder_parameters();
+    for (auto const& placeholder : placeholders) {
+        bool found = false;
+        for(auto const& allowed_placeholder : allowed_placeholders) {
+            if (*placeholder == *allowed_placeholder) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            unbound_placeholders.push_back(placeholder);
+        }
+    }
+
+    return unbound_placeholders.size() > 0;
+}
+
+SortDescriptorCSPtr SortDescriptor::create_sort_parameter_placeholder(const Identifier& identifier)
+{
+    auto result = new SortDescriptor(identifier);
+    result->kind = SortKind::SortParameterPlaceholder;
+    result->sort_arity = -1;
+    result->alias_target = nullptr;
+    return result;
+}
+
+SortDescriptorCSPtr SortDescriptor::create_parametric_sort(const Identifier& identifier,
+                                                           const vector<SortDescriptorCSPtr>& parameter_placeholders)
+{
+    for(auto const& placeholder : parameter_placeholders) {
+        if (placeholder->get_kind() != SortKind::SortParameterPlaceholder) {
+            throw Sygus2ParserException("Parametric sorts can only be created with parameter placeholders.");
+        }
+    }
+
+    auto result = new SortDescriptor(identifier);
+    result->kind = SortKind::Parametric;
+    result->sort_arity = -1;
+    result->sort_parameters = parameter_placeholders;
+    result->alias_target = nullptr;
+
+    return result;
+}
+
+SortDescriptorCSPtr SortDescriptor::create_sort_alias(const Identifier& identifier,
+                                                      const vector<SortDescriptorCSPtr>& parameter_placeholders,
+                                                      SortDescriptorCSPtr alias_target)
+{
+    for(auto const& placeholder : parameter_placeholders) {
+        if (placeholder->get_kind() != SortKind::SortParameterPlaceholder) {
+            throw Sygus2ParserException("Parametric sorts can only be created with parameter placeholders.");
+        }
+    }
+
+    vector<SortDescriptorCSPtr> unbound_placeholders;
+    if (alias_target->check_unbound_placeholders(parameter_placeholders, unbound_placeholders)) {
+        ostringstream sstr;
+        sstr << "Alias target contains unbound placeholders." << endl;
+        sstr << "Alias target: " << alias_target->to_string() << endl;
+        sstr << "The following placeholders are unbound:" << endl;
+        for (auto const& unbound_placeholder : unbound_placeholders) {
+            sstr << unbound_placeholder->to_string() << endl;
+        }
+        throw Sygus2ParserException(sstr.str());
+    }
+
+    auto result = new SortDescriptor(identifier);
+    result->kind = SortKind::SortAlias;
+    result->sort_arity = alias_target->sort_arity;
+    result->sort_parameters = parameter_placeholders;
+    result->alias_target = alias_target;
+    return result;
+}
+
+SortDescriptorCSPtr SortDescriptor::instantiate_sort_impl(const SortInstantiationVector& instantiation_vector) const
+{
+    if (get_num_placeholder_parameters() == 0) {
+        return this;
+    }
+
+    auto result = new SortDescriptor(identifier);
+    result->kind = kind;
+    result->sort_arity = -1;
+
+    vector<SortDescriptorCSPtr> new_sort_parameters(sort_parameters);
+    for (auto const& mapping : instantiation_vector) {
+        auto target = mapping.first;
+        auto replacement = mapping.second;
+        bool replaced = false;
+        for (size_t i = 0; i < new_sort_parameters.size(); ++i) {
+            if (*(new_sort_parameters[i]) == *target) {
+                new_sort_parameters[i] = target;
+                replaced = true;
+                break;
+            }
+        }
+
+        if (!replaced) {
+            delete result;
+            throw new Sygus2ParserException("Could not find placeholder parameter: " + target->to_string());
+        }
+    }
+
+    result->sort_parameters = new_sort_parameters;
+    if (alias_target.is_null()) {
+        result->alias_target = nullptr;
+    } else {
+        result->alias_target = alias_target->instantiate_sort_impl(instantiation_vector);
+    }
+}
+
+SortDescriptorCSPtr SortDescriptor::instantiate_sort(const SortInstantiationVector& instantiation_vector) const
+{
+    if (get_num_placeholder_parameters() == 0) {
+        throw Sygus2ParserException("Sort cannot be instantiated: it is either non-parametric, or "
+                                    "fully instantiated already");
+    }
+    return instantiate_sort_impl(instantiation_vector);
+}
+
+SortDescriptorCSPtr SortDescriptor::resolve_aliases() const
+{
+    if (alias_target.is_null()) {
+        return this;
+    }
+
+    return alias_target->resolve_aliases();
+}
+
 bool SortDescriptor::equals_(const SortDescriptor& other) const
 {
     if (&other == this) {
         return true;
     }
 
-    // sorts are compared purely based on their identifier
-    // and the sort_parameters
+    // Sorts are equal if their identifiers and parameters are equal
     if (identifier != other.identifier) {
         return false;
     }
@@ -352,7 +489,7 @@ bool SortDescriptor::equals_(const SortDescriptor& other) const
         return false;
     }
 
-    for(size_t i = 0; i < sort_parameters.size(); ++i) {
+    for (size_t i = 0; i < sort_parameters.size(); ++i) {
         if (*(sort_parameters[i]) != *(other.sort_parameters[i])) {
             return false;
         }
@@ -364,9 +501,9 @@ bool SortDescriptor::equals_(const SortDescriptor& other) const
 u64 SortDescriptor::compute_hash_() const
 {
     Hasher<Identifier> identifier_hasher;
-    auto result = identifier_hasher(identifier);
-    for (auto const& sort_parameter : sort_parameters) {
-        result = (result * 1301011) ^ sort_parameter->get_hash();
+    u64 result = identifier_hasher(identifier);
+    for (auto const& sort_param : sort_parameters) {
+        result = (result * 1300319) ^ sort_param->get_hash();
     }
 
     return result;
@@ -375,21 +512,24 @@ u64 SortDescriptor::compute_hash_() const
 string SortDescriptor::to_string() const
 {
     ostringstream sstr;
-    sstr << "SortDescriptor(Identifier = " << identifier.to_string();
-    if (sort_parameters.size() == 0) {
-        sstr << ")";
+    if (kind == SortKind::SortParameterPlaceholder) {
+        sstr << "^" << identifier.to_string();
         return sstr.str();
     }
 
-    sstr << ", SortParameters = (";
-    bool first = true;
+    sstr << identifier.to_string();
+    if (sort_parameters.size() == 0) {
+        return sstr.str();
+    }
 
-    for(auto const& arg_sort : sort_parameters) {
+    bool first = true;
+    sstr << " (";
+    for (auto const& param : sort_parameters) {
         if (!first) {
-            sstr << ", ";
+            sstr << " ";
         }
         first = false;
-        sstr << arg_sort->to_string();
+        sstr << param;
     }
 
     sstr << ")";
@@ -401,9 +541,14 @@ SortKind SortDescriptor::get_kind() const
     return kind;
 }
 
-u32 SortDescriptor::get_arity() const
+i32 SortDescriptor::get_sort_arity() const
 {
     return sort_arity;
+}
+
+SortDescriptorCSPtr SortDescriptor::get_alias_target() const
+{
+    return alias_target;
 }
 
 const vector<SortDescriptorCSPtr>& SortDescriptor::get_sort_parameters() const
@@ -411,14 +556,64 @@ const vector<SortDescriptorCSPtr>& SortDescriptor::get_sort_parameters() const
     return sort_parameters;
 }
 
-bool SortDescriptor::is_parametric() const
+vector<SortDescriptorCSPtr> SortDescriptor::get_placeholder_parameters() const
 {
-    return sort_arity > 0;
+    vector<SortDescriptorCSPtr> result;
+    for (auto const& param : sort_parameters) {
+        if (param->kind == SortKind::SortParameterPlaceholder) {
+            result.push_back(param);
+        } else {
+            result.push_back(nullptr);
+        }
+    }
+
+    return result;
 }
 
-bool SortDescriptor::is_instantiated() const
+vector<SortDescriptorCSPtr> SortDescriptor::get_non_placeholder_parameters() const
 {
-    return sort_arity == sort_parameters.size();
+    vector<SortDescriptorCSPtr> result;
+    for (auto const& param : sort_parameters) {
+        if (param->kind != SortKind::SortParameterPlaceholder) {
+            result.push_back(param);
+        } else {
+            result.push_back(nullptr);
+        }
+    }
+
+    return result;
+}
+
+u32 SortDescriptor::get_num_parameters() const
+{
+    return sort_parameters.size();
+}
+
+u32 SortDescriptor::get_num_placeholder_parameters() const
+{
+    u32 result = 0;
+    for (auto const& param : sort_parameters) {
+        if (param->kind == SortKind::SortParameterPlaceholder) {
+            result++;
+        }
+    }
+    return result;
+}
+
+u32 SortDescriptor::get_num_non_placeholder_parameters() const
+{
+    u32 result = 0;
+    for (auto const& param : sort_parameters) {
+        if (param->kind != SortKind::SortParameterPlaceholder) {
+            result++;
+        }
+    }
+    return result;
+}
+
+bool SortDescriptor::is_fully_instantiated() const
+{
+    return get_num_placeholder_parameters() == 0;
 }
 
 VariableDescriptor::VariableDescriptor(const Identifier& identifier, VariableKind kind,
@@ -484,7 +679,7 @@ SymbolTableScope::~SymbolTableScope()
     // Nothing here
 }
 
-void SymbolTableScope::add_mapping(const SymbolTableKey& key, SymbolTableEntrySPtr entry)
+void SymbolTableScope::add_mapping(const SymbolTableKey& key, SymbolTableEntryCSPtr entry)
 {
     mappings[key] = entry;
 }
@@ -500,7 +695,7 @@ SymbolTableEntryCSPtr SymbolTableScope::lookup(const SymbolTableKey& key) const
 
 SymbolTable::SymbolTable()
 {
-    // Nothing here
+    enable_feature("grammars");
 }
 
 SymbolTable::~SymbolTable()
@@ -563,12 +758,6 @@ SortDescriptorCSPtr SymbolTable::lookup_sort(const Identifier& identifier,
     return nullptr;
 }
 
-SortDescriptorCSPtr SymbolTable::lookup_sort(SortExprCSPtr sort_expr) const
-{
-    // TODO: Resolve using the resolver
-    throw Sygus2ParserException("Not implemented");
-}
-
 VariableDescriptorCSPtr SymbolTable::lookup_variable(const Identifier& identifier,
                                                      bool in_current_scope_only) const
 {
@@ -618,7 +807,36 @@ FunctionDescriptorCSPtr SymbolTable::lookup_function(const Identifier& identifie
     return nullptr;
 }
 
-void SymbolTable::add_sort(SortDescriptorSPtr sort_descriptor)
+SortDescriptorCSPtr SymbolTable::lookup_or_resolve_sort(const Identifier& identifier)
+{
+    auto result = lookup_sort(identifier);
+    if (!result.is_null()) {
+        return result;
+    }
+
+    result = TheoryManager::resolve_sort(identifier);
+    if (!result.is_null()) {
+        add_sort(result);
+    }
+    return result;
+}
+
+FunctionDescriptorCSPtr SymbolTable::lookup_or_resolve_function(const Identifier& identifier,
+                                                                const vector<SortDescriptorCSPtr>& argument_sorts)
+{
+    auto result = lookup_function(identifier, argument_sorts);
+    if (!result.is_null()) {
+        return result;
+    }
+
+    result = TheoryManager::resolve_function(identifier, argument_sorts);
+    if (!result.is_null()) {
+        add_function(result);
+    }
+    return result;
+}
+
+void SymbolTable::add_sort(SortDescriptorCSPtr sort_descriptor)
 {
     SymbolTableKey key(sort_descriptor->get_identifier());
     auto const& scope = scope_stack.back();
@@ -629,7 +847,7 @@ void SymbolTable::add_sort(SortDescriptorSPtr sort_descriptor)
     scope_stack.back()->add_mapping(key, sort_descriptor.get_raw_pointer());
 }
 
-void SymbolTable::add_function(FunctionDescriptorSPtr function_descriptor)
+void SymbolTable::add_function(FunctionDescriptorCSPtr function_descriptor)
 {
     SymbolTableKey key(function_descriptor->get_identifier(),
                        function_descriptor->get_argument_sorts());
@@ -641,7 +859,7 @@ void SymbolTable::add_function(FunctionDescriptorSPtr function_descriptor)
     scope_stack.back()->add_mapping(key, function_descriptor.get_raw_pointer());
 }
 
-void SymbolTable::add_variable(VariableDescriptorSPtr variable_descriptor)
+void SymbolTable::add_variable(VariableDescriptorCSPtr variable_descriptor)
 {
     SymbolTableKey key(variable_descriptor->get_identifier());
     auto const& scope = scope_stack.back();
@@ -652,7 +870,7 @@ void SymbolTable::add_variable(VariableDescriptorSPtr variable_descriptor)
     scope_stack.back()->add_mapping(key, variable_descriptor.get_raw_pointer());
 }
 
-void SymbolTable::add_grammar_symbol(GrammarSymbolDescriptorSPtr grammar_symbol_descriptor)
+void SymbolTable::add_grammar_symbol(GrammarSymbolDescriptorCSPtr grammar_symbol_descriptor)
 {
     SymbolTableKey key(grammar_symbol_descriptor->get_identifier());
     auto const& scope = scope_stack.back();
@@ -662,5 +880,55 @@ void SymbolTable::add_grammar_symbol(GrammarSymbolDescriptorSPtr grammar_symbol_
 
     scope_stack.back()->add_mapping(key, grammar_symbol_descriptor.get_raw_pointer());
 }
+
+SortDescriptorCSPtr SymbolTable::get_boolean_sort()
+{
+    return CoreResolver::get_bool_sort();
+}
+
+SortDescriptorCSPtr SymbolTable::get_integer_sort()
+{
+    return IntegerResolver::get_integer_sort();
+}
+
+SortDescriptorCSPtr SymbolTable::get_string_sort()
+{
+    return StringResolver::get_string_sort();
+}
+
+SortDescriptorCSPtr SymbolTable::get_real_sort()
+{
+    return RealResolver::get_real_sort();
+}
+
+bool SymbolTable::is_bitvector_sort(SortDescriptorCSPtr sort_descriptor)
+{
+    u32 unused;
+    return is_bitvector_sort(sort_descriptor, unused);
+}
+
+bool SymbolTable::is_bitvector_sort(SortDescriptorCSPtr sort_descriptor, u32& size)
+{
+    if (sort_descriptor->get_sort_arity() != 0) {
+        return false;
+    }
+    auto const& identifier = sort_descriptor->get_identifier();
+    return BitVectorResolver::parse_bitvector_identifier(identifier, size);
+}
+
+bool SymbolTable::is_array_sort(SortDescriptorCSPtr sort_descriptor)
+{
+    SortDescriptorCSPtr key;
+    SortDescriptorCSPtr value;
+    return is_array_sort(sort_descriptor, key, value);
+}
+
+bool SymbolTable::is_array_sort(SortDescriptorCSPtr sort_descriptor,
+                                SortDescriptorCSPtr& key_sort,
+                                SortDescriptorCSPtr& value_sort)
+{
+    return ArrayResolver::is_array_sort(sort_descriptor, key_sort, value_sort);
+}
+
 
 } /* end namespace */

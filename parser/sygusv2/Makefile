@@ -12,7 +12,8 @@ SYGUS2_PARSER_SOURCES= \
 	Sygus2ParserExceptions.cpp \
 	Sygus2ParserAST.cpp \
 	SymbolTable.cpp \
-	TheoryManager.cpp
+	TheoryManager.cpp \
+	SymbolTableBuilder.cpp
 
 SYGUS2_PARSER_OBJS=$(addprefix $(SYGUS2_PARSER_ROOT)/obj/$(BUILD_SUFFIX)/, $(SYGUS2_PARSER_SOURCES:.cpp=.o))
 SYGUS2_PARSER_DEPS=$(addprefix $(SYGUS2_PARSER_ROOT)/obj/$(BUILD_SUFFIX)/, $(SYGUS2_PARSER_SOURCES:.cpp=.d))

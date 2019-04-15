@@ -50,6 +50,7 @@ using namespace std;
 class SortDescriptor;
 typedef ManagedPointer<SortDescriptor> SortDescriptorSPtr;
 typedef ManagedConstPointer<SortDescriptor> SortDescriptorCSPtr;
+typedef vector<pair<SortDescriptorCSPtr, SortDescriptorCSPtr>> SortInstantiationVector;
 
 class SymbolTableKey : public Hashable<SymbolTableKey>, public Equatable<SymbolTableKey>
 {
@@ -86,30 +87,6 @@ enum class SymbolTableEntryKind
      GrammarSymbol,
     };
 
-enum class VariableKind
-    {
-     Universal,
-     Parameter,
-     Quantified,
-     LetBound
-    };
-
-enum class FunctionKind
-    {
-     SynthFun,
-     SynthInv,
-     UserDefined,
-     Uninterpreted,
-     Theory,
-    };
-
-enum class SortKind
-    {
-     Primitive,
-     UserDefined,
-     Uninterpreted
-    };
-
 class SymbolTableEntry : public Downcastable<SymbolTableEntry>, public RefCountable<SymbolTableEntry>
 {
 protected:
@@ -130,6 +107,15 @@ public:
 
 typedef ManagedPointer<SymbolTableEntry> SymbolTableEntrySPtr;
 typedef ManagedConstPointer<SymbolTableEntry> SymbolTableEntryCSPtr;
+
+enum class FunctionKind
+    {
+     SynthFun,
+     SynthInv,
+     UserDefined,
+     Uninterpreted,
+     Theory,
+    };
 
 class FunctionDescriptor : public SymbolTableEntry,
                            public Equatable<FunctionDescriptor>,
@@ -191,36 +177,79 @@ public:
 typedef ManagedPointer<FunctionDescriptor> FunctionDescriptorSPtr;
 typedef ManagedConstPointer<FunctionDescriptor> FunctionDescriptorCSPtr;
 
+enum class SortKind
+    {
+     Primitive,
+     Uninterpreted,
+     Parametric,
+     SortParameterPlaceholder,
+     SortAlias
+    };
+
 class SortDescriptor : public SymbolTableEntry,
                        public Equatable<SortDescriptor>,
                        public Hashable<SortDescriptor>
 {
 private:
     SortKind kind;
-    u32 sort_arity;
     vector<SortDescriptorCSPtr> sort_parameters;
+    i32 sort_arity;
+    SortDescriptorCSPtr alias_target;
+
+    SortDescriptor() = delete;
+    SortDescriptor(const SortDescriptor&) = delete;
+    SortDescriptor(SortDescriptor&&) = delete;
+    SortDescriptor& operator = (const SortDescriptor&) = delete;
+    SortDescriptor& operator = (SortDescriptor&&) = delete;
+
+    SortDescriptor(const Identifier& identifier);
+    virtual ~SortDescriptor();
+
+    bool check_unbound_placeholders(const vector<SortDescriptorCSPtr>& allowed_placeholders,
+                                    vector<SortDescriptorCSPtr>& unbound_placeholders) const;
+
+    SortDescriptorCSPtr instantiate_sort_impl(const SortInstantiationVector& instantiation_vector) const;
 
 public:
-    // for non-parametric sorts, user-defined or primitive.
-    SortDescriptor(const Identifier& identifier, SortKind kind);
-    // for uninterpreted sorts
-    SortDescriptor(const Identifier& identifier, SortKind kind, u32 sort_arity);
-    // for parametric sorts, user-defined or primitive.
-    SortDescriptor(const Identifier& identifier, SortKind kind,
-                   const vector<SortDescriptorCSPtr>& sort_parameters);
+    static SortDescriptorCSPtr create_primitive_sort(const Identifier& identifier);
+    static SortDescriptorCSPtr create_uninterpreted_sort(const Identifier& identifier,
+                                                         u32 sort_arity);
+    static SortDescriptorCSPtr create_sort_parameter_placeholder(const Identifier& identifier);
+    static SortDescriptorCSPtr create_parametric_sort(const Identifier& identifier,
+                                                      const vector<SortDescriptorCSPtr>& parameter_placeholders);
+    static SortDescriptorCSPtr create_sort_alias(const Identifier& identifier,
+                                                 const vector<SortDescriptorCSPtr>& parameter_placeholders,
+                                                 SortDescriptorCSPtr alias_target);
 
-    ~SortDescriptor();
+    SortDescriptorCSPtr instantiate_sort(const SortInstantiationVector& instantiation_vector) const;
+    SortDescriptorCSPtr resolve_aliases() const;
 
+    // equality and hash methods
     bool equals_(const SortDescriptor& other) const;
     u64 compute_hash_() const;
     string to_string() const;
 
+    // accessors
     SortKind get_kind() const;
-    u32 get_arity() const;
+    i32 get_sort_arity() const;
+    SortDescriptorCSPtr get_alias_target() const;
     const vector<SortDescriptorCSPtr>& get_sort_parameters() const;
-    bool is_parametric() const;
-    bool is_instantiated() const;
+    vector<SortDescriptorCSPtr> get_placeholder_parameters() const;
+    vector<SortDescriptorCSPtr> get_non_placeholder_parameters() const;
+    u32 get_num_parameters() const;
+    u32 get_num_placeholder_parameters() const;
+    u32 get_num_non_placeholder_parameters() const;
+    bool is_fully_instantiated() const;
+
 };
+
+enum class VariableKind
+    {
+     Universal,
+     Parameter,
+     Quantified,
+     LetBound
+    };
 
 class VariableDescriptor : public SymbolTableEntry
 {
@@ -264,10 +293,10 @@ class SymbolTableScope : public RefCountable<SymbolTableScope>
     friend class SymbolTable;
 
 private:
-    unordered_map<SymbolTableKey, SymbolTableEntrySPtr,
+    unordered_map<SymbolTableKey, SymbolTableEntryCSPtr,
                   Hasher<SymbolTableKey>, Equals<SymbolTableKey>> mappings;
 
-    void add_mapping(const SymbolTableKey& key, SymbolTableEntrySPtr entry);
+    void add_mapping(const SymbolTableKey& key, SymbolTableEntryCSPtr entry);
 
 public:
     SymbolTableScope();
@@ -287,7 +316,9 @@ class SymbolTable : public RefCountable<SymbolTable>
 {
 private:
     vector<SymbolTableScopeSPtr> scope_stack;
-
+    vector<string> enabled_features;
+    unordered_map<string, LiteralCSPtr> options;
+    string logic;
     SymbolTableEntryCSPtr lookup(const SymbolTableKey& key, bool in_current_scope_only) const;
 
 public:
@@ -301,7 +332,6 @@ public:
                                  bool in_current_scope_only = false) const;
     SortDescriptorCSPtr lookup_sort(const Identifier& identifier,
                                     bool in_current_scope_only = false) const;
-    SortDescriptorCSPtr lookup_sort(SortExprCSPtr sort_expr) const;
     VariableDescriptorCSPtr lookup_variable(const Identifier& identifier,
                                             bool in_current_scope_only = false) const;
     GrammarSymbolDescriptorCSPtr lookup_grammar_symbol(const Identifier& identifier,
@@ -312,11 +342,37 @@ public:
                                             const vector<SortDescriptorCSPtr>& argument_sorts,
                                             bool in_current_scope_only = false) const;
 
-    void add_sort(SortDescriptorSPtr sort_descriptor);
-    void add_function(FunctionDescriptorSPtr function_descriptor);
-    void add_variable(VariableDescriptorSPtr variable_descriptor);
-    void add_grammar_symbol(GrammarSymbolDescriptorSPtr grammar_symbol_descriptor);
+    SortDescriptorCSPtr lookup_or_resolve_sort(const Identifier& identifier);
+    FunctionDescriptorCSPtr lookup_or_resolve_function(const Identifier& identifier,
+                                                       const vector<SortDescriptorCSPtr>& argument_sorts);
+
+    void add_sort(SortDescriptorCSPtr sort_descriptor);
+    void add_function(FunctionDescriptorCSPtr function_descriptor);
+    void add_variable(VariableDescriptorCSPtr variable_descriptor);
+    void add_grammar_symbol(GrammarSymbolDescriptorCSPtr grammar_symbol_descriptor);
+
+    // one off settings for logics, options and features
+    void enable_feature(const string& feature_name);
+    void disable_feature(const string& feature_name);
+
+    void set_logic(const string& logic_name);
+
+    void set_option(const string& option_name, const LiteralCSPtr literal);
+
+    static SortDescriptorCSPtr get_boolean_sort();
+    static SortDescriptorCSPtr get_integer_sort();
+    static SortDescriptorCSPtr get_string_sort();
+    static SortDescriptorCSPtr get_real_sort();
+    static bool is_bitvector_sort(SortDescriptorCSPtr sort_descriptor);
+    static bool is_bitvector_sort(SortDescriptorCSPtr sort_descriptor, u32& size);
+    static bool is_array_sort(SortDescriptorCSPtr sort_descriptor);
+    static bool is_array_sort(SortDescriptorCSPtr sort_descriptor,
+                              SortDescriptorCSPtr& key_sort,
+                              SortDescriptorCSPtr& value_sort);
 };
+
+typedef ManagedPointer<SymbolTable> SymbolTableSPtr;
+typedef ManagedConstPointer<SymbolTable> SymbolTableCSPtr;
 
 } /* end namespace */
 

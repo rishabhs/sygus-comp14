@@ -157,6 +157,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 %type<lexer_string> Symbol
 %type<symbol_list> SymbolPlus
+%type<symbol_list> SymbolStar
 
 %type<the_literal> Literal
 
@@ -290,7 +291,7 @@ FunDefCommand : TK_LPAREN TK_DEFINE_FUN Symbol TK_LPAREN SortedSymbolStar TK_RPA
               delete $5;
           }
 
-SortDefCommand : TK_LPAREN TK_DEFINE_SORT Symbol SymbolPlus SortExpr TK_RPAREN
+SortDefCommand : TK_LPAREN TK_DEFINE_SORT Symbol SymbolStar SortExpr TK_RPAREN
                {
                    $$ = new DefineSortCommand(GET_CURRENT_LOCATION(), *$3, *$4, $5);
                    delete $3;
@@ -389,6 +390,15 @@ ConstructorDefinition : TK_LPAREN Symbol SortedSymbolStar TK_RPAREN
                           delete $2;
                           delete $3;
                       }
+
+SymbolStar : SymbolPlus
+           {
+               $$ = $1;
+           }
+           | TK_LPAREN TK_RPAREN
+           {
+               $$ = new vector<string>();
+           }
 
 SymbolPlus : TK_LPAREN SymbolPlus Symbol TK_RPAREN
            {

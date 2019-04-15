@@ -41,6 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "include/Sygus2ParserIFace.hpp"
 #include "include/Sygus2ParserExceptions.hpp"
+#include "include/SymbolTable.hpp"
 
 namespace Sygus2Bison {
 extern Sygus2Parser::Program* the_program;
@@ -454,6 +455,27 @@ u64 SortExpr::compute_hash_() const
     return result;
 }
 
+string SortExpr::to_string() const
+{
+    ostringstream sstr;
+    sstr << identifier->to_string();
+
+    if (param_sorts.size() != 0) {
+        sstr << "(";
+        bool first = true;
+        for(auto const& param_sort : param_sorts) {
+            if (!first) {
+                sstr << " ";
+            }
+            first = false;
+            sstr << param_sort->to_string();
+        }
+        sstr << ")";
+    }
+
+    return sstr.str();
+}
+
 void SortExpr::accept(ASTVisitorBase* visitor) const
 {
     visitor->visit_sort_expr(this);
@@ -635,9 +657,29 @@ SortExprCSPtr Term::get_sort() const
     return sort;
 }
 
-void Term::set_sort(SortExprSPtr sort) const
+void Term::set_sort(SortExprCSPtr sort) const
 {
     this->sort = sort;
+}
+
+void Term::set_symbol_table_scope(SymbolTableScopeSPtr scope) const
+{
+    symbol_table_scope = scope;
+}
+
+SymbolTableScopeSPtr Term::get_symbol_table_scope() const
+{
+    return symbol_table_scope;
+}
+
+bool Term::push_symbol_table_scope(SymbolTableSPtr symbol_table) const
+{
+    if (symbol_table_scope.is_null()) {
+        return false;
+    }
+
+    symbol_table->push_scope(symbol_table_scope);
+    return true;
 }
 
 IdentifierTerm::IdentifierTerm(const SourceLocation& location, IdentifierSPtr identifier)
@@ -1099,6 +1141,16 @@ SortExprCSPtr SynthFunCommand::get_function_range_sort() const
 GrammarCSPtr SynthFunCommand::get_synthesis_grammar() const
 {
     return synthesis_grammar;
+}
+
+void SynthFunCommand::set_symbol_table_scope(SymbolTableScopeSPtr scope) const
+{
+    symbol_table_scope = scope;
+}
+
+SymbolTableScopeSPtr SynthFunCommand::get_symbol_table_scope() const
+{
+    return symbol_table_scope;
 }
 
 // Implementation of SynthInvCommand
@@ -1591,6 +1643,26 @@ const vector<SortedSymbolCSPtr>& Grammar::get_nonterminals() const
 const unordered_map<string, GroupedRuleListCSPtr>& Grammar::get_grouped_rule_lists() const
 {
     return const_grouped_rule_lists;
+}
+
+SymbolTableScopeSPtr Grammar::get_symbol_table_scope() const
+{
+    return symbol_table_scope;
+}
+
+void Grammar::set_symbol_table_scope(SymbolTableScopeSPtr scope) const
+{
+    symbol_table_scope = scope;
+}
+
+bool Grammar::push_symbol_table_scope(SymbolTableSPtr symbol_table) const
+{
+    if (symbol_table_scope.is_null()) {
+        return false;
+    }
+
+    symbol_table->push_scope(symbol_table_scope);
+    return true;
 }
 
 // Implementation of Program

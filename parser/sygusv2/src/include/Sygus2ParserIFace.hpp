@@ -47,42 +47,22 @@
 #include "BaseTypes.hpp"
 #include "RefCountable.hpp"
 #include "ManagedPointer.hpp"
+#include "SourceLocation.hpp"
 
 namespace Sygus2Parser {
 
 using namespace std;
 
-class SourceLocation : public Equatable<SourceLocation>,
-                       public Hashable<SourceLocation>
-{
-private:
-    i32 line;
-    i32 column;
-
-public:
-    SourceLocation(i32 line, i32 column);
-    SourceLocation(const SourceLocation& other);
-    SourceLocation(SourceLocation&& other);
-
-    ~SourceLocation();
-
-    bool equals_(const SourceLocation& other) const;
-
-    SourceLocation& operator = (const SourceLocation& Other);
-    SourceLocation& operator = (SourceLocation&& other);
-    u64 compute_hash_() const;
-
-    i32 get_line() const;
-    i32 get_column() const;
-
-    string to_string() const;
-    static SourceLocation none;
-};
-
 class ASTBase;
 class ASTVisitorBase;
 typedef ManagedPointer<ASTBase> ASTBaseSPtr;
 typedef ManagedConstPointer<ASTBase> ASTBaseCSPtr;
+
+class SymbolTable;
+typedef ManagedPointer<SymbolTable> SymbolTableSPtr;
+
+class SymbolTableScope;
+typedef ManagedPointer<SymbolTableScope> SymbolTableScopeSPtr;
 
 class ASTBase : public RefCountable<ASTBase>, public Downcastable<ASTBase>
 {
@@ -194,6 +174,7 @@ public:
 
     bool equals_(const SortExpr& other) const;
     u64 compute_hash_() const;
+    string to_string() const;
 
     virtual void accept(ASTVisitorBase* visitor) const override;
     virtual ASTBaseSPtr clone() const override;
@@ -324,13 +305,19 @@ typedef ManagedConstPointer<Literal> LiteralCSPtr;
 class Term : public ASTBase
 {
 protected:
-    mutable SortExprSPtr sort;
+    mutable SortExprCSPtr sort;
+    mutable SymbolTableScopeSPtr symbol_table_scope;
     Term(const SourceLocation& location);
 
 public:
     virtual ~Term();
-    void set_sort(SortExprSPtr sort) const;
+    void set_sort(SortExprCSPtr sort) const;
     SortExprCSPtr get_sort() const;
+
+    void set_symbol_table_scope(SymbolTableScopeSPtr symbol_table_scope) const;
+    SymbolTableScopeSPtr get_symbol_table_scope() const;
+
+    bool push_symbol_table_scope(SymbolTableSPtr symbol_table) const;
 };
 
 typedef ManagedPointer<Term> TermSPtr;
@@ -605,6 +592,7 @@ private:
     GrammarSPtr synthesis_grammar;
 
     vector<SortedSymbolCSPtr> const_function_parameters;
+    mutable SymbolTableScopeSPtr symbol_table_scope;
 
 public:
     SynthFunCommand(const SourceLocation& location,
@@ -621,6 +609,9 @@ public:
     const vector<SortedSymbolCSPtr>& get_function_parameters() const;
     SortExprCSPtr get_function_range_sort() const;
     GrammarCSPtr get_synthesis_grammar() const;
+
+    void set_symbol_table_scope(SymbolTableScopeSPtr scope) const;
+    SymbolTableScopeSPtr get_symbol_table_scope() const;
 };
 
 typedef ManagedPointer<SynthFunCommand> SynthFunCommandSPtr;
@@ -913,6 +904,7 @@ private:
     vector<SortedSymbolCSPtr> const_grammar_nonterminals;
     unordered_map<string, GroupedRuleListSPtr> grouped_rule_lists;
     unordered_map<string, GroupedRuleListCSPtr> const_grouped_rule_lists;
+    mutable SymbolTableScopeSPtr symbol_table_scope;
 
 public:
     Grammar(const SourceLocation& location,
@@ -925,6 +917,11 @@ public:
 
     const vector<SortedSymbolCSPtr>& get_nonterminals() const;
     const unordered_map<string, GroupedRuleListCSPtr>& get_grouped_rule_lists() const;
+
+    SymbolTableScopeSPtr get_symbol_table_scope() const;
+    void set_symbol_table_scope(SymbolTableScopeSPtr scope) const;
+
+    bool push_symbol_table_scope(SymbolTableSPtr symbol_table) const;
 };
 
 typedef ManagedPointer<Grammar> GrammarSPtr;

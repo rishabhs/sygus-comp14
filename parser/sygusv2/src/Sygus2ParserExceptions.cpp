@@ -35,17 +35,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "include/Sygus2ParserExceptions.hpp"
+#include "include/Sygus2ParserIFace.hpp"
 
 namespace Sygus2Parser {
 
 Sygus2ParserException::Sygus2ParserException()
-    : exception_info("Unspecified")
+    : exception_info("Unspecified"), location(SourceLocation::none)
 {
     // Nothing here
 }
 
 Sygus2ParserException::Sygus2ParserException(const string& exception_info)
-    : exception_info(exception_info)
+    : exception_info(exception_info), location(SourceLocation::none)
+{
+    // Nothing here
+}
+
+Sygus2ParserException::Sygus2ParserException(const string& exception_info,
+                                             const SourceLocation& location)
+    : exception_info(exception_info), location(location)
 {
     // Nothing here
 }
@@ -55,6 +63,11 @@ Sygus2ParserException::~Sygus2ParserException() noexcept (true)
     // Nothing here
 }
 
+const SourceLocation& Sygus2ParserException::get_location() const
+{
+    return location;
+}
+
 const char* Sygus2ParserException::what() const throw()
 {
     return exception_info.c_str();
@@ -62,6 +75,13 @@ const char* Sygus2ParserException::what() const throw()
 
 SymbolTableException::SymbolTableException(const string& exception_info)
     : Sygus2ParserException(exception_info)
+{
+    // Nothing here
+}
+
+SymbolTableException::SymbolTableException(const string& exception_info,
+                                           const SourceLocation& location)
+    : Sygus2ParserException(exception_info, location)
 {
     // Nothing here
 }
@@ -80,6 +100,17 @@ MalformedLiteralException::MalformedLiteralException(const string& literal_strin
     exception_info = sstr.str();
 }
 
+MalformedLiteralException::MalformedLiteralException(const string& literal_string,
+                                                     const string& suffix,
+                                                     const SourceLocation& location)
+{
+    ostringstream sstr;
+    sstr << "The literal \"" << literal_string << "\" is malformed" << endl;
+    sstr << "Details: " << suffix;
+    exception_info = sstr.str();
+    this->location = location;
+}
+
 MalformedLiteralException::~MalformedLiteralException() noexcept (true)
 {
     // Nothing here
@@ -87,6 +118,13 @@ MalformedLiteralException::~MalformedLiteralException() noexcept (true)
 
 UnsupportedFeatureException::UnsupportedFeatureException(const string& exception_info)
     : Sygus2ParserException(exception_info)
+{
+    // Nothing here
+}
+
+UnsupportedFeatureException::UnsupportedFeatureException(const string& exception_info,
+                                                         const SourceLocation& location)
+    : Sygus2ParserException(exception_info, location)
 {
     // Nothing here
 }
@@ -99,6 +137,11 @@ UnsupportedFeatureException::~UnsupportedFeatureException()
 ostream& operator << (ostream& str, const Sygus2ParserException& exc)
 {
     str << exc.what();
+    auto const& location = exc.get_location();
+    if (location != SourceLocation::none) {
+        str << endl;
+        str << "At: " << location.to_string();
+    }
     return str;
 }
 
