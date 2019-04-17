@@ -188,7 +188,20 @@ FunctionDescriptor::FunctionDescriptor(const Identifier& identifier,
                                        FunctionKind kind)
     : SymbolTableEntry(SymbolTableEntryKind::Function, identifier),
       kind(kind), argument_sorts(argument_sorts), argument_names(argument_names),
-      range_sort(range_sort), function_body(function_body), synthesis_grammar(nullptr)
+      range_sort(range_sort), function_body(function_body), synthesis_grammar(nullptr),
+      synth_fun_command(nullptr), synth_inv_command(nullptr)
+{
+    if (argument_names.size() != argument_sorts.size()) {
+        throw Sygus2ParserException("Argument sorts and names must have the same length.");
+    }
+}
+
+FunctionDescriptor::FunctionDescriptor(const Identifier& identifier,
+                                       SortDescriptorCSPtr range_sort,
+                                       FunctionKind kind)
+    : SymbolTableEntry(SymbolTableEntryKind::Function, identifier),
+      kind(kind), range_sort(range_sort), function_body(nullptr), synthesis_grammar(nullptr),
+      synth_fun_command(nullptr), synth_inv_command(nullptr)
 {
     if (argument_names.size() != argument_sorts.size()) {
         throw Sygus2ParserException("Argument sorts and names must have the same length.");
@@ -200,10 +213,12 @@ FunctionDescriptor::FunctionDescriptor(const Identifier& identifier,
                                        const vector<string>& argument_names,
                                        SortDescriptorCSPtr range_sort,
                                        GrammarCSPtr synthesis_grammar,
+                                       SynthFunCommandCSPtr synth_fun_command,
                                        FunctionKind kind)
     : SymbolTableEntry(SymbolTableEntryKind::Function, identifier),
       kind(kind), argument_sorts(argument_sorts), argument_names(argument_names),
-      range_sort(range_sort), function_body(nullptr), synthesis_grammar(synthesis_grammar)
+      range_sort(range_sort), function_body(nullptr), synthesis_grammar(synthesis_grammar),
+      synth_fun_command(synth_fun_command), synth_inv_command(nullptr)
 {
     if (argument_names.size() != argument_sorts.size()) {
         throw Sygus2ParserException("Argument sorts and names must have the same length.");
@@ -214,10 +229,12 @@ FunctionDescriptor::FunctionDescriptor(const Identifier& identifier,
                                        const vector<SortDescriptorCSPtr>& argument_sorts,
                                        const vector<string>& argument_names,
                                        GrammarCSPtr synthesis_grammar,
+                                       SynthInvCommandCSPtr synth_inv_command,
                                        FunctionKind kind)
     : SymbolTableEntry(SymbolTableEntryKind::Function, identifier),
       kind(kind), argument_sorts(argument_sorts), argument_names(argument_names),
-      range_sort(nullptr), function_body(nullptr), synthesis_grammar(synthesis_grammar)
+      range_sort(nullptr), function_body(nullptr), synthesis_grammar(synthesis_grammar),
+      synth_fun_command(nullptr), synth_inv_command(synth_inv_command)
 {
     if (argument_names.size() != argument_sorts.size()) {
         throw Sygus2ParserException("Argument sorts and names must have the same length.");
@@ -230,8 +247,8 @@ FunctionDescriptor::FunctionDescriptor(const Identifier& identifier,
                                        FunctionKind kind)
     : SymbolTableEntry(SymbolTableEntryKind::Function, identifier),
       kind(kind), argument_sorts(argument_sorts), argument_names(),
-      range_sort(range_sort), function_body(nullptr), synthesis_grammar(nullptr)
-
+      range_sort(range_sort), function_body(nullptr), synthesis_grammar(nullptr),
+      synth_fun_command(nullptr), synth_inv_command(nullptr)
 {
     // Nothing here
 }
@@ -310,6 +327,16 @@ GrammarCSPtr FunctionDescriptor::get_synthesis_grammar() const
 u32 FunctionDescriptor::get_arity() const
 {
     return (u32)argument_sorts.size();
+}
+
+SynthFunCommandCSPtr FunctionDescriptor::get_synth_fun_command() const
+{
+    return synth_fun_command;
+}
+
+SynthInvCommandCSPtr FunctionDescriptor::get_synth_inv_command() const
+{
+    return synth_inv_command;
 }
 
 SortDescriptor::SortDescriptor(const Identifier& identifier)
@@ -454,6 +481,8 @@ SortDescriptorCSPtr SortDescriptor::instantiate_sort_impl(const SortInstantiatio
     } else {
         result->alias_target = alias_target->instantiate_sort_impl(instantiation_vector);
     }
+
+    return result;
 }
 
 SortDescriptorCSPtr SortDescriptor::instantiate_sort(const SortInstantiationVector& instantiation_vector) const
@@ -839,9 +868,8 @@ FunctionDescriptorCSPtr SymbolTable::lookup_or_resolve_function(const Identifier
 void SymbolTable::add_sort(SortDescriptorCSPtr sort_descriptor)
 {
     SymbolTableKey key(sort_descriptor->get_identifier());
-    auto const& scope = scope_stack.back();
-    if (scope->lookup(key) != nullptr) {
-        throw new SymbolTableException("Duplicate mapping in same scope for key " + key.to_string());
+    if (lookup(key, false) != nullptr) {
+        throw new SymbolTableException("Redeclaration of identifier " + key.to_string());
     }
 
     scope_stack.back()->add_mapping(key, sort_descriptor.get_raw_pointer());

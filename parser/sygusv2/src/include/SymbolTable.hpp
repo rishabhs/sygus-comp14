@@ -128,6 +128,8 @@ private:
     SortDescriptorCSPtr range_sort;
     TermCSPtr function_body;
     GrammarCSPtr synthesis_grammar;
+    SynthFunCommandCSPtr synth_fun_command;
+    SynthInvCommandCSPtr synth_inv_command;
 
 public:
     // For user defined functions
@@ -138,12 +140,19 @@ public:
                        TermCSPtr function_body,
                        FunctionKind kind = FunctionKind::UserDefined);
 
+    // For constant user-defined functions (for enums)
+    FunctionDescriptor(const Identifier& identifier,
+                       SortDescriptorCSPtr range_sort,
+                       FunctionKind kind = FunctionKind::UserDefined);
+
+
     // For functions to be synthesized
     FunctionDescriptor(const Identifier& identifier,
                        const vector<SortDescriptorCSPtr>& argument_sorts,
                        const vector<string>& argument_names,
                        SortDescriptorCSPtr range_sort,
                        GrammarCSPtr synthesis_grammar,
+                       SynthFunCommandCSPtr synth_fun_command,
                        FunctionKind kind = FunctionKind::SynthFun);
 
     // For invariants to be synthesized
@@ -151,6 +160,7 @@ public:
                        const vector<SortDescriptorCSPtr>& argument_sorts,
                        const vector<string>& argument_names,
                        GrammarCSPtr synthesis_grammar,
+                       SynthInvCommandCSPtr synth_inv_command,
                        FunctionKind = FunctionKind::SynthInv);
 
     // For universally quantified (uninterpreted) functions, or theory functions
@@ -172,6 +182,9 @@ public:
     TermCSPtr get_function_body() const;
     GrammarCSPtr get_synthesis_grammar() const;
     u32 get_arity() const;
+
+    SynthFunCommandCSPtr get_synth_fun_command() const;
+    SynthInvCommandCSPtr get_synth_inv_command() const;
 };
 
 typedef ManagedPointer<FunctionDescriptor> FunctionDescriptorSPtr;
@@ -363,6 +376,7 @@ public:
     static SortDescriptorCSPtr get_integer_sort();
     static SortDescriptorCSPtr get_string_sort();
     static SortDescriptorCSPtr get_real_sort();
+    static SortDescriptorCSPtr get_bitvector_sort(u32 size);
     static bool is_bitvector_sort(SortDescriptorCSPtr sort_descriptor);
     static bool is_bitvector_sort(SortDescriptorCSPtr sort_descriptor, u32& size);
     static bool is_array_sort(SortDescriptorCSPtr sort_descriptor);

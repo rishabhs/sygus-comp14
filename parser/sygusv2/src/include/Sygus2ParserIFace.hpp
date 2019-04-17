@@ -302,17 +302,20 @@ public:
 typedef ManagedPointer<Literal> LiteralSPtr;
 typedef ManagedConstPointer<Literal> LiteralCSPtr;
 
+class SortDescriptor;
+typedef ManagedConstPointer<SortDescriptor> SortDescriptorCSPtr;
+
 class Term : public ASTBase
 {
 protected:
-    mutable SortExprCSPtr sort;
+    mutable SortDescriptorCSPtr sort;
     mutable SymbolTableScopeSPtr symbol_table_scope;
     Term(const SourceLocation& location);
 
 public:
     virtual ~Term();
-    void set_sort(SortExprCSPtr sort) const;
-    SortExprCSPtr get_sort() const;
+    void set_sort(SortDescriptorCSPtr sort) const;
+    SortDescriptorCSPtr get_sort() const;
 
     void set_symbol_table_scope(SymbolTableScopeSPtr symbol_table_scope) const;
     SymbolTableScopeSPtr get_symbol_table_scope() const;

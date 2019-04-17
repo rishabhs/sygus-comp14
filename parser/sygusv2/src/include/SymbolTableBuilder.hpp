@@ -12,6 +12,11 @@ private:
     SymbolTableSPtr symbol_table;
     vector<SortDescriptorCSPtr> sort_stack;
 
+    void add_params_to_symtab(const vector<SortedSymbolCSPtr>& param_list,
+                              SymbolTableSPtr symbol_table,
+                              vector<SortDescriptorCSPtr>& argument_sorts,
+                              vector<string>& argument_names);
+
 public:
     SymbolTableBuilder();
     virtual ~SymbolTableBuilder();

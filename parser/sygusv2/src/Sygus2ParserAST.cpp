@@ -652,12 +652,12 @@ Term::~Term()
     // Nothing here
 }
 
-SortExprCSPtr Term::get_sort() const
+SortDescriptorCSPtr Term::get_sort() const
 {
     return sort;
 }
 
-void Term::set_sort(SortExprCSPtr sort) const
+void Term::set_sort(SortDescriptorCSPtr sort) const
 {
     this->sort = sort;
 }
